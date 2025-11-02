@@ -14,6 +14,7 @@ runs:
       uses: espressif/esp-idf-ci-action@v1
       with:
         esp_idf_version: ${{ inputs.idf-version }}
+        command: echo "ESP-IDF setup complete"
 
     - name: Install Python dependencies
       shell: bash
