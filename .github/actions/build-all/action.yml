@@ -4,6 +4,13 @@ description: 'Build firmware for all ESP32 targets'
 runs:
   using: 'composite'
   steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
     - name: Build frontend
       shell: bash
       run: python frontend/build_frontend.py --ci
