@@ -14,7 +14,6 @@ on:
           - 'basic'
           - 'stress'
           - 'compatibility'
-          - 'performance'
 
 jobs:
   # Firmware validation tests
@@ -177,68 +176,6 @@ jobs:
           BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
           echo "Binary size with ESP-IDF ${{ matrix.idf_version }}: $BINARY_SIZE bytes"
 
-  # Performance benchmarking
-  performance-tests:
-    name: Performance Benchmarking
-    runs-on: ubuntu-latest
-    if: github.event.inputs.test_type == 'performance' || github.event_name == 'schedule'
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup ESP-IDF
-        uses: ./.github/actions/setup-espidf
-        with:
-          idf-version: 'v5.5.1'
-
-      - name: Build frontend
-        run: python frontend/build_frontend.py --ci
-
-      - name: Embed frontend
-        run: python scripts/embed_frontend.py --ci
-
-      - name: Build optimized firmware
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: 'v5.5.1'
-          target: esp32
-          command: |
-            python scripts/build.py --target esp32 --ci
-            
-            # Enable performance optimizations
-            echo "CONFIG_COMPILER_OPTIMIZATION_PERF=y" >> sdkconfig.defaults
-            echo "CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_DISABLE=y" >> sdkconfig.defaults
-            
-            idf.py build
-
-      - name: Analyze performance characteristics
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: 'v5.5.1'
-          target: esp32
-          command: |
-            echo "Performance analysis:"
-            echo "Binary size: $(stat -c%s build/mesh-now.bin) bytes"
-            
-            echo "Memory usage:"
-            idf.py size | grep -E "(Used|Available)"
-            
-            echo "Component sizes:"
-            idf.py size-components | head -10
-
-      - name: Generate performance report
-        uses: ./.github/actions/generate-performance-report
-        with:
-          sha: ${{ github.sha }}
-          idf-version: 'v5.5.1'
-
-      - name: Upload performance report
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-report-${{ github.sha }}
-          path: ci-artifacts/performance_report.md
-
   # Integration test summary
   integration-summary:
     name: Integration Test Summary
@@ -247,6 +184,9 @@ jobs:
     if: always()
     
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Generate integration report
         uses: ./.github/actions/generate-integration-report
         with:
