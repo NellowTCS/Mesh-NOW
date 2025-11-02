@@ -24,7 +24,7 @@ runs:
       shell: bash
       run: |
         source $IDF_PATH/export.sh
-        python scripts/build.py --target ${{ inputs.target }} --ci
+        python scripts/build.py --target ${{ inputs.target }} --ci --with-frontend
         
         # Create build info
         echo "Target: ${{ inputs.target }}" > build_info.txt
