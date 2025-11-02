@@ -57,7 +57,7 @@ Mesh-NOW/
 
 ### Prerequisites
 
-- ESP-IDF v6.1 or later
+- ESP-IDF v5.5.1 or later
 - Python 3.7+
 - Git
 

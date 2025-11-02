@@ -19,7 +19,7 @@ assignees: ""
 **Local Build:**
 
 - **Operating System:** (e.g., Ubuntu 22.04, Windows 11, macOS 13)
-- **ESP-IDF Version:** (e.g., v6.1)
+- **ESP-IDF Version:** (e.g., v5.5.1)
 - **Python Version:** (e.g., 3.11)
 - **Build Command:** (e.g., `idf.py build`, `./scripts/build.sh`)
 

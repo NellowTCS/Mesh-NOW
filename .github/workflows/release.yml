@@ -19,7 +19,7 @@ on:
         type: boolean
 
 env:
-  IDF_VERSION: 'v5.3.1'
+  IDF_VERSION: 'v5.5.1'
 
 jobs:
   # Build release artifacts

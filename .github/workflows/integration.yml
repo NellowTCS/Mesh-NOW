@@ -32,7 +32,7 @@ jobs:
       - name: Setup ESP-IDF
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: 'v5.3.1'
+          esp_idf_version: 'v5.5.1'
 
       - name: Build firmware for ${{ matrix.target }}
         run: |
@@ -102,7 +102,7 @@ jobs:
       - name: Setup ESP-IDF
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: 'v5.3.1'
+          esp_idf_version: 'v5.5.1'
 
       - name: Build with network debugging
         run: |
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        idf_version: ['v5.2.3', 'v5.3.1']
+        idf_version: ['v5.4.0', 'v5.5.1']
     
     steps:
       - name: Checkout repository
@@ -171,7 +171,7 @@ jobs:
       - name: Setup ESP-IDF
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: 'v5.3.1'
+          esp_idf_version: 'v5.5.1'
 
       - name: Build optimized firmware
         run: |
@@ -202,7 +202,7 @@ jobs:
           
           **Build Date:** $(date -u)
           **Commit:** ${{ github.sha }}
-          **ESP-IDF Version:** v5.3.1
+          **ESP-IDF Version:** v5.5.1
           
           ## Binary Size Analysis
           \`\`\`

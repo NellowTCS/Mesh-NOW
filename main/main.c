@@ -99,12 +99,12 @@ void remove_peer(const uint8_t *mac) {
 static void esp_now_send_cb(const esp_now_send_info_t *send_info, esp_now_send_status_t status) {
     if (status == ESP_NOW_SEND_SUCCESS) {
         ESP_LOGI(TAG, "Message sent successfully to %02x:%02x:%02x:%02x:%02x:%02x", 
-                 send_info->des_addr[0], send_info->des_addr[1], send_info->des_addr[2],
-                 send_info->des_addr[3], send_info->des_addr[4], send_info->des_addr[5]);
+                 send_info->dest_addr[0], send_info->dest_addr[1], send_info->dest_addr[2],
+                 send_info->dest_addr[3], send_info->dest_addr[4], send_info->dest_addr[5]);
     } else {
         ESP_LOGW(TAG, "Failed to send message to %02x:%02x:%02x:%02x:%02x:%02x",
-                 send_info->des_addr[0], send_info->des_addr[1], send_info->des_addr[2],
-                 send_info->des_addr[3], send_info->des_addr[4], send_info->des_addr[5]);
+                 send_info->dest_addr[0], send_info->dest_addr[1], send_info->dest_addr[2],
+                 send_info->dest_addr[3], send_info->dest_addr[4], send_info->dest_addr[5]);
     }
 }
 

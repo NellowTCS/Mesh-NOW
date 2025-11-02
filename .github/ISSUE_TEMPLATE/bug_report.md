@@ -18,7 +18,7 @@ A clear and concise description of what the bug is.
 
 ## Environment
 
-- **ESP-IDF Version:** (e.g., v6.1)
+- **ESP-IDF Version:** (e.g., v5.5.1)
 - **Operating System:** (e.g., Windows 11, Ubuntu 22.04, macOS 13)
 - **Build Environment:** (e.g., VS Code, command line, GitHub Codespaces)
 
