@@ -125,10 +125,56 @@ def build_target(target, console, script_dir, progress=None):
 
     return True
 
+def build_frontend(console, project_dir, ci_mode=False):
+    """Build the frontend"""
+    if console and not ci_mode:
+        console.print("[bold blue]Building frontend...[/bold blue]")
+
+    frontend_dir = project_dir / "frontend"
+    build_script = frontend_dir / "build_frontend.py"
+
+    if not build_script.exists():
+        if console and not ci_mode:
+            console.print("[red]Frontend build script not found[/red]")
+        return False
+
+    success, _ = run_command(f"python {build_script} {'--ci' if ci_mode else ''}", cwd=frontend_dir, console=console)
+    if not success:
+        if console and not ci_mode:
+            console.print("[red]Frontend build failed[/red]")
+        return False
+
+    if console and not ci_mode:
+        console.print("[green]✓ Frontend built successfully[/green]")
+    return True
+
+def embed_frontend(console, project_dir, ci_mode=False):
+    """Embed frontend files into ESP32 firmware"""
+    if console and not ci_mode:
+        console.print("[bold blue]Embedding frontend files...[/bold blue]")
+
+    embed_script = project_dir / "scripts" / "embed_frontend.py"
+
+    if not embed_script.exists():
+        if console and not ci_mode:
+            console.print("[red]Embed script not found[/red]")
+        return False
+
+    success, _ = run_command(f"python {embed_script} {'--ci' if ci_mode else ''}", cwd=project_dir, console=console)
+    if not success:
+        if console and not ci_mode:
+            console.print("[red]Frontend embedding failed[/red]")
+        return False
+
+    if console and not ci_mode:
+        console.print("[green]✓ Frontend embedded successfully[/green]")
+    return True
+
 def main():
     parser = argparse.ArgumentParser(description="Mesh-NOW Multi-Target Build Script")
     parser.add_argument('--ci', action='store_true', help='Disable colors and TUI for CI')
     parser.add_argument('--targets', nargs='*', help='Build specific targets (default: all)')
+    parser.add_argument('--with-frontend', action='store_true', help='Build and embed frontend before ESP32 builds')
     args = parser.parse_args()
 
     # Setup console
@@ -151,9 +197,29 @@ def main():
     script_dir = Path(__file__).parent
     os.chdir(script_dir.parent)  # Change to project root
 
+    # Handle frontend building if requested
+    if args.with_frontend:
+        if console and not args.ci:
+            console.print(Panel.fit("[bold green]Frontend Integration Enabled[/bold green]"))
+            console.print()
+
+        if not build_frontend(console, script_dir.parent, args.ci):
+            sys.exit(1)
+        if not embed_frontend(console, script_dir.parent, args.ci):
+            sys.exit(1)
+
+        if console and not args.ci:
+            console.print()
+
     targets = args.targets if args.targets else get_targets()
 
-    console.print(Panel.fit("[bold blue]Mesh-NOW Multi-Target Build Script[/bold blue]"))
+    # Update panel title if frontend is enabled
+    panel_title = "[bold blue]Mesh-NOW Multi-Target Build Script"
+    if args.with_frontend:
+        panel_title += " + Frontend"
+    panel_title += "[/bold blue]"
+
+    console.print(Panel.fit(panel_title))
     console.print(f"Targets: {', '.join(targets)}")
     console.print()
 

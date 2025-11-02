@@ -129,6 +129,7 @@ jobs:
 
       - name: Analyze binary size
         run: |
+          source $IDF_PATH/export.sh
           idf.py size
           idf.py size-components > size_analysis.txt
 

@@ -6,4 +6,6 @@ runs:
   steps:
     - name: Build all targets
       shell: bash
-      run: python scripts/build_all.py --ci
+      run: |
+        source $IDF_PATH/export.sh
+        python scripts/build_all.py --ci

@@ -21,6 +21,11 @@
 #include <errno.h>
 #include <unistd.h>
 
+// Embedded frontend files
+#include "index_html.h"
+#include "bundle_js.h"
+#include "styles_css.h"
+
 #define TAG "MESH_NOW"
 #define MAX_PEERS 20
 #define MAC_ADDR_LEN 6
@@ -130,82 +135,20 @@ static void esp_now_recv_cb(const esp_now_recv_info_t *recv_info, const uint8_t 
 
 // HTTP server handlers
 static esp_err_t index_handler(httpd_req_t *req) {
-    const char* html = 
-        "<!DOCTYPE html>"
-        "<html><head><title>Mesh-NOW</title>"
-        "<meta charset='UTF-8'>"
-        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-        "<style>"
-        "body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }"
-        ".container { max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }"
-        "h1 { color: #333; text-align: center; }"
-        "#messages { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background-color: #fafafa; border-radius: 5px; }"
-        ".message { margin-bottom: 10px; padding: 8px; background-color: #e3f2fd; border-radius: 5px; }"
-        ".message-sender { font-weight: bold; color: #1976d2; }"
-        ".message-content { margin-top: 5px; }"
-        ".input-group { display: flex; gap: 10px; }"
-        "#messageInput { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }"
-        "#sendBtn { padding: 10px 20px; background-color: #1976d2; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }"
-        "#sendBtn:hover { background-color: #1565c0; }"
-        ".info { text-align: center; color: #666; margin-bottom: 20px; }"
-        "</style>"
-        "</head><body>"
-        "<div class='container'>"
-        "<h1>Mesh-NOW</h1>"
-        "<div class='info'>Connect multiple ESP32 devices to create a mesh network</div>"
-        "<div id='messages'></div>"
-        "<div class='input-group'>"
-        "<input type='text' id='messageInput' placeholder='Type your message...' maxlength='200'>"
-        "<button id='sendBtn'>Send</button>"
-        "</div>"
-        "</div>"
-        "<script>"
-        "let messageContainer = document.getElementById('messages');"
-        "let messageInput = document.getElementById('messageInput');"
-        "let sendBtn = document.getElementById('sendBtn');"
-        "function addMessage(sender, content) {"
-        "    let messageDiv = document.createElement('div');"
-        "    messageDiv.className = 'message';"
-        "    messageDiv.innerHTML = '<div class=\"message-sender\">' + sender + '</div><div class=\"message-content\">' + content + '</div>';"
-        "    messageContainer.appendChild(messageDiv);"
-        "    messageContainer.scrollTop = messageContainer.scrollHeight;"
-        "}"
-        "function sendMessage() {"
-        "    let message = messageInput.value.trim();"
-        "    if (message === '') return;"
-        "    fetch('/send', {"
-        "        method: 'POST',"
-        "        headers: {'Content-Type': 'application/x-www-form-urlencoded'},"
-        "        body: 'message=' + encodeURIComponent(message)"
-        "    }).then(response => {"
-        "        if (response.ok) {"
-        "            messageInput.value = '';"
-        "            addMessage('You', message);"
-        "        }"
-        "    });"
-        "}"
-        "function pollMessages() {"
-        "    fetch('/messages')"
-        "    .then(response => response.json())"
-        "    .then(data => {"
-        "        if (data.messages && data.messages.length > 0) {"
-        "            data.messages.forEach(msg => {"
-        "                addMessage(msg.sender, msg.content);"
-        "            });"
-        "        }"
-        "    })"
-        "    .catch(err => console.log('Poll error:', err));"
-        "}"
-        "sendBtn.addEventListener('click', sendMessage);"
-        "messageInput.addEventListener('keypress', function(e) {"
-        "    if (e.key === 'Enter') sendMessage();"
-        "});"
-        "setInterval(pollMessages, 1000);"
-        "addMessage('System', 'Connected to ESP32 Mesh Network');"
-        "</script>"
-        "</body></html>";
-    
-    httpd_resp_send(req, html, strlen(html));
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_send(req, INDEX_HTML, INDEX_HTML_size);
+    return ESP_OK;
+}
+
+static esp_err_t js_handler(httpd_req_t *req) {
+    httpd_resp_set_type(req, "application/javascript");
+    httpd_resp_send(req, BUNDLE_JS, BUNDLE_JS_size);
+    return ESP_OK;
+}
+
+static esp_err_t css_handler(httpd_req_t *req) {
+    httpd_resp_set_type(req, "text/css");
+    httpd_resp_send(req, STYLES_CSS, STYLES_CSS_size);
     return ESP_OK;
 }
 
@@ -301,6 +244,7 @@ static void start_webserver(void) {
     config.stack_size = 8192;
     
     if (httpd_start(&server, &config) == ESP_OK) {
+        // Main page
         httpd_uri_t index_uri = {
             .uri = "/",
             .method = HTTP_GET,
@@ -309,6 +253,25 @@ static void start_webserver(void) {
         };
         httpd_register_uri_handler(server, &index_uri);
         
+        // JavaScript bundle
+        httpd_uri_t js_uri = {
+            .uri = "/bundle.js",
+            .method = HTTP_GET,
+            .handler = js_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &js_uri);
+        
+        // CSS styles
+        httpd_uri_t css_uri = {
+            .uri = "/styles.css",
+            .method = HTTP_GET,
+            .handler = css_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &css_uri);
+        
+        // API endpoints
         httpd_uri_t send_uri = {
             .uri = "/send",
             .method = HTTP_POST,

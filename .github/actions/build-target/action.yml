@@ -23,6 +23,7 @@ runs:
     - name: Build for ${{ inputs.target }}
       shell: bash
       run: |
+        source $IDF_PATH/export.sh
         python scripts/build.py --target ${{ inputs.target }} --ci
         
         # Create build info
@@ -35,6 +36,7 @@ runs:
       id: binary-info
       shell: bash
       run: |
+        source $IDF_PATH/export.sh
         BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
         BINARY_SIZE_KB=$((BINARY_SIZE / 1024))
         echo "size=$BINARY_SIZE_KB" >> $GITHUB_OUTPUT

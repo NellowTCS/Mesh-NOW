@@ -8,3 +8,7 @@
 node_modules/
 dist/
 *.log
+index_html.h
+bundle_js.h
+styles_css.h
+sdkconfig.old

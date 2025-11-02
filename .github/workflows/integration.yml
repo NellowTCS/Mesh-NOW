@@ -69,6 +69,7 @@ jobs:
 
       - name: Check memory usage
         run: |
+          source $IDF_PATH/export.sh
           echo "Memory analysis for ${{ matrix.target }}:"
           idf.py size-components | head -20
 
@@ -107,6 +108,7 @@ jobs:
 
       - name: Build with network debugging
         run: |
+          source $IDF_PATH/export.sh
           python scripts/build.py --target esp32 --ci
           
           # Enable additional logging for testing
@@ -117,6 +119,7 @@ jobs:
 
       - name: Analyze network components
         run: |
+          source $IDF_PATH/export.sh
           echo "Network component analysis:"
           idf.py size-components | grep -E "(lwip|wifi|esp_netif|esp_http|esp_now)"
 
@@ -166,6 +169,7 @@ jobs:
 
       - name: Build optimized firmware
         run: |
+          source $IDF_PATH/export.sh
           python scripts/build.py --target esp32 --ci
           
           # Enable performance optimizations
@@ -176,6 +180,7 @@ jobs:
 
       - name: Analyze performance characteristics
         run: |
+          source $IDF_PATH/export.sh
           echo "Performance analysis:"
           echo "Binary size: $(stat -c%s build/mesh-now.bin) bytes"
           

@@ -107,7 +107,7 @@ def install_esptool(console, ci_mode=False):
         return False
 
     # Verify installation
-    success, version_output = run_command("esptool.py --version", console, ci_mode)
+    success, version_output = run_command("esptool.py version", console, ci_mode)
     if not success:
         if console and not ci_mode:
             console.print("[red]esptool installation verification failed[/red]")
