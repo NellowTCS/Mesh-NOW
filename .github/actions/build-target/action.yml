@@ -20,13 +20,21 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Build for ${{ inputs.target }}
+    - name: Build frontend
+      shell: bash
+      run: python frontend/build_frontend.py --ci
+
+    - name: Embed frontend
+      shell: bash
+      run: python scripts/embed_frontend.py --ci
+
+    - name: Build ESP32 firmware for ${{ inputs.target }}
       uses: espressif/esp-idf-ci-action@v1
       with:
         esp_idf_version: ${{ inputs.idf-version }}
         target: ${{ inputs.target }}
         command: |
-          python scripts/build.py --target ${{ inputs.target }} --ci --with-frontend
+          python scripts/build.py --target ${{ inputs.target }} --ci
           
           # Create build info
           echo "Target: ${{ inputs.target }}" > build_info.txt

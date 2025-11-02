@@ -109,6 +109,12 @@ jobs:
         with:
           idf-version: 'v5.5.1'
 
+      - name: Build frontend
+        run: python frontend/build_frontend.py --ci
+
+      - name: Embed frontend
+        run: python scripts/embed_frontend.py --ci
+
       - name: Build with network debugging
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -149,6 +155,12 @@ jobs:
         with:
           idf-version: ${{ matrix.idf_version }}
 
+      - name: Build frontend
+        run: python frontend/build_frontend.py --ci
+
+      - name: Embed frontend
+        run: python scripts/embed_frontend.py --ci
+
       - name: Test build compatibility
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -179,6 +191,12 @@ jobs:
         uses: ./.github/actions/setup-espidf
         with:
           idf-version: 'v5.5.1'
+
+      - name: Build frontend
+        run: python frontend/build_frontend.py --ci
+
+      - name: Embed frontend
+        run: python scripts/embed_frontend.py --ci
 
       - name: Build optimized firmware
         uses: espressif/esp-idf-ci-action@v1
