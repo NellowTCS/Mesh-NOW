@@ -1,0 +1,412 @@
+name: Release & Deploy
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  IDF_VERSION: 'v6.1'
+
+jobs:
+  # Build release artifacts
+  build-release:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog
+
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="${{ github.ref_name }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "Generating changelog..."
+          
+          # Get previous tag for changelog
+          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed -n '2p')
+          if [ -z "$PREV_TAG" ]; then
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          
+          echo "Previous tag: $PREV_TAG"
+          
+          # Generate changelog content
+          cat > CHANGELOG.md << EOF
+          # Changelog for ${{ steps.version.outputs.version }}
+          
+          **Release Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          **ESP-IDF Version:** ${{ env.IDF_VERSION }}
+          
+          ## Changes Since $PREV_TAG
+          
+          $(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD)
+          
+          ## ESP32 Target Support
+          
+          This release includes optimized firmware for all ESP32 variants:
+          
+          - **ESP32** - Original dual-core Xtensa (520KB RAM)
+          - **ESP32-S2** - Single-core Xtensa with native USB (320KB RAM)
+          - **ESP32-S3** - Dual-core Xtensa with PSRAM support (512KB RAM)
+          - **ESP32-C3** - Single-core RISC-V with Bluetooth LE (400KB RAM)
+          - **ESP32-C6** - Single-core RISC-V with 802.15.4 + BLE (512KB RAM)
+          
+          ## Quick Start
+          
+          1. Download firmware for your ESP32 variant
+          2. Flash using: \`esptool.py write_flash 0x0 mesh-now.bin\`
+          3. Connect to "MESH-NOW" WiFi (password: "password")
+          4. Access web interface at http://192.168.4.1
+          
+          ## Technical Details
+          
+          - Mesh networking via ESP-NOW protocol
+          - Web-based chat interface
+          - Automatic peer discovery
+          - Real-time message propagation
+          - No internet or router required
+          EOF
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Build all targets
+        run: |
+          echo "Building all ESP32 targets for release..."
+          chmod +x scripts/build_all_targets.sh
+          ./scripts/build_all_targets.sh
+
+      - name: Create release packages
+        run: |
+          mkdir -p release/{firmware,flash-tools,documentation}
+          
+          # Package firmware files
+          cd builds
+          for target in */; do
+            target_name=${target%/}
+            echo "Packaging $target_name..."
+            
+            # Create target-specific package
+            mkdir -p ../release/firmware/$target_name
+            cp $target_name/mesh-now.bin ../release/firmware/$target_name/
+            cp $target_name/bootloader.bin ../release/firmware/$target_name/
+            cp $target_name/partition-table.bin ../release/firmware/$target_name/
+            
+            # Create flash script
+            cat > ../release/firmware/$target_name/flash.sh << EOF
+          #!/bin/bash
+          # Mesh-NOW Flash Script for $target_name
+          # Usage: ./flash.sh [PORT]
+          
+          PORT=\${1:-/dev/ttyUSB0}
+          
+          echo "Flashing Mesh-NOW to $target_name on \$PORT"
+          echo "Make sure your ESP32 is in download mode (hold BOOT while pressing RESET)"
+          echo ""
+          
+          esptool.py --chip $target_name \\
+            --port \$PORT \\
+            --baud 460800 \\
+            --before default_reset \\
+            --after hard_reset \\
+            write_flash \\
+            --flash_mode dio \\
+            --flash_freq 40m \\
+            --flash_size detect \\
+            0x0 bootloader.bin \\
+            0x8000 partition-table.bin \\
+            0x10000 mesh-now.bin
+          
+          echo ""
+          echo "Flash complete! Connect to 'MESH-NOW' WiFi network and visit http://192.168.4.1"
+          EOF
+          
+            chmod +x ../release/firmware/$target_name/flash.sh
+            
+            # Create target info
+            cat > ../release/firmware/$target_name/README.md << EOF
+          # Mesh-NOW Firmware for $target_name
+          
+          ## Files
+          - \`mesh-now.bin\` - Main application firmware
+          - \`bootloader.bin\` - ESP32 bootloader
+          - \`partition-table.bin\` - Partition table
+          - \`flash.sh\` - Automated flash script
+          
+          ## Manual Flashing
+          \`\`\`bash
+          esptool.py --chip $target_name write_flash 0x0 bootloader.bin 0x8000 partition-table.bin 0x10000 mesh-now.bin
+          \`\`\`
+          
+          ## Target Specifications
+          - **Architecture:** $(grep "Architecture" ../../MULTI_TARGET_SUPPORT.md | grep $target_name || echo "See documentation")
+          - **RAM:** $(grep "RAM" ../../MULTI_TARGET_SUPPORT.md | grep $target_name || echo "See documentation")
+          - **Special Features:** Target-specific optimizations applied
+          EOF
+          
+            # Create compressed package
+            tar -czf ../release/mesh-now-$target_name-${{ steps.version.outputs.version }}.tar.gz $target_name/
+          done
+          
+          cd ..
+
+      - name: Create flash tools package
+        run: |
+          # Create comprehensive flash tools
+          cat > release/flash-tools/install_esptool.sh << 'EOF'
+          #!/bin/bash
+          # Install esptool.py for flashing ESP32 devices
+          
+          echo "Installing esptool.py..."
+          
+          if command -v pip3 &> /dev/null; then
+            pip3 install esptool
+          elif command -v pip &> /dev/null; then
+            pip install esptool
+          else
+            echo "Error: pip not found. Please install Python and pip first."
+            exit 1
+          fi
+          
+          echo "esptool.py installed successfully!"
+          echo "Usage: esptool.py --help"
+          EOF
+          
+          chmod +x release/flash-tools/install_esptool.sh
+          
+          # Create universal flash script
+          cat > release/flash-tools/flash_mesh_now.sh << 'EOF'
+          #!/bin/bash
+          # Universal Mesh-NOW Flash Script
+          
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          
+          echo "Mesh-NOW Universal Flash Tool"
+          echo "============================="
+          echo ""
+          
+          # Detect available firmware
+          FIRMWARE_DIR="$SCRIPT_DIR/../firmware"
+          if [ ! -d "$FIRMWARE_DIR" ]; then
+            echo "Error: Firmware directory not found at $FIRMWARE_DIR"
+            exit 1
+          fi
+          
+          TARGETS=($(ls "$FIRMWARE_DIR"))
+          
+          if [ ${#TARGETS[@]} -eq 0 ]; then
+            echo "Error: No firmware targets found"
+            exit 1
+          fi
+          
+          echo "Available ESP32 targets:"
+          for i in "${!TARGETS[@]}"; do
+            echo "  $((i+1)). ${TARGETS[i]}"
+          done
+          echo ""
+          
+          # Get target selection
+          while true; do
+            read -p "Select target (1-${#TARGETS[@]}): " selection
+            if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "${#TARGETS[@]}" ]; then
+              TARGET="${TARGETS[$((selection-1))]}"
+              break
+            else
+              echo "Invalid selection. Please enter a number between 1 and ${#TARGETS[@]}."
+            fi
+          done
+          
+          echo "Selected target: $TARGET"
+          echo ""
+          
+          # Get port
+          read -p "Enter COM port [/dev/ttyUSB0]: " PORT
+          PORT=${PORT:-/dev/ttyUSB0}
+          
+          # Flash firmware
+          cd "$FIRMWARE_DIR/$TARGET"
+          if [ -f "flash.sh" ]; then
+            echo "Using target-specific flash script..."
+            ./flash.sh "$PORT"
+          else
+            echo "Using manual flash command..."
+            esptool.py --chip "$TARGET" --port "$PORT" write_flash 0x0 bootloader.bin 0x8000 partition-table.bin 0x10000 mesh-now.bin
+          fi
+          EOF
+          
+          chmod +x release/flash-tools/flash_mesh_now.sh
+
+      - name: Create documentation package
+        run: |
+          cp README.md release/documentation/
+          cp MULTI_TARGET_SUPPORT.md release/documentation/
+          cp CHANGELOG.md release/documentation/
+          
+          # Create quick start guide
+          cat > release/documentation/QUICK_START.md << EOF
+          # Mesh-NOW Quick Start Guide
+          
+          ## What You Need
+          - ESP32 development board (any variant)
+          - USB cable
+          - Computer with Python installed
+          
+          ## Installation Steps
+          
+          1. **Install esptool.py**
+             \`\`\`bash
+             pip install esptool
+             \`\`\`
+          
+          2. **Download firmware**
+             - Choose the right firmware for your ESP32 variant
+             - Extract the downloaded package
+          
+          3. **Connect ESP32**
+             - Connect ESP32 to computer via USB
+             - Put ESP32 in download mode (hold BOOT, press RESET, release BOOT)
+          
+          4. **Flash firmware**
+             \`\`\`bash
+             cd firmware/your-esp32-variant/
+             ./flash.sh
+             \`\`\`
+          
+          5. **Connect to mesh network**
+             - Reset your ESP32 (press RESET button)
+             - Connect to "MESH-NOW" WiFi network
+             - Password: "password"
+             - Open browser to http://192.168.4.1
+          
+          ## Troubleshooting
+          
+          - **Can't connect to ESP32:** Check USB cable and drivers
+          - **Flash fails:** Ensure ESP32 is in download mode
+          - **Can't see WiFi:** Wait 10-20 seconds after reset
+          - **Web page won't load:** Check you're connected to MESH-NOW network
+          
+          ## Multiple Devices
+          
+          To create a mesh network:
+          1. Flash multiple ESP32 devices with Mesh-NOW
+          2. Power them on - they'll automatically discover each other
+          3. Connect to any device's WiFi network
+          4. Messages sent from any device appear on all connected web interfaces
+          
+          Enjoy your serverless mesh chat network!
+          EOF
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mesh-now-release-${{ steps.version.outputs.version }}
+          path: release/
+          retention-days: 90
+
+      - name: Create release checksums
+        run: |
+          cd release
+          find . -name "*.tar.gz" -o -name "*.bin" | xargs sha256sum > SHA256SUMS
+          echo "Generated checksums:"
+          cat SHA256SUMS
+
+  # Create GitHub release
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-release
+    if: github.event_name != 'release'  # Don't duplicate if triggered by release
+    
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: mesh-now-release-${{ needs.build-release.outputs.version }}
+          path: release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.build-release.outputs.version }}
+          name: Mesh-NOW ${{ needs.build-release.outputs.version }}
+          body: ${{ needs.build-release.outputs.changelog }}
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          files: |
+            release/*.tar.gz
+            release/SHA256SUMS
+            release/documentation/CHANGELOG.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Update documentation
+  update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: [build-release, create-release]
+    if: always() && needs.build-release.result == 'success'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update version in README
+        run: |
+          VERSION=${{ needs.build-release.outputs.version }}
+          sed -i "s/Version: .*/Version: $VERSION/" README.md
+          
+          # Update download links if they exist
+          if grep -q "download" README.md; then
+            sed -i "s|releases/download/v[0-9]*\.[0-9]*\.[0-9]*|releases/download/$VERSION|g" README.md
+          fi
+
+      - name: Commit version update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add README.md
+            git commit -m "Update version to ${{ needs.build-release.outputs.version }} [skip ci]"
+            git push
+          fi

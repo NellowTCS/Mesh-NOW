@@ -1,0 +1,19 @@
+{
+  "alive-status-codes": [200, 206],
+  "ignore-patterns": [
+    {
+      "pattern": "^https://github\\.com/.*/releases/download/.*"
+    },
+    {
+      "pattern": "^https://.*\\.local.*"
+    },
+    {
+      "pattern": "^http://192\\.168\\..*"
+    },
+    {
+      "pattern": "^http://localhost.*"
+    }
+  ],
+  "retry-after": "5s",
+  "timeout": "10s"
+}

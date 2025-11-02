@@ -1,60 +1,227 @@
-name: Build Zephyr-NOW
+name: Build Mesh-NOW
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'ESP32 target to build'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'esp32'
+          - 'esp32s2'
+          - 'esp32s3'
+          - 'esp32c3'
+          - 'esp32c6'
 
+env:
+  IDF_VERSION: 'v6.1'
+  
 jobs:
-  build:
+  # Configuration validation job
+  validate-configs:
+    name: Validate Configurations
     runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.set-targets.outputs.targets }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
+
+      - name: Validate all target configurations
+        run: |
+          chmod +x scripts/test_targets.sh
+          ./scripts/test_targets.sh
+
+      - name: Set build targets
+        id: set-targets
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.target }}" != "all" ]; then
+            echo "targets=[\"${{ github.event.inputs.target }}\"]" >> $GITHUB_OUTPUT
+          else
+            echo "targets=[\"esp32\", \"esp32s2\", \"esp32s3\", \"esp32c3\", \"esp32c6\"]" >> $GITHUB_OUTPUT
+          fi
+
+  # Multi-target build job
+  build:
+    name: Build ESP32 Targets
+    runs-on: ubuntu-latest
+    needs: validate-configs
     strategy:
+      fail-fast: false
       matrix:
-        board:
-          - esp32_devkitc_wroom
-          - esp32s2_saola
-          - esp32s3_devkitm
-          - esp32c3_devkitm
+        target: ${{ fromJson(needs.validate-configs.outputs.targets) }}
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        path: zephyr-now
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
 
-    - name: Install dependencies
-      run: |
-        pip install west
-        
-    - name: Initialize West workspace
-      working-directory: zephyr-now
-      run: |
-        west init -l .
-        west update
-        
-    - name: Install Zephyr SDK
-      run: |
-        cd ~
-        wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.16.5-1/zephyr-sdk-0.16.5-1_linux-x86_64.tar.xz
-        tar xvf zephyr-sdk-0.16.5-1_linux-x86_64.tar.xz
-        cd zephyr-sdk-0.16.5-1
-        ./setup.sh -t all -h -c
-        
-    - name: Build for ${{ matrix.board }}
-      env:
-        ZEPHYR_BASE: ${{ github.workspace }}/zephyr
-      run: |
-        cd ${{ github.workspace }}/zephyr-now
-        west build -b ${{ matrix.board }} -p
-        
-    - name: Upload firmware
-      uses: actions/upload-artifact@v4
-      with:
-        name: firmware-${{ matrix.board }}
-        path: zephyr-now/build/zephyr/zephyr.bin
+      - name: Build for ${{ matrix.target }}
+        run: |
+          echo "Building Mesh-NOW for ${{ matrix.target }}"
+          idf.py set-target ${{ matrix.target }}
+          
+          # Apply target-specific configuration
+          if [ -f "configs/sdkconfig.${{ matrix.target }}" ]; then
+            cp configs/sdkconfig.${{ matrix.target }} sdkconfig.defaults
+            echo "Applied configuration: configs/sdkconfig.${{ matrix.target }}"
+          fi
+          
+          # Build the project
+          idf.py build
+          
+          # Create build info
+          echo "Target: ${{ matrix.target }}" > build_info.txt
+          echo "Commit: ${{ github.sha }}" >> build_info.txt
+          echo "Build Date: $(date -u)" >> build_info.txt
+          echo "IDF Version: ${{ env.IDF_VERSION }}" >> build_info.txt
+
+      - name: Get binary size
+        id: binary-info
+        run: |
+          BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
+          BINARY_SIZE_KB=$((BINARY_SIZE / 1024))
+          echo "size=$BINARY_SIZE_KB" >> $GITHUB_OUTPUT
+          echo "Binary size: ${BINARY_SIZE_KB}KB"
+
+      - name: Upload firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mesh-now-${{ matrix.target }}-${{ github.sha }}
+          path: |
+            build/mesh-now.bin
+            build/bootloader/bootloader.bin
+            build/partition_table/partition-table.bin
+            build_info.txt
+          retention-days: 30
+
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ matrix.target }}-${{ github.sha }}
+          path: |
+            build/log/
+          retention-days: 7
+
+  # Size analysis job
+  size-analysis:
+    name: Binary Size Analysis
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
+
+      - name: Build current version (ESP32)
+        run: |
+          idf.py set-target esp32
+          cp configs/sdkconfig.esp32 sdkconfig.defaults
+          idf.py build
+
+      - name: Analyze binary size
+        run: |
+          idf.py size
+          idf.py size-components > size_analysis.txt
+
+      - name: Upload size analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: size-analysis-${{ github.sha }}
+          path: size_analysis.txt
+
+  # Release build job (only on tags)
+  release-build:
+    name: Release Build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
+
+      - name: Build all targets for release
+        run: |
+          chmod +x scripts/build_all_targets.sh
+          ./scripts/build_all_targets.sh
+
+      - name: Create release archive
+        run: |
+          mkdir -p release
+          cd builds
+          for target in */; do
+            target_name=${target%/}
+            tar -czf ../release/mesh-now-${target_name}-${{ github.ref_name }}.tar.gz $target_name/
+          done
+
+      - name: Generate release notes
+        run: |
+          cat > release/RELEASE_NOTES.md << EOF
+          # Mesh-NOW ${{ github.ref_name }}
+          
+          ## ESP32 Multi-Target Support
+          
+          This release includes firmware for all supported ESP32 variants:
+          
+          - **ESP32** - Original dual-core Xtensa (esp32/)
+          - **ESP32-S2** - Single-core Xtensa with USB (esp32s2/)  
+          - **ESP32-S3** - Dual-core Xtensa with PSRAM (esp32s3/)
+          - **ESP32-C3** - Single-core RISC-V (esp32c3/)
+          - **ESP32-C6** - Single-core RISC-V with 802.15.4 (esp32c6/)
+          
+          ## Installation
+          
+          1. Download the appropriate firmware for your ESP32 variant
+          2. Flash using: \`esptool.py write_flash 0x0 mesh-now.bin\`
+          3. Connect to "MESH-NOW" WiFi network (password: "password")
+          4. Access web interface at http://192.168.4.1
+          
+          ## Changes in this release
+          
+          - Built with ESP-IDF ${{ env.IDF_VERSION }}
+          - Commit: ${{ github.sha }}
+          - Build Date: $(date -u)
+          EOF
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mesh-now-release-${{ github.ref_name }}
+          path: |
+            release/
+          retention-days: 90

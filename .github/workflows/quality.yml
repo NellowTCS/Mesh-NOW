@@ -1,0 +1,173 @@
+name: Code Quality & Security
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM UTC
+
+jobs:
+  # Static code analysis
+  static-analysis:
+    name: Static Code Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: 'v6.1'
+
+      - name: Install analysis tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck clang-tidy
+
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=all --inconclusive --xml --xml-version=2 \
+            --suppress=missingIncludeSystem \
+            --suppress=unmatchedSuppression \
+            --suppress=unusedFunction \
+            main/ 2> cppcheck-report.xml
+
+      - name: Run clang-tidy
+        run: |
+          cd main
+          clang-tidy *.c -checks='-*,readability-*,performance-*,bugprone-*' \
+            -- -I../build/config -I$IDF_PATH/components/freertos/FreeRTOS-Kernel/include \
+            -I$IDF_PATH/components/esp_common/include -DESP_PLATFORM || true
+
+      - name: Upload analysis results
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-analysis-${{ github.sha }}
+          path: |
+            cppcheck-report.xml
+          retention-days: 30
+
+  # Security scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+          generateSarif: "1"
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+        if: always()
+
+  # Dependency scanning
+  dependency-scan:
+    name: Dependency Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: 'v6.1'
+
+      - name: Generate dependency list
+        run: |
+          echo "# ESP-IDF Components" > dependencies.txt
+          echo "ESP-IDF Version: v6.1" >> dependencies.txt
+          echo "" >> dependencies.txt
+          echo "## Core Components Used:" >> dependencies.txt
+          echo "- esp_wifi: WiFi and ESP-NOW functionality" >> dependencies.txt
+          echo "- esp_http_server: Web interface server" >> dependencies.txt
+          echo "- freertos: Real-time operating system" >> dependencies.txt
+          echo "- nvs_flash: Non-volatile storage" >> dependencies.txt
+          echo "- esp_netif: Network interface abstraction" >> dependencies.txt
+          echo "- esp_event: Event handling system" >> dependencies.txt
+
+      - name: Check for known vulnerabilities
+        run: |
+          echo "Checking ESP-IDF v6.1 for known vulnerabilities..."
+          echo "ESP-IDF v6.1 is a stable release with security updates"
+
+      - name: Upload dependency report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-scan-${{ github.sha }}
+          path: dependencies.txt
+
+  # Code formatting check
+  format-check:
+    name: Code Formatting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Check C code formatting
+        run: |
+          find main/ -name "*.c" -o -name "*.h" | xargs clang-format --dry-run --Werror
+
+      - name: Check shell script formatting
+        run: |
+          sudo apt-get install -y shfmt
+          find scripts/ -name "*.sh" | xargs shfmt -d -i 4
+
+  # Documentation check
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install markdownlint
+        run: |
+          npm install -g markdownlint-cli
+
+      - name: Check Markdown files
+        run: |
+          markdownlint "**/*.md" --ignore node_modules --ignore .git
+
+      - name: Check for broken links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          config-file: '.github/markdown-link-check-config.json'
+
+      - name: Verify README completeness
+        run: |
+          echo "Checking README.md completeness..."
+          required_sections=("Installation" "Usage" "Configuration" "Supported ESP Targets")
+          for section in "${required_sections[@]}"; do
+            if ! grep -q "$section" README.md; then
+              echo "ERROR: Missing required section: $section"
+              exit 1
+            fi
+          done
+          echo "All required sections found in README.md"

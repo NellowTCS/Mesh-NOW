@@ -1,0 +1,207 @@
+name: Dependabot Updates
+
+on:
+  schedule:
+    - cron: '0 10 * * 1'  # Weekly on Monday at 10 AM UTC
+  workflow_dispatch:
+
+jobs:
+  # ESP-IDF version check
+  check-esp-idf:
+    name: Check ESP-IDF Updates
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check latest ESP-IDF version
+        run: |
+          echo "Checking for ESP-IDF updates..."
+          
+          # Get current version from workflows
+          CURRENT_VERSION=$(grep "IDF_VERSION:" .github/workflows/build.yml | head -1 | cut -d"'" -f2)
+          echo "Current ESP-IDF version: $CURRENT_VERSION"
+          
+          # Check latest release
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/espressif/esp-idf/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+          echo "Latest ESP-IDF version: $LATEST_VERSION"
+          
+          if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+            echo "ESP-IDF update available: $CURRENT_VERSION -> $LATEST_VERSION"
+            
+            # Create issue for manual review
+            cat > esp-idf-update.md << EOF
+          # ESP-IDF Update Available
+          
+          **Current Version:** $CURRENT_VERSION
+          **Latest Version:** $LATEST_VERSION
+          
+          ## Action Required
+          
+          A new version of ESP-IDF is available. Please review the changes and test compatibility before updating:
+          
+          1. Review [ESP-IDF release notes](https://github.com/espressif/esp-idf/releases/tag/$LATEST_VERSION)
+          2. Test build compatibility with new version
+          3. Update IDF_VERSION in workflow files if compatible
+          4. Update documentation if needed
+          
+          ## Files to Update
+          
+          - .github/workflows/build.yml
+          - .github/workflows/quality.yml  
+          - .github/workflows/integration.yml
+          - .github/workflows/release.yml
+          - README.md (if version mentioned)
+          
+          ## Testing Checklist
+          
+          - [ ] All ESP32 targets build successfully
+          - [ ] No new compilation warnings
+          - [ ] Binary size within acceptable limits
+          - [ ] Configuration compatibility maintained
+          - [ ] Network functionality preserved
+          EOF
+            
+            echo "Update information saved to esp-idf-update.md"
+          else
+            echo "ESP-IDF is up to date"
+          fi
+
+      - name: Upload update info
+        uses: actions/upload-artifact@v4
+        with:
+          name: esp-idf-update-check
+          path: esp-idf-update.md
+        if: hashFiles('esp-idf-update.md') != ''
+
+  # GitHub Actions updates
+  check-actions:
+    name: Check Action Updates
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for action updates
+        run: |
+          echo "Checking for GitHub Action updates..."
+          
+          # List all actions used in workflows
+          grep -r "uses:" .github/workflows/ | grep -v "espressif/esp-idf-ci-action" > current_actions.txt
+          
+          echo "Current GitHub Actions:"
+          cat current_actions.txt
+          
+          echo ""
+          echo "Manual review recommended for:"
+          echo "- actions/checkout@v4 -> Check for v5+"
+          echo "- actions/upload-artifact@v4 -> Check for v5+"
+          echo "- actions/download-artifact@v4 -> Check for v5+"
+          echo "- espressif/esp-idf-ci-action@v1 -> Check for v2+"
+
+      - name: Upload action list
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-actions-check
+          path: current_actions.txt
+
+  # Security updates
+  security-check:
+    name: Security Update Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for security advisories
+        run: |
+          echo "Checking for security advisories..."
+          
+          # Check ESP-IDF security advisories
+          curl -s "https://api.github.com/repos/espressif/esp-idf/security-advisories" | \
+            jq -r '.[] | select(.state == "published") | "\(.summary) - \(.html_url)"' || \
+            echo "No security advisories API access or none found"
+          
+          echo ""
+          echo "Manual security review recommended:"
+          echo "- Check ESP-IDF security advisories: https://github.com/espressif/esp-idf/security/advisories"
+          echo "- Review CVE database for ESP32: https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=esp32"
+          echo "- Check WiFi and network stack updates"
+
+  # Component updates
+  check-components:
+    name: Check Component Updates
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: 'v6.1'
+
+      - name: Check component versions
+        run: |
+          echo "Checking ESP-IDF component information..."
+          
+          # Build once to get component info
+          idf.py set-target esp32
+          cp configs/sdkconfig.esp32 sdkconfig.defaults
+          idf.py reconfigure
+          
+          echo "Key component versions:"
+          idf.py --version
+          
+          echo ""
+          echo "Component check complete. Manual review of ESP-IDF changelog recommended."
+
+  # Create update summary
+  update-summary:
+    name: Update Summary
+    runs-on: ubuntu-latest
+    needs: [check-esp-idf, check-actions, security-check, check-components]
+    if: always()
+    
+    steps:
+      - name: Create update summary
+        run: |
+          cat > update_summary.md << EOF
+          # Mesh-NOW Dependency Update Summary
+          
+          **Check Date:** $(date -u)
+          **Repository:** ${{ github.repository }}
+          
+          ## Update Check Results
+          
+          | Component | Status |
+          |-----------|--------|
+          | ESP-IDF | ${{ needs.check-esp-idf.result }} |
+          | GitHub Actions | ${{ needs.check-actions.result }} |
+          | Security Check | ${{ needs.security-check.result }} |
+          | Components | ${{ needs.check-components.result }} |
+          
+          ## Recommendations
+          
+          1. Review ESP-IDF release notes for breaking changes
+          2. Test all ESP32 targets after any updates
+          3. Update documentation if dependencies change
+          4. Monitor security advisories regularly
+          
+          ## Next Steps
+          
+          - [ ] Review update artifacts from this workflow
+          - [ ] Plan testing strategy for updates
+          - [ ] Schedule maintenance window if needed
+          - [ ] Update project dependencies systematically
+          EOF
+
+      - name: Upload summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-update-summary
+          path: update_summary.md
