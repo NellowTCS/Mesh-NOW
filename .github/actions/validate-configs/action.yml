@@ -1,0 +1,9 @@
+name: 'Validate Configurations'
+description: 'Validate all ESP32 target configurations'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate all target configurations
+      shell: bash
+      run: python scripts/test_targets.py --ci

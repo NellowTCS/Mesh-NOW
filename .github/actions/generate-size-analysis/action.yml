@@ -1,0 +1,18 @@
+name: 'Generate Size Analysis'
+description: 'Generate binary size analysis report'
+
+inputs:
+  sha:
+    description: 'Git commit SHA'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate size analysis
+      shell: bash
+      run: |
+        mkdir -p ci-artifacts
+        idf.py size > ci-artifacts/size_analysis.txt
+        idf.py size-components >> ci-artifacts/size_analysis.txt
+        echo "Generated size analysis for commit ${{ inputs.sha }}" >> ci-artifacts/size_analysis.txt

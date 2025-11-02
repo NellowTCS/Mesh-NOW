@@ -13,7 +13,7 @@ A serverless mesh network chat application using ESP32 devices and the ESP-NOW p
 
 ## Project Structure
 
-```text
+```bash
 Mesh-NOW/
 ├── main/
 │   ├── main.c              # Main application code with ESP-NOW mesh

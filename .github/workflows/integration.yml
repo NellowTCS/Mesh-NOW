@@ -30,15 +30,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup ESP-IDF
-        uses: espressif/esp-idf-ci-action@v1
+        uses: ./.github/actions/setup-espidf
         with:
-          esp_idf_version: 'v5.5.1'
+          idf-version: 'v5.5.1'
 
-      - name: Build firmware for ${{ matrix.target }}
-        run: |
-          idf.py set-target ${{ matrix.target }}
-          cp configs/sdkconfig.${{ matrix.target }} sdkconfig.defaults
-          idf.py build
+      - name: Build firmware
+        uses: ./.github/actions/build-target
+        with:
+          target: ${{ matrix.target }}
+          idf-version: 'v5.5.1'
+          sha: ${{ github.sha }}
 
       - name: Validate binary structure
         run: |
@@ -100,14 +101,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup ESP-IDF
-        uses: espressif/esp-idf-ci-action@v1
+        uses: ./.github/actions/setup-espidf
         with:
-          esp_idf_version: 'v5.5.1'
+          idf-version: 'v5.5.1'
 
       - name: Build with network debugging
         run: |
-          idf.py set-target esp32
-          cp configs/sdkconfig.esp32 sdkconfig.defaults
+          python scripts/build.py --target esp32 --ci
           
           # Enable additional logging for testing
           echo "CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y" >> sdkconfig.defaults
@@ -126,32 +126,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        idf_version: ['v5.4.0', 'v5.5.1']
+        idf_version: ['v5.3.1', 'v5.5.1']
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup ESP-IDF ${{ matrix.idf_version }}
-        uses: espressif/esp-idf-ci-action@v1
+        uses: ./.github/actions/setup-espidf
         with:
-          esp_idf_version: ${{ matrix.idf_version }}
+          idf-version: ${{ matrix.idf_version }}
 
       - name: Test build compatibility
         run: |
           echo "Testing compatibility with ESP-IDF ${{ matrix.idf_version }}"
           
           # Test ESP32 build (most compatible)
-          idf.py set-target esp32
-          cp configs/sdkconfig.esp32 sdkconfig.defaults
-          
-          # Try to build
-          if idf.py build; then
-            echo "Compatible with ESP-IDF ${{ matrix.idf_version }}"
-          else
-            echo "Not compatible with ESP-IDF ${{ matrix.idf_version }}"
-            exit 1
-          fi
+          python scripts/build.py --target esp32 --ci
 
       - name: Compare binary sizes
         run: |
@@ -169,14 +160,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup ESP-IDF
-        uses: espressif/esp-idf-ci-action@v1
+        uses: ./.github/actions/setup-espidf
         with:
-          esp_idf_version: 'v5.5.1'
+          idf-version: 'v5.5.1'
 
       - name: Build optimized firmware
         run: |
-          idf.py set-target esp32
-          cp configs/sdkconfig.esp32 sdkconfig.defaults
+          python scripts/build.py --target esp32 --ci
           
           # Enable performance optimizations
           echo "CONFIG_COMPILER_OPTIMIZATION_PERF=y" >> sdkconfig.defaults
@@ -196,35 +186,16 @@ jobs:
           idf.py size-components | head -10
 
       - name: Generate performance report
-        run: |
-          cat > performance_report.md << EOF
-          # Mesh-NOW Performance Report
-          
-          **Build Date:** $(date -u)
-          **Commit:** ${{ github.sha }}
-          **ESP-IDF Version:** v5.5.1
-          
-          ## Binary Size Analysis
-          \`\`\`
-          $(idf.py size)
-          \`\`\`
-          
-          ## Top Components by Size
-          \`\`\`
-          $(idf.py size-components | head -10)
-          \`\`\`
-          
-          ## Memory Layout
-          - Flash usage optimized for ESP32 (4MB)
-          - RAM usage efficient for real-time mesh operations
-          - Component separation for modularity
-          EOF
+        uses: ./.github/actions/generate-performance-report
+        with:
+          sha: ${{ github.sha }}
+          idf-version: 'v5.5.1'
 
       - name: Upload performance report
         uses: actions/upload-artifact@v4
         with:
           name: performance-report-${{ github.sha }}
-          path: performance_report.md
+          path: ci-artifacts/performance_report.md
 
   # Integration test summary
   integration-summary:
@@ -234,47 +205,16 @@ jobs:
     if: always()
     
     steps:
-      - name: Collect test results
-        run: |
-          echo "Integration Test Summary"
-          echo "======================="
-          echo "Firmware Validation: ${{ needs.firmware-validation.result }}"
-          echo "Network Tests: ${{ needs.network-tests.result }}"
-          echo "Compatibility Tests: ${{ needs.compatibility-tests.result }}"
-          
-          # Create test report
-          cat > integration_report.md << EOF
-          # Mesh-NOW Integration Test Report
-          
-          **Test Date:** $(date -u)
-          **Commit:** ${{ github.sha }}
-          
-          ## Test Results
-          
-          | Test Suite | Status |
-          |------------|--------|
-          | Firmware Validation | ${{ needs.firmware-validation.result }} |
-          | Network Tests | ${{ needs.network-tests.result }} |
-          | Compatibility Tests | ${{ needs.compatibility-tests.result }} |
-          
-          ## Target Coverage
-          
-          All ESP32 variants tested:
-          - ESP32 (Xtensa dual-core)
-          - ESP32-S2 (Xtensa single-core)
-          - ESP32-S3 (Xtensa dual-core + PSRAM)
-          - ESP32-C3 (RISC-V single-core)
-          - ESP32-C6 (RISC-V single-core + 802.15.4)
-          
-          ## Recommendations
-          
-          - All targets build successfully
-          - Memory usage within acceptable limits
-          - ESP-IDF compatibility verified
-          EOF
+      - name: Generate integration report
+        uses: ./.github/actions/generate-integration-report
+        with:
+          sha: ${{ github.sha }}
+          firmware-validation-result: ${{ needs.firmware-validation.result }}
+          network-tests-result: ${{ needs.network-tests.result }}
+          compatibility-tests-result: ${{ needs.compatibility-tests.result }}
 
       - name: Upload integration report
         uses: actions/upload-artifact@v4
         with:
           name: integration-report-${{ github.sha }}
-          path: integration_report.md
+          path: ci-artifacts/integration_report.md

@@ -1,0 +1,9 @@
+name: 'Build All Targets'
+description: 'Build firmware for all ESP32 targets'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Build all targets
+      shell: bash
+      run: python scripts/build_all.py --ci

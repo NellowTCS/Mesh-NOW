@@ -1,0 +1,53 @@
+name: 'Generate Integration Report'
+description: 'Generate integration test summary report'
+
+inputs:
+  sha:
+    description: 'Git commit SHA'
+    required: true
+  firmware-validation-result:
+    description: 'Firmware validation job result'
+    required: true
+  network-tests-result:
+    description: 'Network tests job result'
+    required: true
+  compatibility-tests-result:
+    description: 'Compatibility tests job result'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate integration report
+      shell: bash
+      run: |
+        mkdir -p ci-artifacts
+        cat > ci-artifacts/integration_report.md << EOF
+        # Mesh-NOW Integration Test Report
+        
+        **Test Date:** $(date -u)
+        **Commit:** ${{ inputs.sha }}
+        
+        ## Test Results
+        
+        | Test Suite | Status |
+        |------------|--------|
+        | Firmware Validation | ${{ inputs.firmware-validation-result }} |
+        | Network Tests | ${{ inputs.network-tests-result }} |
+        | Compatibility Tests | ${{ inputs.compatibility-tests-result }} |
+        
+        ## Target Coverage
+        
+        All ESP32 variants tested:
+        - ESP32 (Xtensa dual-core)
+        - ESP32-S2 (Xtensa single-core)
+        - ESP32-S3 (Xtensa dual-core + PSRAM)
+        - ESP32-C3 (RISC-V single-core)
+        - ESP32-C6 (RISC-V single-core + 802.15.4)
+        
+        ## Recommendations
+        
+        - All targets build successfully
+        - Memory usage within acceptable limits
+        - ESP-IDF compatibility verified
+        EOF

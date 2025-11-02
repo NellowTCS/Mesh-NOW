@@ -1,0 +1,70 @@
+name: 'Generate Changelog'
+description: 'Generate changelog from git history'
+
+inputs:
+  version:
+    description: 'Release version'
+    required: true
+  idf-version:
+    description: 'ESP-IDF version'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate changelog
+      id: generate
+      shell: bash
+      run: |
+        mkdir -p ci-artifacts
+        
+        echo "Generating changelog..."
+        
+        # Get previous tag for changelog
+        PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed -n '2p')
+        if [ -z "$PREV_TAG" ]; then
+          PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+        fi
+        
+        echo "Previous tag: $PREV_TAG"
+        
+        # Generate changelog content
+        cat > ci-artifacts/CHANGELOG.md << EOF
+        # Changelog for ${{ inputs.version }}
+        
+        **Release Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        **ESP-IDF Version:** ${{ inputs.idf-version }}
+        
+        ## Changes Since $PREV_TAG
+        
+        $(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD)
+        
+        ## ESP32 Target Support
+        
+        This release includes optimized firmware for all ESP32 variants:
+        
+        - **ESP32** - Original dual-core Xtensa (520KB RAM)
+        - **ESP32-S2** - Single-core Xtensa with native USB (320KB RAM)
+        - **ESP32-S3** - Dual-core Xtensa with PSRAM support (512KB RAM)
+        - **ESP32-C3** - Single-core RISC-V with Bluetooth LE (400KB RAM)
+        - **ESP32-C6** - Single-core RISC-V with 802.15.4 + BLE (512KB RAM)
+        
+        ## Quick Start
+        
+        1. Download firmware for your ESP32 variant
+        2. Flash using: \`esptool.py write_flash 0x0 mesh-now.bin\`
+        3. Connect to "MESH-NOW" WiFi (password: "password")
+        4. Access web interface at http://192.168.4.1
+        
+        ## Technical Details
+        
+        - Mesh networking via ESP-NOW protocol
+        - Web-based chat interface
+        - Automatic peer discovery
+        - Real-time message propagation
+        - No internet or router required
+        EOF
+        
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        cat ci-artifacts/CHANGELOG.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT

@@ -1,0 +1,41 @@
+name: 'Build Target'
+description: 'Build firmware for a specific ESP32 target'
+
+inputs:
+  target:
+    description: 'ESP32 target to build'
+    required: true
+  idf-version:
+    description: 'ESP-IDF version'
+    required: true
+  sha:
+    description: 'Git commit SHA'
+    required: true
+
+outputs:
+  binary-size:
+    description: 'Size of the built binary in KB'
+    value: ${{ steps.binary-info.outputs.size }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Build for ${{ inputs.target }}
+      shell: bash
+      run: |
+        python scripts/build.py --target ${{ inputs.target }} --ci
+        
+        # Create build info
+        echo "Target: ${{ inputs.target }}" > build_info.txt
+        echo "Commit: ${{ inputs.sha }}" >> build_info.txt
+        echo "Build Date: $(date -u)" >> build_info.txt
+        echo "IDF Version: ${{ inputs.idf-version }}" >> build_info.txt
+
+    - name: Get binary size
+      id: binary-info
+      shell: bash
+      run: |
+        BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
+        BINARY_SIZE_KB=$((BINARY_SIZE / 1024))
+        echo "size=$BINARY_SIZE_KB" >> $GITHUB_OUTPUT
+        echo "Binary size: ${BINARY_SIZE_KB}KB"

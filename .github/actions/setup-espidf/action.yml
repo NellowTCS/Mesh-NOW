@@ -1,0 +1,20 @@
+name: 'Setup ESP-IDF'
+description: 'Setup ESP-IDF environment with Python dependencies'
+
+inputs:
+  idf-version:
+    description: 'ESP-IDF version to install'
+    required: true
+    default: 'v5.5.1'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup ESP-IDF
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: ${{ inputs.idf-version }}
+
+    - name: Install Python dependencies
+      shell: bash
+      run: pip install rich

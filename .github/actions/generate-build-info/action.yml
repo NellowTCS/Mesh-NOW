@@ -1,0 +1,27 @@
+name: 'Generate Build Info'
+description: 'Generate build information file'
+
+inputs:
+  target:
+    description: 'ESP32 target'
+    required: true
+  idf-version:
+    description: 'ESP-IDF version'
+    required: true
+  sha:
+    description: 'Git commit SHA'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate build info
+      shell: bash
+      run: |
+        mkdir -p ci-artifacts
+        cat > ci-artifacts/build_info_${{ inputs.target }}.txt << EOF
+        Target: ${{ inputs.target }}
+        Commit: ${{ inputs.sha }}
+        Build Date: $(date -u)
+        IDF Version: ${{ inputs.idf-version }}
+        EOF
