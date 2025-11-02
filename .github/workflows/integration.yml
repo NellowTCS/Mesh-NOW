@@ -68,10 +68,13 @@ jobs:
           echo "Binary size OK: $BINARY_SIZE bytes"
 
       - name: Check memory usage
-        run: |
-          source $IDF_PATH/export.sh
-          echo "Memory analysis for ${{ matrix.target }}:"
-          idf.py size-components | head -20
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: 'v5.5.1'
+          target: ${{ matrix.target }}
+          command: |
+            echo "Memory analysis for ${{ matrix.target }}:"
+            idf.py size-components | head -20
 
       - name: Extract and validate configuration
         run: |
@@ -107,21 +110,27 @@ jobs:
           idf-version: 'v5.5.1'
 
       - name: Build with network debugging
-        run: |
-          source $IDF_PATH/export.sh
-          python scripts/build.py --target esp32 --ci
-          
-          # Enable additional logging for testing
-          echo "CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y" >> sdkconfig.defaults
-          echo "CONFIG_LOG_MAXIMUM_LEVEL=5" >> sdkconfig.defaults
-          
-          idf.py build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: 'v5.5.1'
+          target: esp32
+          command: |
+            python scripts/build.py --target esp32 --ci
+            
+            # Enable additional logging for testing
+            echo "CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y" >> sdkconfig.defaults
+            echo "CONFIG_LOG_MAXIMUM_LEVEL=5" >> sdkconfig.defaults
+            
+            idf.py build
 
       - name: Analyze network components
-        run: |
-          source $IDF_PATH/export.sh
-          echo "Network component analysis:"
-          idf.py size-components | grep -E "(lwip|wifi|esp_netif|esp_http|esp_now)"
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: 'v5.5.1'
+          target: esp32
+          command: |
+            echo "Network component analysis:"
+            idf.py size-components | grep -E "(lwip|wifi|esp_netif|esp_http|esp_now)"
 
   # Compatibility testing
   compatibility-tests:
@@ -141,11 +150,15 @@ jobs:
           idf-version: ${{ matrix.idf_version }}
 
       - name: Test build compatibility
-        run: |
-          echo "Testing compatibility with ESP-IDF ${{ matrix.idf_version }}"
-          
-          # Test ESP32 build (most compatible)
-          python scripts/build.py --target esp32 --ci
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ matrix.idf_version }}
+          target: esp32
+          command: |
+            echo "Testing compatibility with ESP-IDF ${{ matrix.idf_version }}"
+            
+            # Test ESP32 build (most compatible)
+            python scripts/build.py --target esp32 --ci
 
       - name: Compare binary sizes
         run: |
@@ -168,27 +181,33 @@ jobs:
           idf-version: 'v5.5.1'
 
       - name: Build optimized firmware
-        run: |
-          source $IDF_PATH/export.sh
-          python scripts/build.py --target esp32 --ci
-          
-          # Enable performance optimizations
-          echo "CONFIG_COMPILER_OPTIMIZATION_PERF=y" >> sdkconfig.defaults
-          echo "CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_DISABLE=y" >> sdkconfig.defaults
-          
-          idf.py build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: 'v5.5.1'
+          target: esp32
+          command: |
+            python scripts/build.py --target esp32 --ci
+            
+            # Enable performance optimizations
+            echo "CONFIG_COMPILER_OPTIMIZATION_PERF=y" >> sdkconfig.defaults
+            echo "CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_DISABLE=y" >> sdkconfig.defaults
+            
+            idf.py build
 
       - name: Analyze performance characteristics
-        run: |
-          source $IDF_PATH/export.sh
-          echo "Performance analysis:"
-          echo "Binary size: $(stat -c%s build/mesh-now.bin) bytes"
-          
-          echo "Memory usage:"
-          idf.py size | grep -E "(Used|Available)"
-          
-          echo "Component sizes:"
-          idf.py size-components | head -10
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: 'v5.5.1'
+          target: esp32
+          command: |
+            echo "Performance analysis:"
+            echo "Binary size: $(stat -c%s build/mesh-now.bin) bytes"
+            
+            echo "Memory usage:"
+            idf.py size | grep -E "(Used|Available)"
+            
+            echo "Component sizes:"
+            idf.py size-components | head -10
 
       - name: Generate performance report
         uses: ./.github/actions/generate-performance-report

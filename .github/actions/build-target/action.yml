@@ -21,22 +21,23 @@ runs:
   using: 'composite'
   steps:
     - name: Build for ${{ inputs.target }}
-      shell: bash
-      run: |
-        source $IDF_PATH/export.sh
-        python scripts/build.py --target ${{ inputs.target }} --ci --with-frontend
-        
-        # Create build info
-        echo "Target: ${{ inputs.target }}" > build_info.txt
-        echo "Commit: ${{ inputs.sha }}" >> build_info.txt
-        echo "Build Date: $(date -u)" >> build_info.txt
-        echo "IDF Version: ${{ inputs.idf-version }}" >> build_info.txt
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: ${{ inputs.idf-version }}
+        target: ${{ inputs.target }}
+        command: |
+          python scripts/build.py --target ${{ inputs.target }} --ci --with-frontend
+          
+          # Create build info
+          echo "Target: ${{ inputs.target }}" > build_info.txt
+          echo "Commit: ${{ inputs.sha }}" >> build_info.txt
+          echo "Build Date: $(date -u)" >> build_info.txt
+          echo "IDF Version: ${{ inputs.idf-version }}" >> build_info.txt
 
     - name: Get binary size
       id: binary-info
       shell: bash
       run: |
-        source $IDF_PATH/export.sh
         BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
         BINARY_SIZE_KB=$((BINARY_SIZE / 1024))
         echo "size=$BINARY_SIZE_KB" >> $GITHUB_OUTPUT

@@ -1,12 +1,16 @@
 name: 'Validate Configurations'
 description: 'Validate all ESP32 target configurations'
 
+inputs:
+  idf-version:
+    description: 'ESP-IDF version to use'
+    required: true
+
 runs:
   using: 'composite'
   steps:
     - name: Validate all target configurations
-      shell: bash
-      run: |
-        echo "Validating target configurations..."
-        source $IDF_PATH/export.sh
-        python scripts/test_targets.py --ci
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: ${{ inputs.idf-version }}
+        command: python scripts/test_targets.py --ci

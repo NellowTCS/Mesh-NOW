@@ -5,7 +5,7 @@ runs:
   using: 'composite'
   steps:
     - name: Build all targets
-      shell: bash
-      run: |
-        source $IDF_PATH/export.sh
-        python scripts/build_all.py --ci --with-frontend
+      uses: espressif/esp-idf-ci-action@v1
+      with:
+        esp_idf_version: v5.5.1
+        command: python scripts/build_all.py --ci --with-frontend

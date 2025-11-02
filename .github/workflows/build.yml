@@ -47,6 +47,8 @@ jobs:
 
       - name: Validate configurations
         uses: ./.github/actions/validate-configs
+        with:
+          idf-version: ${{ env.IDF_VERSION }}
 
       - name: Set build targets
         id: set-targets
@@ -128,10 +130,13 @@ jobs:
           sha: ${{ github.sha }}
 
       - name: Analyze binary size
-        run: |
-          source $IDF_PATH/export.sh
-          idf.py size
-          idf.py size-components > size_analysis.txt
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
+          target: esp32
+          command: |
+            idf.py size
+            idf.py size-components > size_analysis.txt
 
       - name: Upload size analysis
         uses: actions/upload-artifact@v4
