@@ -41,14 +41,14 @@ A clear and concise description of what actually happened.
 
 If applicable, add screenshots or paste log output to help explain your problem.
 
-```
+```txt
 Paste any error logs here
 ```
 
 ## Network Information
 
 - **WiFi Status:** (Can you see "MESH-NOW" network?)
-- **Web Interface:** (Can you access http://192.168.4.1?)
+- **Web Interface:** (Can you access <http://192.168.4.1>?)
 - **Multiple Devices:** (Are you testing with multiple ESP32s?)
 - **Message Delivery:** (Do messages appear on other devices?)
 

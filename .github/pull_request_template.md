@@ -1,4 +1,6 @@
+<!-- markdownlint-disable MD041 -->
 ## Description
+<!-- markdownlint-enable MD041 -->
 
 Brief description of what this PR does.
 
