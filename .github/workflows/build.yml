@@ -27,7 +27,7 @@ on:
           - 'esp32c6'
 
 env:
-  IDF_VERSION: 'v6.1'
+  IDF_VERSION: 'v5.3.1'
   
 jobs:
   # Configuration validation job

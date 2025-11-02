@@ -21,7 +21,7 @@ jobs:
       - name: Setup ESP-IDF
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: 'v6.1'
+          esp_idf_version: 'v5.3.1'
 
       - name: Install analysis tools
         run: |
@@ -87,12 +87,12 @@ jobs:
       - name: Setup ESP-IDF
         uses: espressif/esp-idf-ci-action@v1
         with:
-          esp_idf_version: 'v6.1'
+          esp_idf_version: 'v5.3.1'
 
       - name: Generate dependency list
         run: |
           echo "# ESP-IDF Components" > dependencies.txt
-          echo "ESP-IDF Version: v6.1" >> dependencies.txt
+          echo "ESP-IDF Version: v5.3.1" >> dependencies.txt
           echo "" >> dependencies.txt
           echo "## Core Components Used:" >> dependencies.txt
           echo "- esp_wifi: WiFi and ESP-NOW functionality" >> dependencies.txt
@@ -104,8 +104,8 @@ jobs:
 
       - name: Check for known vulnerabilities
         run: |
-          echo "Checking ESP-IDF v6.1 for known vulnerabilities..."
-          echo "ESP-IDF v6.1 is a stable release with security updates"
+          echo "Checking ESP-IDF v5.3.1 for known vulnerabilities..."
+          echo "ESP-IDF v5.3.1 is a stable release with security updates"
 
       - name: Upload dependency report
         uses: actions/upload-artifact@v4
