@@ -139,7 +139,7 @@ esptool.py --chip esp32c3 --port /dev/ttyUSB0 --baud 115200 \
 
 1. Flash the firmware to your ESP32 device
 2. The device will create a WiFi AP with:
-   - **SSID**: ESP32-Chat
+   - **SSID**: MESH-NOW-[8 character string from MAC address]
    - **Password**: password
 3. Connect to the WiFi network
 4. Open your browser and go to: <http://192.168.4.1>
@@ -151,7 +151,7 @@ esptool.py --chip esp32c3 --port /dev/ttyUSB0 --baud 115200 \
 
 Edit `main/main.c` to customize:
 
-- `WIFI_SSID`: WiFi AP name (default: "MESH-NOW")
+- `WIFI_SSID`: WiFi AP name (default: "MESH-NOW-[8 character string from MAC address]")
 - `WIFI_PASS`: WiFi AP password (default: "password")
 - `WIFI_CHANNEL`: WiFi channel (default: 1)
 - `ESPNOW_CHANNEL`: ESP-NOW channel (default: 1)
