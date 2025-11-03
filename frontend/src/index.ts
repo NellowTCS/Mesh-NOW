@@ -1,4 +1,5 @@
 import './styles.css';
+import { initDevTools } from './devtools';
 
 // Types
 interface Message {
@@ -9,6 +10,23 @@ interface Message {
 
 interface ApiResponse {
     messages: Message[];
+}
+
+interface PeersResponse {
+    peers: string[];
+}
+
+interface WifiInfoResponse {
+    ssid: string;
+    password: string;
+    channel: number;
+}
+
+// Extend window interface
+declare global {
+    interface Window {
+        meshNowApp?: MeshNowApp;
+    }
 }
 
 // App class
@@ -75,14 +93,17 @@ class MeshNowApp {
     }
 
     private initializeApp(): void {
-        this.addSystemMessage('Connected to ESP32 Mesh Network');
+        this.updateWifiInfo();
         this.updatePeerCount();
+        // Initialize lightweight devtools
+        try { initDevTools(); } catch (e) { console.warn('devtools init failed', e); }
     }
 
     private async sendMessage(): Promise<void> {
         const message = this.messageInput.value.trim();
         if (!message) return;
 
+        console.log('Sending message:', message);
         try {
             const response = await fetch('/send', {
                 method: 'POST',
@@ -106,8 +127,10 @@ class MeshNowApp {
 
     private async pollMessages(): Promise<void> {
         try {
+            console.log('Polling for messages...');
             const response = await fetch('/messages');
             const data: ApiResponse = await response.json();
+            console.log('Messages response:', data);
 
             if (data.messages && data.messages.length > 0) {
                 data.messages.forEach(msg => {
@@ -120,6 +143,7 @@ class MeshNowApp {
     }
 
     private startPolling(): void {
+        console.log('Starting polling...');
         setInterval(() => this.pollMessages(), 1000);
         setInterval(() => this.updatePeerCount(), 5000);
     }
@@ -153,19 +177,38 @@ class MeshNowApp {
 
     private async updatePeerCount(): Promise<void> {
         try {
+            console.log('Updating peer count...');
             const response = await fetch('/peers');
-            const data = await response.json();
-            const count = data.peers || 0;
+            const data: PeersResponse = await response.json();
+            console.log('Peers response:', data);
+            const count = data.peers ? data.peers.length : 0;
             this.peerCount.textContent = `${count} peer${count !== 1 ? 's' : ''}`;
         } catch (error) {
+            console.log('Peer count error:', error);
             // Silently fail for peer count updates
+        }
+    }
+
+    private async updateWifiInfo(): Promise<void> {
+        try {
+            console.log('Fetching WiFi info...');
+            const response = await fetch('/wifi-info');
+            const data: WifiInfoResponse = await response.json();
+            console.log('WiFi info:', data);
+            this.addSystemMessage(`Connected to ESP32 Mesh Network`);
+            this.addSystemMessage(`WiFi: "${data.ssid}""`);
+        } catch (error) {
+            console.log('WiFi info error:', error);
+            this.addSystemMessage('Connected to ESP32 Mesh Network');
         }
     }
 }
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new MeshNowApp();
+    // Prevent multiple initializations
+    if (window.meshNowApp) return;
+    window.meshNowApp = new MeshNowApp();
 });
 
 // Export for potential testing

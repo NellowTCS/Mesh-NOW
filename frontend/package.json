@@ -20,7 +20,9 @@
     "webpack-cli": "^5.1.0",
     "webpack-dev-server": "^4.15.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "eruda": "^3.4.3"
+  },
   "engines": {
     "node": ">=16.0.0"
   }

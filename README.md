@@ -100,14 +100,14 @@ idf.py build
 
 ```bash
 # Use interactive build script
-./scripts/build.sh
+./scripts/build.py --with-frontend
 ```
 
 #### Build for All Targets
 
 ```bash
 # Build for all supported ESP32 variants
-./scripts/build_all_targets.sh
+./scripts/build_all_targets.py
 ```
 
 ### Flash to ESP32
@@ -118,6 +118,19 @@ idf.py -p /dev/ttyUSB0 flash monitor
 
 # Or auto-detect port
 idf.py flash monitor
+```
+
+### Flashing Manually
+
+#### ESP32C3
+
+```bash
+esptool.py --chip esp32c3 --port /dev/ttyUSB0 --baud 115200 \
+  --before default_reset --after hard_reset \
+  write_flash --flash_mode dio --flash_freq 40m --flash_size 4MB \
+  0x0 bootloader/bootloader.bin \
+  0x8000 partition_table/partition-table.bin \
+  0x10000 mesh-now.bin
 ```
 
 ## Usage

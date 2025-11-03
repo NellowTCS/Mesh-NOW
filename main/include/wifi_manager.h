@@ -4,10 +4,10 @@
 #include <stdint.h>
 #include <esp_err.h>
 
-// WiFi configuration
-#define WIFI_SSID "MESH-NOW"
+// WiFi configuration, SSID will be generated dynamically
 #define WIFI_PASS "password"
 #define WIFI_CHANNEL 1
+#define WIFI_SSID_BASE "MESH-NOW"
 
 // Function declarations
 esp_err_t wifi_manager_init(void);

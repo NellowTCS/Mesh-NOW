@@ -1,6 +1,10 @@
 #include "web_server.h"
+#include "wifi_manager.h"
+#include "mesh_now.h"
+
 #include <esp_log.h>
 #include <esp_http_server.h>
+#include <esp_wifi.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <string.h>
@@ -20,6 +24,7 @@ static message_send_callback_t send_callback = NULL;
 
 // HTTP server handlers
 static esp_err_t index_handler(httpd_req_t *req) {
+    ESP_LOGI(TAG, "Serving index.html");
     httpd_resp_set_type(req, "text/html");
     httpd_resp_send(req, INDEX_HTML, INDEX_HTML_size);
     return ESP_OK;
@@ -38,11 +43,14 @@ static esp_err_t css_handler(httpd_req_t *req) {
 }
 
 static esp_err_t send_handler(httpd_req_t *req) {
+    ESP_LOGI(TAG, "Handling /send request");
+    
     char content[512];
     int content_len = httpd_req_recv(req, content, sizeof(content) - 1);
 
     if (content_len > 0 && send_callback) {
         content[content_len] = '\0';
+        ESP_LOGI(TAG, "Received send request with content: %s", content);
 
         // Parse message from POST data
         char *msg_start = strstr(content, "message=");
@@ -68,6 +76,7 @@ static esp_err_t send_handler(httpd_req_t *req) {
             }
             decoded[len] = '\0';
 
+            ESP_LOGI(TAG, "Decoded message: %s", decoded);
             // Send message via callback
             send_callback(decoded);
         }
@@ -78,6 +87,8 @@ static esp_err_t send_handler(httpd_req_t *req) {
 }
 
 static esp_err_t messages_handler(httpd_req_t *req) {
+    ESP_LOGI(TAG, "Handling /messages request");
+    
     char json_response[2048];
     strcpy(json_response, "{\"messages\":[");
 
@@ -93,6 +104,7 @@ static esp_err_t messages_handler(httpd_req_t *req) {
     bool first = true;
 
     while (message_queue && xQueueReceive(message_queue, &msg, 0) == pdTRUE && msg_count < 10) {
+        ESP_LOGI(TAG, "Found message in queue: %s", msg.message);
         if (!first) {
             strcat(json_response, ",");
         }
@@ -110,6 +122,55 @@ static esp_err_t messages_handler(httpd_req_t *req) {
     }
 
     strcat(json_response, "]}");
+    ESP_LOGI(TAG, "Returning %d messages", msg_count);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, json_response, strlen(json_response));
+    return ESP_OK;
+}
+
+static esp_err_t peers_handler(httpd_req_t *req) {
+    ESP_LOGI(TAG, "Handling /peers request");
+    
+    int peer_count = mesh_now_get_peer_count();
+    mesh_peer_t* peers = mesh_now_get_peers();
+    
+    char json_response[1024];
+    strcpy(json_response, "{\"peers\":[");
+    
+    for (int i = 0; i < peer_count && i < MAX_PEERS; i++) {
+        if (peers[i].active) {
+            char peer_mac[18];
+            snprintf(peer_mac, sizeof(peer_mac), "%02x:%02x:%02x:%02x:%02x:%02x",
+                     peers[i].peer_addr[0], peers[i].peer_addr[1], peers[i].peer_addr[2],
+                     peers[i].peer_addr[3], peers[i].peer_addr[4], peers[i].peer_addr[5]);
+            
+            if (i > 0) strcat(json_response, ",");
+            char peer_entry[32];
+            snprintf(peer_entry, sizeof(peer_entry), "\"%s\"", peer_mac);
+            strcat(json_response, peer_entry);
+        }
+    }
+    
+    strcat(json_response, "]}");
+    ESP_LOGI(TAG, "Returning %d peers", peer_count);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, json_response, strlen(json_response));
+    return ESP_OK;
+}
+
+static esp_err_t wifi_info_handler(httpd_req_t *req) {
+    ESP_LOGI(TAG, "Handling /wifi-info request");
+    
+    // Get current WiFi config
+    wifi_config_t wifi_config;
+    ESP_ERROR_CHECK(esp_wifi_get_config(WIFI_IF_AP, &wifi_config));
+    
+    char json_response[128];
+    snprintf(json_response, sizeof(json_response), 
+             "{\"ssid\":\"%s\",\"password\":\"%s\",\"channel\":%d}",
+             (char*)wifi_config.ap.ssid, WIFI_PASS, wifi_config.ap.channel);
 
     httpd_resp_set_type(req, "application/json");
     httpd_resp_send(req, json_response, strlen(json_response));
@@ -167,6 +228,22 @@ esp_err_t web_server_init(QueueHandle_t queue) {
             .user_ctx = NULL
         };
         httpd_register_uri_handler(server, &messages_uri);
+
+        httpd_uri_t peers_uri = {
+            .uri = "/peers",
+            .method = HTTP_GET,
+            .handler = peers_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &peers_uri);
+
+        httpd_uri_t wifi_info_uri = {
+            .uri = "/wifi-info",
+            .method = HTTP_GET,
+            .handler = wifi_info_handler,
+            .user_ctx = NULL
+        };
+        httpd_register_uri_handler(server, &wifi_info_uri);
 
         ESP_LOGI(TAG, "HTTP server started successfully");
         return ESP_OK;

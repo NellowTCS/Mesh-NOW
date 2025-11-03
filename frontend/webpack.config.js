@@ -43,9 +43,7 @@ module.exports = {
     }),
   ],
   optimization: {
-    splitChunks: {
-      chunks: 'all',
-    },
+    splitChunks: false, // Disable chunk splitting for single bundle
   },
   devServer: {
     static: {
