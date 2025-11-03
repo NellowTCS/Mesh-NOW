@@ -1,5 +1,7 @@
 # Mesh-NOW
 
+> This is very WIP! The messages are sent via the default 128 bit encryption of ESP-NOW but there is no PMK/spoofing protection.
+
 A serverless mesh network chat application using ESP32 devices and the ESP-NOW protocol. Direct device-to-device communication without requiring a central WiFi router or internet connection.
 
 ## Features
