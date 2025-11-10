@@ -185,16 +185,16 @@ Each ESP32 variant has optimized settings in the `configs/` directory:
 │   ESP32 Node 1  │◄────────────────────►│   ESP32 Node 2  │
 │  WiFi AP + HTTP │                      │  WiFi AP + HTTP │
 └─────────────────┘                      └─────────────────┘
-         ▲                                        ▲
-         │                                        │
+         ▲                                       ▲
+         │                                       │
          │            ESP-NOW Mesh               │
-         │                                        │
+         │                                       │
          └────────────┐      ┌───────────────────┘
                       ▼      ▼
-              ┌─────────────────┐
-              │   ESP32 Node 3  │
-              │  WiFi AP + HTTP │
-              └─────────────────┘
+                ┌─────────────────┐
+                │   ESP32 Node 3  │
+                │  WiFi AP + HTTP │
+                └─────────────────┘
 ```
 
 ## License
