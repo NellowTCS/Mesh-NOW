@@ -21,6 +21,15 @@ esp_err_t send_message_callback(const char *message) {
     return mesh_now_send_message(message);
 }
 
+static void mesh_now_receive_handler(const mesh_message_t *mesh_msg) {
+    message_t msg;
+    strncpy(msg.message, mesh_msg->message, sizeof(msg.message) - 1);
+    msg.message[sizeof(msg.message) - 1] = '\0';
+    memcpy(msg.sender_mac, mesh_msg->sender_mac, sizeof(msg.sender_mac));
+    msg.timestamp = mesh_msg->timestamp;
+    message_queue_send(&msg);
+}
+
 void app_main(void) {
     ESP_LOGI(TAG, "Starting Mesh-NOW ESP32 Chat Application");
 
@@ -34,6 +43,7 @@ void app_main(void) {
 
     // Initialize message queue
     ESP_ERROR_CHECK(message_queue_init());
+    mesh_now_set_receive_callback(mesh_now_receive_handler);
 
     // Initialize WiFi
     ESP_ERROR_CHECK(wifi_manager_init());

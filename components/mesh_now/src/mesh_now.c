@@ -15,6 +15,7 @@ static mesh_peer_t peers[MAX_PEERS];
 static int peer_count = 0;
 static uint8_t broadcast_mac[ESP_NOW_ETH_ALEN] = BROADCAST_MAC;
 static TaskHandle_t beacon_task_handle = NULL;
+static mesh_now_receive_callback_t receive_callback = NULL;
 
 // ESP-NOW send callback
 static void esp_now_send_cb(const esp_now_send_info_t *send_info, esp_now_send_status_t status)
@@ -60,16 +61,19 @@ static void esp_now_recv_cb(const esp_now_recv_info_t *recv_info, const uint8_t 
     }
     else if (mesh_msg.type == MSG_TYPE_CHAT)
     {
-        // Chat message - add sender as peer and queue for web interface
+        // Chat message - add sender as peer and dispatch to registered handler
         mesh_now_add_peer(mesh_msg.sender_mac);
 
-        message_t msg;
-        strncpy(msg.message, mesh_msg.message, sizeof(msg.message));
-        memcpy(msg.sender_mac, mesh_msg.sender_mac, sizeof(msg.sender_mac));
-        msg.timestamp = mesh_msg.timestamp;
-        message_queue_send(&msg);
-
-        ESP_LOGI(TAG, "Queued chat message: %s", mesh_msg.message);
+        if (receive_callback) {
+            receive_callback(&mesh_msg);
+        } else {
+            message_t msg;
+            strncpy(msg.message, mesh_msg.message, sizeof(msg.message));
+            memcpy(msg.sender_mac, mesh_msg.sender_mac, sizeof(msg.sender_mac));
+            msg.timestamp = mesh_msg.timestamp;
+            message_queue_send(&msg);
+            ESP_LOGI(TAG, "Queued chat message: %s", mesh_msg.message);
+        }
     }
 }
 
@@ -284,6 +288,11 @@ void mesh_now_remove_peer(const uint8_t *mac)
             return;
         }
     }
+}
+
+void mesh_now_set_receive_callback(mesh_now_receive_callback_t callback)
+{
+    receive_callback = callback;
 }
 
 esp_err_t mesh_now_send_message(const char *message)
