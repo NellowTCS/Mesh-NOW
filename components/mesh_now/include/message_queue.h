@@ -5,6 +5,10 @@
 #include <freertos/queue.h>
 #include <esp_err.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Message structure
 typedef struct {
     char message[256];
@@ -18,5 +22,9 @@ esp_err_t message_queue_deinit(void);
 QueueHandle_t message_queue_get_handle(void);
 esp_err_t message_queue_send(const message_t *msg);
 esp_err_t message_queue_receive(message_t *msg, TickType_t timeout);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // MESSAGE_QUEUE_H

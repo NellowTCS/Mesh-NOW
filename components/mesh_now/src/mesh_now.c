@@ -61,7 +61,7 @@ static void esp_now_recv_cb(const esp_now_recv_info_t *recv_info, const uint8_t 
     }
     else if (mesh_msg.type == MSG_TYPE_CHAT)
     {
-        // Chat message - add sender as peer and dispatch to registered handler
+        // Broadcast chat message always delivered
         mesh_now_add_peer(mesh_msg.sender_mac);
 
         if (receive_callback) {
@@ -73,6 +73,30 @@ static void esp_now_recv_cb(const esp_now_recv_info_t *recv_info, const uint8_t 
             msg.timestamp = mesh_msg.timestamp;
             message_queue_send(&msg);
             ESP_LOGI(TAG, "Queued chat message: %s", mesh_msg.message);
+        }
+    }
+    else if (mesh_msg.type == MSG_TYPE_DIRECT)
+    {
+        uint8_t my_mac[ESP_NOW_ETH_ALEN];
+        esp_read_mac(my_mac, ESP_MAC_WIFI_STA);
+
+        if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) != 0)
+        {
+            ESP_LOGI(TAG, "Direct message not for this node, ignoring");
+            return;
+        }
+
+        mesh_now_add_peer(mesh_msg.sender_mac);
+
+        if (receive_callback) {
+            receive_callback(&mesh_msg);
+        } else {
+            message_t msg;
+            strncpy(msg.message, mesh_msg.message, sizeof(msg.message));
+            memcpy(msg.sender_mac, mesh_msg.sender_mac, sizeof(msg.sender_mac));
+            msg.timestamp = mesh_msg.timestamp;
+            message_queue_send(&msg);
+            ESP_LOGI(TAG, "Queued direct message: %s", mesh_msg.message);
         }
     }
 }
@@ -327,6 +351,38 @@ esp_err_t mesh_now_send_message(const char *message)
     if (ret == ESP_OK)
     {
         ESP_LOGI(TAG, "Sent chat message to %d peers: %s", peer_count, message);
+    }
+
+    return ret;
+}
+
+esp_err_t mesh_now_send_direct(const uint8_t *target_mac, const char *message)
+{
+    if (target_mac == NULL || message == NULL)
+    {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    mesh_now_add_peer(target_mac);
+
+    mesh_message_t msg;
+    memset(&msg, 0, sizeof(mesh_message_t));
+    msg.type = MSG_TYPE_DIRECT;
+    strncpy(msg.message, message, sizeof(msg.message) - 1);
+    msg.message[sizeof(msg.message) - 1] = '\0';
+    esp_read_mac(msg.sender_mac, ESP_MAC_WIFI_STA);
+    memcpy(msg.target_mac, target_mac, ESP_NOW_ETH_ALEN);
+    msg.timestamp = esp_timer_get_time() / 1000; // Convert to ms
+
+    esp_err_t ret = esp_now_send(target_mac, (uint8_t *)&msg, sizeof(mesh_message_t));
+    if (ret == ESP_OK)
+    {
+        ESP_LOGI(TAG, "Sent direct message to %02x:%02x:%02x:%02x:%02x:%02x: %s",
+                 target_mac[0], target_mac[1], target_mac[2], target_mac[3], target_mac[4], target_mac[5], message);
+    }
+    else
+    {
+        ESP_LOGW(TAG, "Failed to send direct message: %s", esp_err_to_name(ret));
     }
 
     return ret;
