@@ -644,11 +644,6 @@ void mesh_now_set_receive_callback(mesh_now_receive_callback_t callback)
     receive_callback = callback;
 }
 
-esp_err_t mesh_now_set_receive_callback(mesh_now_receive_callback_t callback)
-{
-    receive_callback = callback;
-}
-
 static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg, bool queue_for_retransmit)
 {
     msg->message_id = mesh_now_generate_message_id();
