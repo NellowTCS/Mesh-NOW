@@ -478,13 +478,15 @@ esp_err_t mesh_now_init(void)
     }
 
     // Start beacon broadcast task for peer discovery
-    BaseType_t task_ret = xTaskCreate(
+    BaseType_t task_ret = xTaskCreatePinnedToCore(
         beacon_task,
         "beacon_task",
         4096,
         NULL,
         5,
-        &beacon_task_handle);
+        &beacon_task_handle,
+        0  // CORE 0
+    );
 
     if (task_ret != pdPASS)
     {
@@ -492,13 +494,16 @@ esp_err_t mesh_now_init(void)
         return ESP_FAIL;
     }
 
-    task_ret = xTaskCreate(
+    // Start retransmit task pinned to core 0
+    task_ret = xTaskCreatePinnedToCore(
         retransmit_task,
         "retransmit_task",
         4096,
         NULL,
         5,
-        &retransmit_task_handle);
+        &retransmit_task_handle,
+        0  // CORE 0
+    );
 
     if (task_ret != pdPASS)
     {
