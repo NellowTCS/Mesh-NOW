@@ -226,6 +226,7 @@ static void retransmit_task(void *pvParameters)
 }
 
 // ESP-NOW send callback
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 static void esp_now_send_cb(const esp_now_send_info_t *send_info, esp_now_send_status_t status)
 {
     if (status == ESP_NOW_SEND_SUCCESS)
@@ -241,7 +242,26 @@ static void esp_now_send_cb(const esp_now_send_info_t *send_info, esp_now_send_s
                  send_info->des_addr[3], send_info->des_addr[4], send_info->des_addr[5]);
     }
 }
+#else
+// ESP-NOW send callback (ESP-IDF v4.4 / Arduino v2.x format)
+static void esp_now_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
+{
+    if (status == ESP_NOW_SEND_SUCCESS)
+    {
+        ESP_LOGI(TAG, "Message sent successfully to %02x:%02x:%02x:%02x:%02x:%02x",
+                 mac_addr[0], mac_addr[1], mac_addr[2],
+                 mac_addr[3], mac_addr[4], mac_addr[5]);
+    }
+    else
+    {
+        ESP_LOGW(TAG, "Failed to send message to %02x:%02x:%02x:%02x:%02x:%02x",
+                 mac_addr[0], mac_addr[1], mac_addr[2],
+                 mac_addr[3], mac_addr[4], mac_addr[5]);
+    }
+}
+#endif
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 // ESP-NOW receive callback
 static void esp_now_recv_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len)
 {
@@ -405,6 +425,172 @@ static void esp_now_recv_cb(const esp_now_recv_info_t *recv_info, const uint8_t 
         }
     }
 }
+
+#else
+// ESP-NOW receive callback (ESP-IDF v4.4 / Arduino v2.x format)
+static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int len)
+{
+    if (len != sizeof(mesh_message_t))
+    {
+        ESP_LOGW(TAG, "Received invalid message length: %d (expected %d)", len, sizeof(mesh_message_t));
+        return;
+    }
+
+    mesh_message_t mesh_msg;
+    memcpy(&mesh_msg, data, sizeof(mesh_message_t));
+
+    bool payload_encrypted = false;
+    if (mesh_msg.flags & MSG_FLAG_ENCRYPTED) {
+        payload_encrypted = true;
+        mesh_now_crypt_payload((uint8_t *)mesh_msg.message, sizeof(mesh_msg.message));
+        mesh_msg.flags &= ~MSG_FLAG_ENCRYPTED;
+    }
+
+    ESP_LOGI(TAG, "Received ESP-NOW message from %02x:%02x:%02x:%02x:%02x:%02x, type: %d, id: %u",
+             mac_addr[0], mac_addr[1], mac_addr[2],
+             mac_addr[3], mac_addr[4], mac_addr[5],
+             mesh_msg.type, mesh_msg.message_id);
+
+    if (mesh_msg.type != MSG_TYPE_BEACON && mesh_msg.type != MSG_TYPE_ACK) {
+        if (mesh_now_is_message_seen(mesh_msg.message_id)) {
+            ESP_LOGW(TAG, "Duplicate message %u ignored", mesh_msg.message_id);
+            return;
+        }
+        mesh_now_mark_message_seen(mesh_msg.message_id);
+    }
+
+    if (mesh_msg.type == MSG_TYPE_BEACON)
+    {
+        ESP_LOGI(TAG, "Received discovery beacon from %02x:%02x:%02x:%02x:%02x:%02x",
+                 mesh_msg.sender_mac[0], mesh_msg.sender_mac[1], mesh_msg.sender_mac[2],
+                 mesh_msg.sender_mac[3], mesh_msg.sender_mac[4], mesh_msg.sender_mac[5]);
+        mesh_now_add_peer(mesh_msg.sender_mac);
+    }
+    else if (mesh_msg.type == MSG_TYPE_ACK)
+    {
+        uint8_t my_mac[ESP_NOW_ETH_ALEN];
+        esp_read_mac(my_mac, ESP_MAC_WIFI_STA);
+
+        if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) != 0)
+        {
+            if (mesh_msg.hop_count > 0) {
+                if (payload_encrypted) {
+                    mesh_now_maybe_encrypt_message(&mesh_msg);
+                }
+                mesh_now_route_message(&mesh_msg);
+            }
+            return;
+        }
+
+        int pending_index = mesh_now_find_pending(mesh_msg.message_id);
+        if (pending_index >= 0) {
+            mesh_now_release_pending(pending_index);
+            ESP_LOGI(TAG, "Received ACK for message %u", mesh_msg.message_id);
+        }
+    }
+    else if (mesh_msg.type == MSG_TYPE_CHAT)
+    {
+        mesh_now_add_peer(mesh_msg.sender_mac);
+
+        if (receive_callback) {
+            receive_callback(&mesh_msg);
+        } else {
+            message_t msg;
+            strncpy(msg.message, mesh_msg.message, sizeof(msg.message));
+            memcpy(msg.sender_mac, mesh_msg.sender_mac, sizeof(msg.sender_mac));
+            msg.timestamp = mesh_msg.timestamp;
+            message_queue_send(&msg);
+            ESP_LOGI(TAG, "Queued chat message: %s", mesh_msg.message);
+        }
+
+        if (mesh_msg.hop_count > 0) {
+            if (payload_encrypted) {
+                mesh_now_maybe_encrypt_message(&mesh_msg);
+            }
+            mesh_now_route_message(&mesh_msg);
+        }
+    }
+    else if (mesh_msg.type == MSG_TYPE_DIRECT)
+    {
+        uint8_t my_mac[ESP_NOW_ETH_ALEN];
+        esp_read_mac(my_mac, ESP_MAC_WIFI_STA);
+
+        if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) != 0)
+        {
+            if (mesh_msg.hop_count > 0) {
+                mesh_now_route_message(&mesh_msg);
+            }
+            return;
+        }
+
+        mesh_now_add_peer(mesh_msg.sender_mac);
+        mesh_now_send_ack(&mesh_msg);
+
+        if (receive_callback) {
+            receive_callback(&mesh_msg);
+        } else {
+            message_t msg;
+            strncpy(msg.message, mesh_msg.message, sizeof(msg.message));
+            memcpy(msg.sender_mac, mesh_msg.sender_mac, sizeof(msg.sender_mac));
+            msg.timestamp = mesh_msg.timestamp;
+            message_queue_send(&msg);
+            ESP_LOGI(TAG, "Queued direct message: %s", mesh_msg.message);
+        }
+    }
+    else if (mesh_msg.type == MSG_TYPE_GROUP)
+    {
+        mesh_now_add_peer(mesh_msg.sender_mac);
+        if (mesh_msg.group_id == local_group_id) {
+            if (receive_callback) {
+                receive_callback(&mesh_msg);
+            } else {
+                message_t msg;
+                strncpy(msg.message, mesh_msg.message, sizeof(msg.message));
+                memcpy(msg.sender_mac, mesh_msg.sender_mac, sizeof(msg.sender_mac));
+                msg.timestamp = mesh_msg.timestamp;
+                message_queue_send(&msg);
+                ESP_LOGI(TAG, "Queued group message: %s", mesh_msg.message);
+            }
+        }
+
+        if (mesh_msg.hop_count > 0) {
+            if (payload_encrypted) {
+                mesh_now_maybe_encrypt_message(&mesh_msg);
+            }
+            mesh_now_route_message(&mesh_msg);
+        }
+    }
+    else if (mesh_msg.type == MSG_TYPE_PRESENCE)
+    {
+        mesh_now_add_peer(mesh_msg.sender_mac);
+        if (receive_callback) {
+            receive_callback(&mesh_msg);
+        }
+        if (mesh_msg.hop_count > 0) {
+            if (payload_encrypted) {
+                mesh_now_maybe_encrypt_message(&mesh_msg);
+            }
+            mesh_now_route_message(&mesh_msg);
+        }
+    }
+    else if (mesh_msg.type == MSG_TYPE_TYPING)
+    {
+        uint8_t my_mac[ESP_NOW_ETH_ALEN];
+        esp_read_mac(my_mac, ESP_MAC_WIFI_STA);
+
+        if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) == 0) {
+            if (receive_callback) {
+                receive_callback(&mesh_msg);
+            }
+        } else if (mesh_msg.hop_count > 0) {
+            if (payload_encrypted) {
+                mesh_now_maybe_encrypt_message(&mesh_msg);
+            }
+            mesh_now_route_message(&mesh_msg);
+        }
+    }
+}
+#endif
 
 // Beacon broadcast task - periodically announce presence to discover other nodes
 static void beacon_task(void *pvParameters)
