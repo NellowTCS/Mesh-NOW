@@ -138,12 +138,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-  
-      - name: Setup ESP-IDF
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: 'v5.5.1'
-  
+
       - name: Build and Embed Frontend
         run: |
           # Build Frontend
@@ -151,21 +146,24 @@ jobs:
   
           # Embed Frontend
           python3 scripts/embed_frontend.py
-  
-      - name: Check component versions
-        run: |
-          echo "Checking ESP-IDF component information..."
           
-          # Build once to get component info
-          idf.py set-target esp32
-          cp configs/sdkconfig.esp32 sdkconfig.defaults
-          idf.py reconfigure
-          
-          echo "Key component versions:"
-          idf.py --version
-          
-          echo ""
-          echo "Component check complete. Manual review of ESP-IDF changelog recommended."
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: 'v5.5.1'
+          command: |
+            echo "Checking ESP-IDF component information..."
+            
+            # Build once to get component info
+            idf.py set-target esp32
+            cp configs/sdkconfig.esp32 sdkconfig.defaults
+            idf.py reconfigure
+            
+            echo "Key component versions:"
+            idf.py --version
+            
+            echo ""
+            echo "Component check complete. Manual review of ESP-IDF changelog recommended."
 
   # Create update summary
   update-summary:
