@@ -131,7 +131,6 @@ jobs:
           echo "- Review CVE database for ESP32: https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=esp32"
           echo "- Check WiFi and network stack updates"
 
-  # Component updates
   check-components:
     name: Check Component Updates
     runs-on: ubuntu-latest
@@ -139,12 +138,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+  
       - name: Setup ESP-IDF
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: 'v5.5.1'
-
+  
+      - name: Build and Embed Frontend
+        run: |
+          # Build Frontend
+          python3 frontend/build_frontend.py
+  
+          # Embed Frontend
+          python3 scripts/embed_frontend.py
+  
       - name: Check component versions
         run: |
           echo "Checking ESP-IDF component information..."
