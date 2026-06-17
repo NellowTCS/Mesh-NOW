@@ -1,0 +1,17 @@
+{
+    "name": "mesh_now",
+    "version": "1.0.0",
+    "description": "ESP-NOW mesh networking library for PocketMage",
+    "keywords": ["esp-now", "mesh", "networking", "esp32", "pocketmage"],
+    "build": {
+        "srcDir": "components/mesh_now/src",
+        "includeDir": "components/mesh_now/include"
+    },
+    "frameworks": ["arduino", "espidf"],
+    "platforms": ["espressif32"],
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/NellowTCS/Mesh-NOW"
+    }
+}
