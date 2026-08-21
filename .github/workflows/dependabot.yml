@@ -142,10 +142,10 @@ jobs:
       - name: Build and Embed Frontend
         run: |
           # Build Frontend
-          python3 frontend/build_frontend.py
+          python3 examples/chat-app/frontend/build_frontend.py
   
           # Embed Frontend
-          python3 scripts/embed_frontend.py
+          python3 examples/chat-app/scripts/embed_frontend.py
           
       - name: Setup ESP-IDF
         uses: espressif/esp-idf-ci-action@v1
@@ -156,7 +156,7 @@ jobs:
             
             # Build once to get component info
             idf.py set-target esp32
-            cp configs/sdkconfig.esp32 sdkconfig.defaults
+            cp examples/chat-app/configs/sdkconfig.esp32 sdkconfig.defaults
             idf.py reconfigure
             
             echo "Key component versions:"

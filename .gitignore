@@ -1,15 +1,35 @@
-/build
-/builds
-/__pycache__/
-*.pyc
-.env
-.DS_Store
+# Build artifacts
+build/
+site/
+
+# Dependencies
+node_modules/
+
+# Editor
 .vscode/
 .idea/
-node_modules/
-dist/
-*.log
-index_html.h
-bundle_js.h
-styles_css.h
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ESP-IDF generated
+sdkconfig
 sdkconfig.old
+*.bin
+*.elf
+*.map
+*.csv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Logs
+*.log
+
+_docmd-search/

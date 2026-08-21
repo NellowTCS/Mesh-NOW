@@ -63,15 +63,15 @@ jobs:
 
       - name: Build all targets
         run: |
-          python scripts/build_all.py --ci
+          python examples/chat-app/scripts/build_all.py --ci
 
       - name: Create release packages
         run: |
           mkdir -p release/{firmware,flash-tools,documentation}
           
           # Copy flash tools
-          cp scripts/install_esptool.py release/flash-tools/
-          cp scripts/flash_mesh_now.py release/flash-tools/
+          cp examples/chat-app/scripts/install_esptool.py release/flash-tools/
+          cp examples/chat-app/scripts/flash_mesh_now.py release/flash-tools/
           
           # Package firmware files
           cd builds
@@ -86,11 +86,11 @@ jobs:
             cp $target_name/partition-table.bin ../release/firmware/$target_name/
             
             # Copy and customize flash script
-            cp ../../scripts/flash.py ../release/firmware/$target_name/
+            cp ../../examples/chat-app/scripts/flash.py ../release/firmware/$target_name/
             # The flash.py script auto-detects the target, so no need to customize
             
             # Create target-specific README
-            cp ../../docs/templates/firmware_readme.md ../release/firmware/$target_name/README.md
+            cp ../../Docs/docs/getting-started/quickstart.md ../release/firmware/$target_name/README.md
             sed -i "s/{TARGET}/$target_name/g" ../release/firmware/$target_name/README.md
             # Add target-specific information (you can expand this)
             sed -i "s/{ARCHITECTURE}/ESP32 Architecture/g" ../release/firmware/$target_name/README.md
@@ -105,9 +105,8 @@ jobs:
       - name: Create documentation package
         run: |
           cp README.md release/documentation/
-          cp MULTI_TARGET_SUPPORT.md release/documentation/
           cp ci-artifacts/CHANGELOG.md release/documentation/
-          cp docs/QUICK_START.md release/documentation/
+          cp Docs/docs/getting-started/quickstart.md release/documentation/
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4

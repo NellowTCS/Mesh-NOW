@@ -9,18 +9,18 @@ runs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+        cache-dependency-path: examples/chat-app/frontend/package-lock.json
 
     - name: Build frontend
       shell: bash
-      run: python frontend/build_frontend.py --ci
+      run: python examples/chat-app/frontend/build_frontend.py --ci
 
     - name: Embed frontend
       shell: bash
-      run: python scripts/embed_frontend.py --ci
+      run: python examples/chat-app/scripts/embed_frontend.py --ci
 
     - name: Build all ESP32 targets
       uses: espressif/esp-idf-ci-action@v1
       with:
         esp_idf_version: v5.5.1
-        command: python scripts/build_all.py --ci
+        command: python examples/chat-app/scripts/build_all.py --ci

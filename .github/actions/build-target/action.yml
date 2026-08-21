@@ -25,15 +25,15 @@ runs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+        cache-dependency-path: examples/chat-app/frontend/package-lock.json
 
     - name: Build frontend
       shell: bash
-      run: python frontend/build_frontend.py --ci
+      run: python examples/chat-app/frontend/build_frontend.py --ci
 
     - name: Embed frontend
       shell: bash
-      run: python scripts/embed_frontend.py --ci
+      run: python examples/chat-app/scripts/embed_frontend.py --ci
 
     - name: Build ESP32 firmware for ${{ inputs.target }}
       uses: espressif/esp-idf-ci-action@v1
@@ -41,7 +41,7 @@ runs:
         esp_idf_version: ${{ inputs.idf-version }}
         target: ${{ inputs.target }}
         command: |
-          python scripts/build.py --target ${{ inputs.target }} --ci
+          python examples/chat-app/scripts/build.py --target ${{ inputs.target }} --ci
           
           # Create build info
           echo "Target: ${{ inputs.target }}" > build_info.txt

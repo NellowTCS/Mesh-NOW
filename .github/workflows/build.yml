@@ -5,12 +5,12 @@ on:
     branches: [ main, develop ]
     paths-ignore:
       - '**.md'
-      - 'docs/**'
+      - 'Docs/**'
   pull_request:
     branches: [ main, develop ]
     paths-ignore:
       - '**.md'
-      - 'docs/**'
+      - 'Docs/**'
   workflow_dispatch:
     inputs:
       target:

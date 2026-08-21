@@ -109,10 +109,10 @@ jobs:
           idf-version: 'v5.5.1'
 
       - name: Build frontend
-        run: python frontend/build_frontend.py --ci
+        run: python examples/chat-app/frontend/build_frontend.py --ci
 
       - name: Embed frontend
-        run: python scripts/embed_frontend.py --ci
+        run: python examples/chat-app/scripts/embed_frontend.py --ci
 
       - name: Build with network debugging
         uses: espressif/esp-idf-ci-action@v1
@@ -120,7 +120,7 @@ jobs:
           esp_idf_version: 'v5.5.1'
           target: esp32
           command: |
-            python scripts/build.py --target esp32 --ci
+            python examples/chat-app/scripts/build.py --target esp32 --ci
             
             # Enable additional logging for testing
             echo "CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y" >> sdkconfig.defaults
@@ -155,10 +155,10 @@ jobs:
           idf-version: ${{ matrix.idf_version }}
 
       - name: Build frontend
-        run: python frontend/build_frontend.py --ci
+        run: python examples/chat-app/frontend/build_frontend.py --ci
 
       - name: Embed frontend
-        run: python scripts/embed_frontend.py --ci
+        run: python examples/chat-app/scripts/embed_frontend.py --ci
 
       - name: Test build compatibility
         uses: espressif/esp-idf-ci-action@v1
@@ -169,7 +169,7 @@ jobs:
             echo "Testing compatibility with ESP-IDF ${{ matrix.idf_version }}"
             
             # Test ESP32 build (most compatible)
-            python scripts/build.py --target esp32 --ci
+            python examples/chat-app/scripts/build.py --target esp32 --ci
 
       - name: Compare binary sizes
         run: |
