@@ -134,7 +134,7 @@ class MeshNowApp {
             <div class="sidebar-section">
                 <div class="sidebar-label">Encryption</div>
                 <div class="group-controls">
-                    <input type="text" class="encryption-input" placeholder="Key (up to 32 bytes)">
+                    <input type="text" class="encryption-input" placeholder="Key">
                     <button class="encryption-set-btn">Set</button>
                 </div>
             </div>

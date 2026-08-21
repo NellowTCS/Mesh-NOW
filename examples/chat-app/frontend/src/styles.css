@@ -122,9 +122,10 @@ body {
 }
 
 .peer-list {
-    flex: 1;
+    flex: 1 1 0;
     overflow-y: auto;
     padding: 6px;
+    min-height: 0;
 }
 
 .peer-item {
@@ -367,33 +368,35 @@ body {
 
 /* Sidebar sections */
 .sidebar-section {
-    padding: 12px;
+    padding: 6px 10px;
     border-top: 1px solid var(--border);
 }
 
 .sidebar-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--text-dim);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .group-controls {
     display: flex;
-    gap: 6px;
+    gap: 4px;
+    align-items: center;
 }
 
 .group-input,
 .encryption-input {
     flex: 1;
-    padding: 6px 8px;
+    padding: 3px 6px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    font-size: 13px;
+    font-size: 12px;
     background: var(--surface);
     color: var(--text);
+    min-width: 0;
 }
 
 .group-input:focus,
@@ -404,7 +407,7 @@ body {
 
 .group-set-btn,
 .encryption-set-btn {
-    padding: 6px 12px;
+    padding: 3px 8px;
     background: var(--accent);
     color: #fff;
     border: none;
