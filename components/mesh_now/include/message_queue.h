@@ -14,6 +14,8 @@ typedef struct {
     char message[256];
     uint8_t sender_mac[6];
     uint32_t timestamp;
+    uint8_t type;
+    uint8_t target_mac[6];
 } message_t;
 
 // Function declarations
