@@ -1,10 +1,10 @@
 # TODO
 
-- [ ] Rename PROJECT_NAME to "mesh-now" - CI scripts, flash scripts, build actions all expect mesh-now.bin
+- [x] Rename PROJECT_NAME to "mesh-now" - CI scripts, flash scripts, build actions all expect mesh-now.bin
 - [ ] Add root ESP-IDF project or fix docs - quickstart, integration.yml, dependabot.yml assume it exists
 - [ ] Fix release.yml paths - does "cd builds" at repo root but output is in examples/chat-app/builds/
-- [ ] Add message_queue_init() inside mesh_now_init() - queue fallback silently drops all messages
-- [ ] Seed message IDs with esp_random() or MAC hash - hardcoded 1 causes cross-node dedup collisions
+- [x] Add message_queue_init() inside mesh_now_init() - queue fallback silently drops all messages
+- [x] Seed message IDs with esp_random() - hardcoded 1 causes cross-node dedup collisions
 - [ ] Re-encrypt DIRECT messages on relay - CHAT/GROUP/PRESENCE/TYPING do, DIRECT does not
 - [ ] XOR encryption leaks key bytes on known plaintext - "typing"/"stopped" reveal key directly
 - [ ] Add thread safety to peers[], pending_messages[], seen_message_ids[] - mutated from multiple tasks with no locks
@@ -14,19 +14,12 @@
 - [ ] Fix group ID 0 semantics - code delivers when group_id == local_group_id, docs say 0 means no filter
 - [ ] Initialize message_t.type and .target_mac in fallback paths - stack garbage leaks to consumers
 - [ ] Fix web server - invalid JSON, serves AP password, ESP_ERROR_CHECK in handler can abort, unchecked returns
-- [ ] Move sdkconfig copy before set-target in build.py - currently applied after, never takes effect
-- [ ] Fix Kconfig symbol - CONFIG_ESP_WIFI_ESP_NOW_MAX_ENCRYPT should be ESPNOW_MAX_ENCRYPT_NUM
-- [ ] Add #include <esp_idf_version.h> - works via transitive includes, fragile
+- [x] Move sdkconfig copy before set-target in build.py - currently applied after, never takes effect
+- [x] Fix Kconfig symbol - CONFIG_ESP_WIFI_ESP_NOW_MAX_ENCRYPT should be ESPNOW_MAX_ENCRYPT_NUM
+- [x] Add #include <esp_idf_version.h> - works via transitive includes, fragile
 - [ ] Add component Kconfig for tunable params - beacon interval, TTL, retries, queue size all require editing source
 - [ ] Add tests - zero unit/integration tests exist, PR template claims they pass
-- [ ] Gitignore generated frontend headers - index_html.h neither committed nor gitignored
+- [x] Gitignore generated frontend headers - index_html.h neither committed nor gitignored
 - [ ] Refactor v4/v5 recv-callback duplication - ~130 lines of near-identical code
 - [ ] Fix struct size in docs - message-format.md says 154, actual is 152
 - [ ] Fix routing mermaid diagram - shows forwarding at hop=0, code drops at hop=0
-
-## quick stuff
-
-- [ ] Rename PROJECT_NAME
-- [ ] Add message_queue_init() call
-- [ ] Seed message IDs with esp_random()
-- [ ] Fix Kconfig symbol

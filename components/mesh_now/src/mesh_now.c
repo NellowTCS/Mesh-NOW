@@ -2,6 +2,8 @@
 #include "message_queue.h"
 #include <esp_log.h>
 #include <esp_now.h>
+#include <esp_idf_version.h>
+#include <esp_random.h>
 #include <esp_mac.h>
 #include <esp_timer.h>
 #include <esp_err.h>
@@ -27,7 +29,7 @@ static mesh_now_receive_callback_t receive_callback = NULL;
 static bool encryption_enabled = false;
 static uint8_t encryption_key[MAX_ENCRYPTION_KEY];
 static size_t encryption_key_len = 0;
-static uint32_t next_message_id = 1;
+static uint32_t next_message_id = 0;
 static uint8_t local_group_id = 0;
 
 typedef struct {
@@ -45,7 +47,7 @@ static int seen_message_count = 0;
 static uint32_t mesh_now_generate_message_id(void)
 {
     if (next_message_id == 0) {
-        next_message_id = 1;
+        next_message_id = esp_random();
     }
     return next_message_id++;
 }
@@ -625,6 +627,9 @@ static void beacon_task(void *pvParameters)
 esp_err_t mesh_now_init(void)
 {
     ESP_LOGI(TAG, "Initializing ESP-NOW mesh networking");
+
+    // Initialize message queue
+    message_queue_init();
 
     // Initialize ESP-NOW
     esp_err_t ret = esp_now_init();

@@ -2,7 +2,7 @@
 
 > Lightweight mesh networking protocol for ESP32 using ESP-NOW.
 
-Mesh-NOW is a C library that turns any ESP32 into a mesh networking node. Device-to-device communication over ESP-NOW with automatic peer discovery, multi-hop routing, message queuing, and optional payload encryption. No router. No internet. No infrastructure.
+Mesh-NOW is a protocol and library that turns any ESP32 into a mesh networking node. Device-to-device communication over ESP-NOW with automatic peer discovery, multi-hop routing, message queuing, and optional payload encryption.
 
 ## Features
 

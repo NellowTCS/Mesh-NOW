@@ -24,6 +24,11 @@ sdkconfig.old
 *.map
 *.csv
 
+# Generated frontend headers
+examples/chat-app/main/*_html.h
+examples/chat-app/main/*_js.h
+examples/chat-app/main/*_css.h
+
 # Python
 __pycache__/
 *.pyc
@@ -33,3 +38,4 @@ __pycache__/
 *.log
 
 _docmd-search/
+dist/

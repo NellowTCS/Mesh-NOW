@@ -53,9 +53,9 @@ def build_target(target, console, script_dir, progress=None):
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
-    task = progress.add_task(f"Building {target}...", total=4) if progress else None
+    task = progress.add_task(f"Building {target}...", total=3) if progress else None
 
-    # Set target
+    # Set target (sdkconfig.defaults.{target} is picked up automatically)
     if progress:
         progress.update(task, description=f"Setting target {target}...")
     else:
@@ -65,19 +65,6 @@ def build_target(target, console, script_dir, progress=None):
         if progress:
             progress.update(task, description=f"Failed to set target {target}")
         return False
-    if progress:
-        progress.advance(task)
-
-    # Copy target-specific config
-    config_file = script_dir.parent / "configs" / f"sdkconfig.{target}"
-    if config_file.exists():
-        if progress:
-            progress.update(task, description=f"Applying config for {target}...")
-        else:
-            console.print(f"Using configuration: {config_file}")
-        success, _ = run_command(f"cp {config_file} sdkconfig.defaults", console=console)
-        if not success:
-            return False
     if progress:
         progress.advance(task)
 
