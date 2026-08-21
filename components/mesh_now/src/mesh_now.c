@@ -288,6 +288,13 @@ static void esp_now_recv_cb(const esp_now_recv_info_t *recv_info, const uint8_t 
              recv_info->src_addr[3], recv_info->src_addr[4], recv_info->src_addr[5],
              mesh_msg.type, mesh_msg.message_id);
 
+    // Filter out messages from self (ESP-NOW echoes broadcasts back to sender)
+    uint8_t my_mac[ESP_NOW_ETH_ALEN];
+    esp_read_mac(my_mac, ESP_MAC_WIFI_STA);
+    if (memcmp(mesh_msg.sender_mac, my_mac, ESP_NOW_ETH_ALEN) == 0) {
+        return;
+    }
+
     if (mesh_msg.type != MSG_TYPE_BEACON && mesh_msg.type != MSG_TYPE_ACK) {
         if (mesh_now_is_message_seen(mesh_msg.message_id)) {
             ESP_LOGW(TAG, "Duplicate message %u ignored", mesh_msg.message_id);
@@ -452,6 +459,13 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data, int le
              mac_addr[0], mac_addr[1], mac_addr[2],
              mac_addr[3], mac_addr[4], mac_addr[5],
              mesh_msg.type, mesh_msg.message_id);
+
+    // Filter out messages from self (ESP-NOW echoes broadcasts back to sender)
+    uint8_t my_mac[ESP_NOW_ETH_ALEN];
+    esp_read_mac(my_mac, ESP_MAC_WIFI_STA);
+    if (memcmp(mesh_msg.sender_mac, my_mac, ESP_NOW_ETH_ALEN) == 0) {
+        return;
+    }
 
     if (mesh_msg.type != MSG_TYPE_BEACON && mesh_msg.type != MSG_TYPE_ACK) {
         if (mesh_now_is_message_seen(mesh_msg.message_id)) {
@@ -847,6 +861,8 @@ static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg, bool queue_fo
     msg->hop_count = DEFAULT_ROUTE_TTL;
     esp_read_mac(msg->sender_mac, ESP_MAC_WIFI_STA);
     msg->timestamp = esp_timer_get_time() / 1000;
+
+    mesh_now_mark_message_seen(msg->message_id);
 
     esp_err_t ret = mesh_now_send_packet(broadcast_mac, msg, queue_for_retransmit);
     if (ret == ESP_OK) {
