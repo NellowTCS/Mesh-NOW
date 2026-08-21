@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Mesh-NOW Frontend Builder
-Python version - Platform agnostic with TUI
 """
 
 import os

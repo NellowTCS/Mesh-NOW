@@ -1,6 +1,3 @@
-// Lightweight devtools overlay - small replacement for eruda
-// Captures console logs and shows a minimal overlay. Small, no deps.
-
 type LogEntry = { level: 'log' | 'warn' | 'error'; msg: string; ts: number };
 
 const logs: LogEntry[] = [];

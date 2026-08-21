@@ -23,3 +23,6 @@
 - [ ] Refactor v4/v5 recv-callback duplication - ~130 lines of near-identical code
 - [ ] Fix struct size in docs - message-format.md says 154, actual is 152
 - [ ] Fix routing mermaid diagram - shows forwarding at hop=0, code drops at hop=0
+- [ ] Node naming - add name field to mesh_peer_t, mesh_now_set_name() API, beacon carries name in payload, wire format change (protocol-breaking)
+- [ ] MQTT transport bridging - extract transport abstraction layer, ESP-NOW adapter, MQTT adapter, broker config, pub/sub topic schema per node. Major architectural refactor.
+- [ ] Web client overhaul

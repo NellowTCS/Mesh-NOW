@@ -9,8 +9,6 @@
 
 #define TAG "WIFI_MGR"
 
-#define TAG "WIFI_MGR"
-
 static void (*add_peer_callback)(const uint8_t *mac) = NULL;
 static void (*remove_peer_callback)(const uint8_t *mac) = NULL;
 

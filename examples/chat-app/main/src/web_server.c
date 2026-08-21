@@ -1,16 +1,18 @@
 #include "web_server.h"
 #include "wifi_manager.h"
 #include "mesh_now.h"
+#include "message_queue.h"
 
 #include <esp_log.h>
 #include <esp_http_server.h>
 #include <esp_wifi.h>
+#include <esp_mac.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <string.h>
 #include <inttypes.h>
+#include <ctype.h>
 
-// Embedded frontend files
 #include "index_html.h"
 #include "bundle_js.h"
 #include "styles_css.h"
@@ -20,255 +22,516 @@
 
 static httpd_handle_t server = NULL;
 static QueueHandle_t message_queue = NULL;
-static message_send_callback_t send_callback = NULL;
+static web_server_callbacks_t callbacks = {0};
 
-// HTTP server handlers
-static esp_err_t index_handler(httpd_req_t *req) {
-    ESP_LOGI(TAG, "Serving index.html");
+// Node name (stored here, synced via callback)
+static char node_name[17] = {0};
+
+// JSON string escaping, writes escaped version of src into dst, returns bytes written
+static int json_escape(char *dst, size_t dst_size, const char *src)
+{
+    int out = 0;
+    for (int i = 0; src[i] && out < (int)dst_size - 2; i++)
+    {
+        char c = src[i];
+        if (c == '"' || c == '\\')
+        {
+            dst[out++] = '\\';
+            dst[out++] = c;
+        }
+        else if (c == '\n')
+        {
+            dst[out++] = '\\';
+            dst[out++] = 'n';
+        }
+        else if (c == '\r')
+        {
+            dst[out++] = '\\';
+            dst[out++] = 'r';
+        }
+        else if (c == '\t')
+        {
+            dst[out++] = '\\';
+            dst[out++] = 't';
+        }
+        else if ((unsigned char)c < 0x20)
+        {
+            out += snprintf(dst + out, dst_size - out, "\\u%04x", (unsigned char)c);
+        }
+        else
+        {
+            dst[out++] = c;
+        }
+    }
+    dst[out] = '\0';
+    return out;
+}
+
+// Basic URL decoder, returns bytes written
+static int url_decode(char *dst, size_t dst_size, const char *src)
+{
+    int out = 0;
+    for (int i = 0; src[i] && out < (int)dst_size - 1; i++)
+    {
+        if (src[i] == '+')
+        {
+            dst[out++] = ' ';
+        }
+        else if (src[i] == '%' && src[i + 1] && src[i + 2])
+        {
+            unsigned int hex;
+            if (sscanf(&src[i + 1], "%2x", &hex) == 1)
+            {
+                dst[out++] = (char)hex;
+            }
+            i += 2;
+        }
+        else
+        {
+            dst[out++] = src[i];
+        }
+    }
+    dst[out] = '\0';
+    return out;
+}
+
+// Parse form-encoded key from POST body, returns pointer to value (or NULL)
+static const char *form_get_value(const char *body, const char *key)
+{
+    size_t key_len = strlen(key);
+    for (const char *p = body; *p; p++)
+    {
+        if (strncmp(p, key, key_len) == 0 && p[key_len] == '=')
+        {
+            return p + key_len + 1;
+        }
+        while (*p && *p != '&')
+            p++;
+    }
+    return NULL;
+}
+
+// Parse MAC string "xx:xx:xx:xx:xx:xx" into 6 bytes, returns true on success
+static bool parse_mac(uint8_t *out, const char *str)
+{
+    unsigned int mac[6];
+    if (sscanf(str, "%02x:%02x:%02x:%02x:%02x:%02x",
+               &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]) != 6)
+    {
+        return false;
+    }
+    for (int i = 0; i < 6; i++)
+        out[i] = (uint8_t)mac[i];
+    return true;
+}
+
+// Read full POST body into buffer
+static int read_body(httpd_req_t *req, char *buf, size_t buf_size)
+{
+    int total = 0;
+    int remaining = req->content_len;
+    while (remaining > 0 && total < (int)buf_size - 1)
+    {
+        int read = httpd_req_recv(req, buf + total, (remaining < (int)(buf_size - 1 - total)) ? remaining : (buf_size - 1 - total));
+        if (read <= 0)
+            break;
+        total += read;
+        remaining -= read;
+    }
+    buf[total] = '\0';
+    return total;
+}
+
+// Static file handlers
+
+static esp_err_t index_handler(httpd_req_t *req)
+{
     httpd_resp_set_type(req, "text/html");
     httpd_resp_send(req, INDEX_HTML, INDEX_HTML_size);
     return ESP_OK;
 }
 
-static esp_err_t js_handler(httpd_req_t *req) {
+static esp_err_t js_handler(httpd_req_t *req)
+{
     httpd_resp_set_type(req, "application/javascript");
     httpd_resp_send(req, BUNDLE_JS, BUNDLE_JS_size);
     return ESP_OK;
 }
 
-static esp_err_t css_handler(httpd_req_t *req) {
+static esp_err_t css_handler(httpd_req_t *req)
+{
     httpd_resp_set_type(req, "text/css");
     httpd_resp_send(req, STYLES_CSS, STYLES_CSS_size);
     return ESP_OK;
 }
 
-static esp_err_t send_handler(httpd_req_t *req) {
-    ESP_LOGI(TAG, "Handling /send request");
-    
-    char content[512];
-    int content_len = httpd_req_recv(req, content, sizeof(content) - 1);
+// handlers
 
-    if (content_len > 0 && send_callback) {
-        content[content_len] = '\0';
-        ESP_LOGI(TAG, "Received send request with content: %s", content);
+static esp_err_t send_handler(httpd_req_t *req)
+{
+    char body[512];
+    read_body(req, body, sizeof(body));
 
-        // Parse message from POST data
-        char *msg_start = strstr(content, "message=");
-        if (msg_start) {
-            msg_start += 8; // Skip "message="
-            char *msg_end = strchr(msg_start, '&');
-            if (msg_end) *msg_end = '\0';
-
-            // URL decode (basic)
-            char decoded[256];
-            int len = 0;
-            for (int i = 0; msg_start[i] && len < sizeof(decoded) - 1; i++) {
-                if (msg_start[i] == '+') {
-                    decoded[len++] = ' ';
-                } else if (msg_start[i] == '%' && msg_start[i+1] && msg_start[i+2]) {
-                    int hex;
-                    sscanf(&msg_start[i+1], "%2x", &hex);
-                    decoded[len++] = (char)hex;
-                    i += 2;
-                } else {
-                    decoded[len++] = msg_start[i];
-                }
-            }
-            decoded[len] = '\0';
-
-            ESP_LOGI(TAG, "Decoded message: %s", decoded);
-            // Send message via callback
-            send_callback(decoded);
-        }
+    const char *raw = form_get_value(body, "message");
+    if (!raw || !callbacks.send_broadcast)
+    {
+        httpd_resp_send(req, "{\"ok\":false}", 12);
+        return ESP_OK;
     }
 
-    httpd_resp_send(req, "OK", 2);
+    char decoded[256];
+    url_decode(decoded, sizeof(decoded), raw);
+    callbacks.send_broadcast(decoded);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, "{\"ok\":true}", 11);
     return ESP_OK;
 }
 
-static esp_err_t messages_handler(httpd_req_t *req) {
-    ESP_LOGI(TAG, "Handling /messages request");
-    
-    char json_response[2048];
-    strcpy(json_response, "{\"messages\":[");
+static esp_err_t send_direct_handler(httpd_req_t *req)
+{
+    char body[512];
+    read_body(req, body, sizeof(body));
 
-    // Message structure (should match mesh_now.h)
-    typedef struct {
-        char message[256];
-        uint8_t sender_mac[6];
-        uint32_t timestamp;
-    } mesh_message_t;
+    const char *raw_target = form_get_value(body, "target");
+    const char *raw_msg = form_get_value(body, "message");
+    if (!raw_target || !raw_msg || !callbacks.send_direct)
+    {
+        httpd_resp_send(req, "{\"ok\":false}", 12);
+        return ESP_OK;
+    }
 
-    mesh_message_t msg;
+    char target_decoded[32];
+    url_decode(target_decoded, sizeof(target_decoded), raw_target);
+    uint8_t target_mac[6];
+    if (!parse_mac(target_mac, target_decoded))
+    {
+        httpd_resp_send(req, "{\"ok\":false,\"error\":\"bad mac\"}", 28);
+        return ESP_OK;
+    }
+
+    char msg_decoded[256];
+    url_decode(msg_decoded, sizeof(msg_decoded), raw_msg);
+    callbacks.send_direct(target_mac, msg_decoded);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, "{\"ok\":true}", 11);
+    return ESP_OK;
+}
+
+static esp_err_t send_group_handler(httpd_req_t *req)
+{
+    char body[512];
+    read_body(req, body, sizeof(body));
+
+    const char *raw_group = form_get_value(body, "group_id");
+    const char *raw_msg = form_get_value(body, "message");
+    if (!raw_group || !raw_msg || !callbacks.send_group)
+    {
+        httpd_resp_send(req, "{\"ok\":false}", 12);
+        return ESP_OK;
+    }
+
+    uint8_t group_id = (uint8_t)atoi(raw_group);
+    char msg_decoded[256];
+    url_decode(msg_decoded, sizeof(msg_decoded), raw_msg);
+    callbacks.send_group(group_id, msg_decoded);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, "{\"ok\":true}", 11);
+    return ESP_OK;
+}
+
+static esp_err_t typing_handler(httpd_req_t *req)
+{
+    char body[512];
+    read_body(req, body, sizeof(body));
+
+    const char *raw_target = form_get_value(body, "target");
+    const char *raw_typing = form_get_value(body, "typing");
+    if (!raw_target || !raw_typing || !callbacks.send_typing)
+    {
+        httpd_resp_send(req, "{\"ok\":false}", 12);
+        return ESP_OK;
+    }
+
+    char target_decoded[32];
+    url_decode(target_decoded, sizeof(target_decoded), raw_target);
+    uint8_t target_mac[6];
+    if (!parse_mac(target_mac, target_decoded))
+    {
+        httpd_resp_send(req, "{\"ok\":false,\"error\":\"bad mac\"}", 28);
+        return ESP_OK;
+    }
+
+    bool typing = (strcmp(raw_typing, "true") == 0);
+    callbacks.send_typing(target_mac, typing);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, "{\"ok\":true}", 11);
+    return ESP_OK;
+}
+
+static esp_err_t name_handler(httpd_req_t *req)
+{
+    char body[512];
+    read_body(req, body, sizeof(body));
+
+    const char *raw_name = form_get_value(body, "name");
+    if (!raw_name)
+    {
+        httpd_resp_send(req, "{\"ok\":false}", 12);
+        return ESP_OK;
+    }
+
+    char decoded[17];
+    url_decode(decoded, sizeof(decoded), raw_name);
+    strncpy(node_name, decoded, sizeof(node_name) - 1);
+    node_name[sizeof(node_name) - 1] = '\0';
+
+    if (callbacks.set_name)
+    {
+        callbacks.set_name(node_name);
+    }
+
+    httpd_resp_set_type(req, "application/json");
+    char resp[64];
+    snprintf(resp, sizeof(resp), "{\"ok\":true,\"name\":\"%s\"}", node_name);
+    httpd_resp_send(req, resp, strlen(resp));
+    return ESP_OK;
+}
+
+static esp_err_t self_handler(httpd_req_t *req)
+{
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+
+    char json[128];
+    snprintf(json, sizeof(json),
+             "{\"mac\":\"%02x:%02x:%02x:%02x:%02x:%02x\",\"name\":\"%s\"}",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
+             node_name[0] ? node_name : "unknown");
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, json, strlen(json));
+    return ESP_OK;
+}
+
+static esp_err_t messages_handler(httpd_req_t *req)
+{
+    char json_response[4096];
+    int pos = 0;
+    pos += snprintf(json_response + pos, sizeof(json_response) - pos, "{\"messages\":[");
+
+    message_t msg;
     int msg_count = 0;
     bool first = true;
 
-    while (message_queue && xQueueReceive(message_queue, &msg, 0) == pdTRUE && msg_count < 10) {
-        ESP_LOGI(TAG, "Found message in queue: %s", msg.message);
-        if (!first) {
-            strcat(json_response, ",");
+    while (message_queue && xQueueReceive(message_queue, &msg, 0) == pdTRUE && msg_count < 20)
+    {
+        if (!first)
+        {
+            json_response[pos++] = ',';
         }
 
-        char temp[512];
-        snprintf(temp, sizeof(temp),
-                "{\"sender\":\"%02x:%02x:%02x:%02x:%02x:%02x\",\"content\":\"%s\",\"timestamp\":%" PRIu32 "}",
-                msg.sender_mac[0], msg.sender_mac[1], msg.sender_mac[2],
-                msg.sender_mac[3], msg.sender_mac[4], msg.sender_mac[5],
-                msg.message, msg.timestamp);
+        char escaped[300];
+        json_escape(escaped, sizeof(escaped), msg.message);
 
-        strcat(json_response, temp);
+        pos += snprintf(json_response + pos, sizeof(json_response) - pos,
+                        "{\"sender\":\"%02x:%02x:%02x:%02x:%02x:%02x\""
+                        ",\"content\":\"%s\""
+                        ",\"timestamp\":%" PRIu32
+                        ",\"type\":%u"
+                        ",\"group_id\":%u"
+                        ",\"target\":\"%02x:%02x:%02x:%02x:%02x:%02x\"}",
+                        msg.sender_mac[0], msg.sender_mac[1], msg.sender_mac[2],
+                        msg.sender_mac[3], msg.sender_mac[4], msg.sender_mac[5],
+                        escaped, msg.timestamp, msg.type, msg.group_id,
+                        msg.target_mac[0], msg.target_mac[1], msg.target_mac[2],
+                        msg.target_mac[3], msg.target_mac[4], msg.target_mac[5]);
         first = false;
         msg_count++;
     }
 
-    strcat(json_response, "]}");
-    ESP_LOGI(TAG, "Returning %d messages", msg_count);
-
+    pos += snprintf(json_response + pos, sizeof(json_response) - pos, "]}");
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_send(req, json_response, strlen(json_response));
+    httpd_resp_send(req, json_response, pos);
     return ESP_OK;
 }
 
-static esp_err_t peers_handler(httpd_req_t *req) {
-    ESP_LOGI(TAG, "Handling /peers request");
-    
-    int peer_count = mesh_now_get_peer_count();
-    mesh_peer_t* peers = mesh_now_get_peers();
-    
-    char json_response[1024];
-    strcpy(json_response, "{\"peers\":[");
-    
-    for (int i = 0; i < peer_count && i < MAX_PEERS; i++) {
-        if (peers[i].active) {
-            char peer_mac[18];
-            snprintf(peer_mac, sizeof(peer_mac), "%02x:%02x:%02x:%02x:%02x:%02x",
-                     peers[i].peer_addr[0], peers[i].peer_addr[1], peers[i].peer_addr[2],
-                     peers[i].peer_addr[3], peers[i].peer_addr[4], peers[i].peer_addr[5]);
-            
-            if (i > 0) strcat(json_response, ",");
-            char peer_entry[32];
-            snprintf(peer_entry, sizeof(peer_entry), "\"%s\"", peer_mac);
-            strcat(json_response, peer_entry);
-        }
+static esp_err_t peers_handler(httpd_req_t *req)
+{
+    int count = mesh_now_get_peer_count();
+    mesh_peer_t *peers = mesh_now_get_peers();
+
+    char json[2048];
+    int pos = 0;
+    pos += snprintf(json + pos, sizeof(json) - pos, "{\"peers\":[");
+
+    bool first = true;
+    for (int i = 0; i < count && i < MAX_PEERS; i++)
+    {
+        if (!peers[i].active)
+            continue;
+        if (!first)
+            json[pos++] = ',';
+        pos += snprintf(json + pos, sizeof(json) - pos,
+                        "\"%02x:%02x:%02x:%02x:%02x:%02x\"",
+                        peers[i].peer_addr[0], peers[i].peer_addr[1], peers[i].peer_addr[2],
+                        peers[i].peer_addr[3], peers[i].peer_addr[4], peers[i].peer_addr[5]);
+        first = false;
     }
-    
-    strcat(json_response, "]}");
-    ESP_LOGI(TAG, "Returning %d peers", peer_count);
 
+    pos += snprintf(json + pos, sizeof(json) - pos, "]}");
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_send(req, json_response, strlen(json_response));
+    httpd_resp_send(req, json, pos);
     return ESP_OK;
 }
 
-static esp_err_t wifi_info_handler(httpd_req_t *req) {
-    ESP_LOGI(TAG, "Handling /wifi-info request");
-    
-    // Get current WiFi config
+static esp_err_t wifi_info_handler(httpd_req_t *req)
+{
     wifi_config_t wifi_config;
-    ESP_ERROR_CHECK(esp_wifi_get_config(WIFI_IF_AP, &wifi_config));
-    
-    char json_response[128];
-    snprintf(json_response, sizeof(json_response), 
-             "{\"ssid\":\"%s\",\"password\":\"%s\",\"channel\":%d}",
-             (char*)wifi_config.ap.ssid, WIFI_PASS, wifi_config.ap.channel);
+    esp_err_t err = esp_wifi_get_config(WIFI_IF_AP, &wifi_config);
+    if (err != ESP_OK)
+    {
+        httpd_resp_send(req, "{\"error\":\"failed\"}", 18);
+        return ESP_OK;
+    }
+
+    char json[256];
+    snprintf(json, sizeof(json),
+             "{\"ssid\":\"%s\",\"channel\":%d}",
+             (char *)wifi_config.ap.ssid, wifi_config.ap.channel);
 
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_send(req, json_response, strlen(json_response));
+    httpd_resp_send(req, json, strlen(json));
     return ESP_OK;
 }
 
-esp_err_t web_server_init(QueueHandle_t queue) {
+static esp_err_t presence_handler(httpd_req_t *req)
+{
+    char body[512];
+    read_body(req, body, sizeof(body));
+
+    const char *raw_status = form_get_value(body, "status");
+    if (!raw_status || !callbacks.send_presence) {
+        httpd_resp_send(req, "{\"ok\":false}", 12);
+        return ESP_OK;
+    }
+
+    char decoded[128];
+    url_decode(decoded, sizeof(decoded), raw_status);
+    callbacks.send_presence(decoded);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, "{\"ok\":true}", 11);
+    return ESP_OK;
+}
+
+static esp_err_t group_handler(httpd_req_t *req)
+{
+    char body[512];
+    read_body(req, body, sizeof(body));
+
+    const char *raw_group = form_get_value(body, "group_id");
+    if (!raw_group || !callbacks.set_group) {
+        httpd_resp_send(req, "{\"ok\":false}", 12);
+        return ESP_OK;
+    }
+
+    uint8_t group_id = (uint8_t)atoi(raw_group);
+    callbacks.set_group(group_id);
+
+    httpd_resp_set_type(req, "application/json");
+    char resp[48];
+    snprintf(resp, sizeof(resp), "{\"ok\":true,\"group_id\":%u}", group_id);
+    httpd_resp_send(req, resp, strlen(resp));
+    return ESP_OK;
+}
+
+static esp_err_t encryption_handler(httpd_req_t *req)
+{
+    char body[512];
+    read_body(req, body, sizeof(body));
+
+    const char *raw_key = form_get_value(body, "key");
+    if (!raw_key || !callbacks.set_encryption) {
+        httpd_resp_send(req, "{\"ok\":false}", 12);
+        return ESP_OK;
+    }
+
+    char decoded[64];
+    url_decode(decoded, sizeof(decoded), raw_key);
+    size_t key_len = strlen(decoded);
+    if (key_len > 32) key_len = 32;
+    callbacks.set_encryption((const uint8_t *)decoded, key_len);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, "{\"ok\":true}", 11);
+    return ESP_OK;
+}
+
+static esp_err_t favicon_handler(httpd_req_t *req)
+{
+    httpd_resp_send(req, NULL, 0);
+    return ESP_OK;
+}
+
+// Init / deinit
+
+esp_err_t web_server_init(QueueHandle_t queue, const web_server_callbacks_t *cbs)
+{
     message_queue = queue;
+    if (cbs)
+        callbacks = *cbs;
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = HTTP_PORT;
+    config.max_uri_handlers = 20;
     config.stack_size = 8192;
 
-    if (httpd_start(&server, &config) == ESP_OK) {
-        // Main page
-        httpd_uri_t index_uri = {
-            .uri = "/",
-            .method = HTTP_GET,
-            .handler = index_handler,
-            .user_ctx = NULL
-        };
-        httpd_register_uri_handler(server, &index_uri);
-
-        // JavaScript bundle
-        httpd_uri_t js_uri = {
-            .uri = "/bundle.js",
-            .method = HTTP_GET,
-            .handler = js_handler,
-            .user_ctx = NULL
-        };
-        httpd_register_uri_handler(server, &js_uri);
-
-        // CSS styles
-        httpd_uri_t css_uri = {
-            .uri = "/styles.css",
-            .method = HTTP_GET,
-            .handler = css_handler,
-            .user_ctx = NULL
-        };
-        httpd_register_uri_handler(server, &css_uri);
-
-        // API endpoints
-        httpd_uri_t send_uri = {
-            .uri = "/send",
-            .method = HTTP_POST,
-            .handler = send_handler,
-            .user_ctx = NULL
-        };
-        httpd_register_uri_handler(server, &send_uri);
-
-        httpd_uri_t messages_uri = {
-            .uri = "/messages",
-            .method = HTTP_GET,
-            .handler = messages_handler,
-            .user_ctx = NULL
-        };
-        httpd_register_uri_handler(server, &messages_uri);
-
-        httpd_uri_t peers_uri = {
-            .uri = "/peers",
-            .method = HTTP_GET,
-            .handler = peers_handler,
-            .user_ctx = NULL
-        };
-        httpd_register_uri_handler(server, &peers_uri);
-
-        httpd_uri_t wifi_info_uri = {
-            .uri = "/wifi-info",
-            .method = HTTP_GET,
-            .handler = wifi_info_handler,
-            .user_ctx = NULL
-        };
-        httpd_register_uri_handler(server, &wifi_info_uri);
-
-        ESP_LOGI(TAG, "HTTP server started successfully");
-        return ESP_OK;
-    } else {
+    if (httpd_start(&server, &config) != ESP_OK)
+    {
         ESP_LOGE(TAG, "Failed to start HTTP server");
         return ESP_FAIL;
     }
-}
 
-esp_err_t web_server_deinit(void) {
-    if (server) {
-        httpd_stop(server);
-        server = NULL;
+    const httpd_uri_t uris[] = {
+        {.uri = "/", .method = HTTP_GET, .handler = index_handler},
+        {.uri = "/bundle.js", .method = HTTP_GET, .handler = js_handler},
+        {.uri = "/styles.css", .method = HTTP_GET, .handler = css_handler},
+        {.uri = "/send", .method = HTTP_POST, .handler = send_handler},
+        {.uri = "/send/direct", .method = HTTP_POST, .handler = send_direct_handler},
+        {.uri = "/send/group", .method = HTTP_POST, .handler = send_group_handler},
+        {.uri = "/presence", .method = HTTP_POST, .handler = presence_handler},
+        {.uri = "/typing", .method = HTTP_POST, .handler = typing_handler},
+        {.uri = "/name", .method = HTTP_POST, .handler = name_handler},
+        {.uri = "/group", .method = HTTP_POST, .handler = group_handler},
+        {.uri = "/encryption", .method = HTTP_POST, .handler = encryption_handler},
+        {.uri = "/self", .method = HTTP_GET, .handler = self_handler},
+        {.uri = "/messages", .method = HTTP_GET, .handler = messages_handler},
+        {.uri = "/peers", .method = HTTP_GET, .handler = peers_handler},
+        {.uri = "/wifi-info", .method = HTTP_GET, .handler = wifi_info_handler},
+        {.uri = "/favicon.ico", .method = HTTP_GET, .handler = favicon_handler},
+    };
+
+    for (int i = 0; i < (int)(sizeof(uris) / sizeof(uris[0])); i++)
+    {
+        httpd_uri_t entry = uris[i];
+        entry.user_ctx = NULL;
+        httpd_register_uri_handler(server, &entry);
     }
+
+    ESP_LOGI(TAG, "HTTP server started on port %d", HTTP_PORT);
     return ESP_OK;
 }
 
-void web_server_set_send_callback(message_send_callback_t callback) {
-    send_callback = callback;
-}
-
-
-esp_err_t web_server_send_message(const char *message) {
-    // This should be set by the main application
-    // For now, just log the message
-    ESP_LOGI(TAG, "Web server received message: %s", message);
+esp_err_t web_server_deinit(void)
+{
+    if (server)
+    {
+        httpd_stop(server);
+        server = NULL;
+    }
     return ESP_OK;
 }
