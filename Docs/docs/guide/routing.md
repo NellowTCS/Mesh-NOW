@@ -42,8 +42,7 @@ flowchart LR
     S[Sender] -->|hop=3| R1[Relay 1]
     R1 -->|hop=2| R2[Relay 2]
     R2 -->|hop=1| R3[Relay 3]
-    R3 -->|hop=0| D[Destination]
-    D -.->|TTL expired| X[Drop]
+    R3 -.->|hop=0, drop| X[Drop]
 ```
 
 ## Duplicate Detection

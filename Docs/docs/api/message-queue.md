@@ -86,6 +86,9 @@ typedef struct {
     char message[256];
     uint8_t sender_mac[6];
     uint32_t timestamp;
+    uint8_t type;
+    uint8_t group_id;
+    uint8_t target_mac[6];
 } message_t;
 ```
 
@@ -124,7 +127,7 @@ void app_main(void)
 | Parameter | Value |
 | :-------- | :---- |
 | Queue capacity | 50 messages |
-| Message size | `sizeof(message_t)` (~266 bytes) |
+| Message size | `sizeof(message_t)` (~272 bytes) |
 | Total queue RAM | ~13 KB |
 
 ## Callback vs. Queue

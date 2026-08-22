@@ -1,0 +1,192 @@
+#include "mesh_now_internal.h"
+#include "message_queue.h"
+#include <esp_log.h>
+#include <esp_now.h>
+#include <esp_random.h>
+#include <esp_mac.h>
+#include <string.h>
+
+#define TAG "MESH_NOW"
+
+mesh_peer_t peers[MAX_PEERS];
+int peer_count = 0;
+uint8_t broadcast_mac[ESP_NOW_ETH_ALEN] = BROADCAST_MAC;
+TaskHandle_t beacon_task_handle = NULL;
+TaskHandle_t retransmit_task_handle = NULL;
+mesh_now_receive_callback_t receive_callback = NULL;
+bool encryption_enabled = false;
+uint8_t encryption_key[MAX_ENCRYPTION_KEY];
+size_t encryption_key_len = 0;
+uint32_t next_message_id = 0;
+uint8_t local_group_id = 0;
+char local_node_name[MESH_NOW_NODE_NAME_MAX + 1] = {0};
+pending_message_t pending_messages[MAX_PENDING_MESSAGES];
+uint32_t seen_message_ids[MAX_SEEN_MESSAGE_IDS];
+int seen_message_count = 0;
+
+uint32_t mesh_now_generate_message_id(void)
+{
+    if (next_message_id == 0) {
+        next_message_id = esp_random();
+    }
+    return next_message_id++;
+}
+
+bool mesh_now_is_message_seen(uint32_t message_id)
+{
+    for (int i = 0; i < seen_message_count; ++i) {
+        if (seen_message_ids[i] == message_id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void mesh_now_mark_message_seen(uint32_t message_id)
+{
+    if (seen_message_count < MAX_SEEN_MESSAGE_IDS) {
+        seen_message_ids[seen_message_count++] = message_id;
+        return;
+    }
+
+    memmove(&seen_message_ids[0], &seen_message_ids[1],
+            (MAX_SEEN_MESSAGE_IDS - 1) * sizeof(uint32_t));
+    seen_message_ids[MAX_SEEN_MESSAGE_IDS - 1] = message_id;
+}
+
+int mesh_now_allocate_pending(void)
+{
+    for (int i = 0; i < MAX_PENDING_MESSAGES; ++i) {
+        if (!pending_messages[i].active) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int mesh_now_find_pending(uint32_t message_id)
+{
+    for (int i = 0; i < MAX_PENDING_MESSAGES; ++i) {
+        if (pending_messages[i].active &&
+            pending_messages[i].message_id == message_id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void mesh_now_release_pending(int index)
+{
+    if (index >= 0 && index < MAX_PENDING_MESSAGES) {
+        pending_messages[index].active = false;
+    }
+}
+
+void mesh_now_set_receive_callback(mesh_now_receive_callback_t callback)
+{
+    receive_callback = callback;
+}
+
+esp_err_t mesh_now_set_group(uint8_t group_id)
+{
+    local_group_id = group_id;
+    return ESP_OK;
+}
+
+esp_err_t mesh_now_set_encryption_key(const uint8_t *key, size_t len)
+{
+    if (key == NULL || len == 0 || len > MAX_ENCRYPTION_KEY) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    memcpy(encryption_key, key, len);
+    encryption_key_len = len;
+    encryption_enabled = true;
+    return ESP_OK;
+}
+
+esp_err_t mesh_now_set_name(const char *name)
+{
+    if (name == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    strncpy(local_node_name, name, MESH_NOW_NODE_NAME_MAX);
+    local_node_name[MESH_NOW_NODE_NAME_MAX] = '\0';
+    return ESP_OK;
+}
+
+int mesh_now_get_peer_count(void)
+{
+    return peer_count;
+}
+
+mesh_peer_t *mesh_now_get_peers(void)
+{
+    return peers;
+}
+
+esp_err_t mesh_now_init(void)
+{
+    ESP_LOGI(TAG, "Initializing ESP-NOW mesh networking");
+
+    message_queue_init();
+
+    esp_err_t ret = esp_now_init();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize ESP-NOW: %s", esp_err_to_name(ret));
+        return ret;
+    }
+
+    mesh_now_register_callbacks();
+
+    esp_now_peer_info_t broadcast_peer;
+    memset(&broadcast_peer, 0, sizeof(esp_now_peer_info_t));
+    memcpy(broadcast_peer.peer_addr, broadcast_mac, ESP_NOW_ETH_ALEN);
+    broadcast_peer.channel = 1;
+    broadcast_peer.encrypt = false;
+
+    ret = esp_now_add_peer(&broadcast_peer);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add broadcast peer: %s",
+                 esp_err_to_name(ret));
+        return ret;
+    }
+
+    ret = mesh_now_start_tasks();
+    if (ret != ESP_OK) {
+        return ret;
+    }
+
+    ESP_LOGI(TAG, "ESP-NOW mesh networking initialized successfully");
+    return ESP_OK;
+}
+
+esp_err_t mesh_now_deinit(void)
+{
+    ESP_LOGI(TAG, "Deinitializing ESP-NOW mesh networking");
+
+    if (beacon_task_handle != NULL) {
+        vTaskDelete(beacon_task_handle);
+        beacon_task_handle = NULL;
+    }
+
+    if (retransmit_task_handle != NULL) {
+        vTaskDelete(retransmit_task_handle);
+        retransmit_task_handle = NULL;
+    }
+
+    esp_now_del_peer(broadcast_mac);
+    esp_now_unregister_send_cb();
+    esp_now_unregister_recv_cb();
+
+    esp_err_t ret = esp_now_deinit();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to deinitialize ESP-NOW: %s",
+                 esp_err_to_name(ret));
+        return ret;
+    }
+
+    peer_count = 0;
+    ESP_LOGI(TAG, "ESP-NOW mesh networking deinitialized successfully");
+    return ESP_OK;
+}

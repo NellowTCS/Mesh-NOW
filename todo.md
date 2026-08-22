@@ -1,32 +1,13 @@
 # TODO
 
-- [x] Rename PROJECT_NAME to "mesh-now" - CI scripts, flash scripts, build actions all expect mesh-now.bin
 - [ ] Add root ESP-IDF project or fix docs - quickstart, integration.yml, dependabot.yml assume it exists
 - [ ] Fix release.yml paths - does "cd builds" at repo root but output is in examples/chat-app/builds/
-- [x] Add message_queue_init() inside mesh_now_init() - queue fallback silently drops all messages
-- [x] Seed message IDs with esp_random() - hardcoded 1 causes cross-node dedup collisions
-- [x] Re-encrypt DIRECT messages on relay - fixed by new wire format, all messages go through same encode+encrypt path
-- [x] XOR encryption leaks key bytes - replaced with AES-128-GCM via mbedtls
 - [ ] Add thread safety to peers[], pending_messages[], seen_message_ids[] - mutated from multiple tasks with no locks
 - [ ] Actually check MSG_FLAG_REQUIRES_ACK - set but retransmit_task ignores it
 - [ ] Fix timestamps - ms-since-boot is meaningless across nodes, web UI displays them
-- [x] Expire stale peers - beacon task sweeps every ~30s, marks inactive after PEER_EXPIRY_US
-- [x] Fix group ID 0 semantics - code delivers only when local_group_id != 0 && group_id == local_group_id
-- [x] Initialize message_t.type and .target_mac in fallback paths - mesh_now_handle_message memsets to 0
-- [x] Fix web server - invalid JSON, AP password, ESP_ERROR_CHECK, unchecked returns - all replaced with cJSON
-- [x] Move sdkconfig copy before set-target in build.py - currently applied after, never takes effect
-- [x] Fix Kconfig symbol - CONFIG_ESP_WIFI_ESP_NOW_MAX_ENCRYPT should be ESPNOW_MAX_ENCRYPT_NUM
-- [x] Add #include <esp_idf_version.h> - works via transitive includes, fragile
 - [ ] Add component Kconfig for tunable params - beacon interval, TTL, retries, queue size all require editing source
 - [ ] Add tests - zero unit/integration tests exist, PR template claims they pass
-- [x] Gitignore generated frontend headers - index_html.h neither committed nor gitignored
-- [x] Refactor v4/v5 recv-callback duplication - single esp_now_recv_cb with #if IDF_VERSION dispatch
-- [x] Fix struct size in docs - docs now describe variable-length wire format, not fixed struct
-- [ ] Fix routing mermaid diagram - shows forwarding at hop=0, code drops at hop=0
-- [x] Node naming - mesh_peer_t.node_name, mesh_now_set_name() API, beacons carry name via MSG_FLAG_HAS_NODE_NAME
+- [x] Fix routing mermaid diagram - was showing hop=0 reaching destination, code drops at hop=0
+- [x] Fix message-queue.md struct - showed 3 fields, actual has 6 (added type, group_id, target_mac)
 - [ ] MQTT transport bridging - extract transport abstraction layer, ESP-NOW adapter, MQTT adapter, broker config, pub/sub topic schema per node. Major architectural refactor.
-- [x] Web client overhaul - chat bubbles, peer sidebar, DM, typing, name editing, groups, presence, encryption settings
-- [x] Protocol upgrade - mesh_now.ksy SSOT, MessagePack wire format, AES-128-GCM encryption, magic bytes
-- [x] mpack component - ludocode/mpack as git submodule, wrapper outside submodule directory
-- [x] cJSON in web server - all JSON responses use cJSON, proper escaping
-- [x] Node naming - set_name API, beacon carries name, peers store name
+- [x] Split mesh_now.c monolith - 1114 lines split into core/, codec/, crypto/, net/, queue/ subdirectories

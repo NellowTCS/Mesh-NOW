@@ -1,4 +1,10 @@
-idf_component_register(SRCS "src/mesh_now.c"
-                       "src/message_queue.c"
+idf_component_register(SRCS "src/core/mesh_now.c"
+                       "src/crypto/mesh_now_crypto.c"
+                       "src/codec/mesh_now_codec.c"
+                       "src/net/mesh_now_peer.c"
+                       "src/net/mesh_now_recv.c"
+                       "src/net/mesh_now_send.c"
+                       "src/queue/message_queue.c"
                        INCLUDE_DIRS "include"
+                       PRIV_INCLUDE_DIRS "src/core"
                        REQUIRES esp_wifi esp_timer mpack mbedtls)
