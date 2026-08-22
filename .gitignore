@@ -29,6 +29,9 @@ examples/chat-app/main/*_html.h
 examples/chat-app/main/*_js.h
 examples/chat-app/main/*_css.h
 
+# Generated protocol parser
+examples/chat-app/frontend/src/generated/
+
 # Python
 __pycache__/
 *.pyc

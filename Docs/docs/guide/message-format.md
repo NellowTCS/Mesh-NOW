@@ -3,14 +3,22 @@ title: "Message Format"
 description: "The mesh_message_t structure, message types, flags, and fields."
 ---
 
-Every Mesh-NOW message is a fixed-size `mesh_message_t` struct sent as a raw ESP-NOW frame.
+Every Mesh-NOW message is serialized to MessagePack and sent as a binary ESP-NOW frame.
 
-## Structure
+## Wire Format
+
+Messages use a binary envelope with a 27-byte header followed by a MessagePack-encoded payload. See [Wire Format](../protocol/wire-format.md) for the full binary layout.
+
+The canonical protocol specification is [`mesh_now.ksy`](/mesh_now.ksy) at the repository root.
+
+## Internal Structure
+
+The library uses this structure internally:
 
 ```c
 typedef struct {
     uint8_t type;              // Message type (0-6)
-    uint8_t flags;             // Bitfield: REQUIRES_ACK, ENCRYPTED
+    uint8_t flags;             // Bitfield: REQUIRES_ACK, ENCRYPTED, HAS_NODE_NAME
     uint8_t group_id;          // Group identifier (0-255)
     uint8_t hop_count;         // Remaining hops before drop
     uint32_t message_id;       // Unique message identifier
@@ -18,24 +26,28 @@ typedef struct {
     uint8_t target_mac[6];     // Target MAC (direct messages)
     uint32_t timestamp;        // Milliseconds since init
     char message[128];         // Payload (null-terminated)
+    char node_name[17];        // Node name (beacons only)
 } mesh_message_t;
 ```
 
-**Total frame size:** 154 bytes (fits within ESP-NOW's 250-byte limit).
+::: callout warning title:"Internal Only"
+`mesh_message_t` is an internal representation. On the wire, messages are serialized to MessagePack with variable-length fields, not sent as raw structs.
+::: /callout
 
 ## Field Reference
 
 | Field | Size | Description |
 | :---- | :--- | :---------- |
 | `type` | 1 byte | Message type identifier (see below) |
-| `flags` | 1 byte | Bitfield: bit 0 = requires ACK, bit 1 = encrypted |
+| `flags` | 1 byte | Bitfield: ACK required, encrypted, has node name |
 | `group_id` | 1 byte | Group membership filter (0 = no group) |
 | `hop_count` | 1 byte | Remaining relay count; decremented at each hop |
-| `message_id` | 4 bytes | Monotonically increasing unique ID |
+| `message_id` | 4 bytes | Monotonically increasing unique ID (random seed) |
 | `sender_mac` | 6 bytes | MAC address of the originating node |
-| `target_mac` | 6 bytes | MAC address of the intended recipient (broadcast = `FF:FF:FF:FF:FF:FF`) |
+| `target_mac` | 6 bytes | MAC address of the intended recipient |
 | `timestamp` | 4 bytes | Milliseconds since `mesh_now_init()` was called |
-| `message` | 128 bytes | Null-terminated payload string |
+| `message` | variable | Payload string (null-terminated) |
+| `node_name` | variable | Node name (beacons with HAS_NODE_NAME flag) |
 
 ## Message Types
 
@@ -54,7 +66,8 @@ typedef struct {
 | Flag | Value | Meaning |
 | :--- | :---- | :------ |
 | `MSG_FLAG_REQUIRES_ACK` | `0x01` | Sender expects an ACK response |
-| `MSG_FLAG_ENCRYPTED` | `0x02` | Payload is XOR-encrypted |
+| `MSG_FLAG_ENCRYPTED` | `0x02` | Payload is AES-128-GCM encrypted |
+| `MSG_FLAG_HAS_NODE_NAME` | `0x04` | Beacon includes a node name string |
 
 ## Sending Functions
 
@@ -78,8 +91,18 @@ esp_err_t mesh_now_send_presence(const char *status);
 esp_err_t mesh_now_send_typing(const uint8_t *target_mac, bool typing);
 ```
 
+## Node Naming
+
+Nodes can set a human-readable name that is broadcast in beacons:
+
+```c
+mesh_now_set_name("Sensor-01");
+```
+
+When a beacon with `MSG_FLAG_HAS_NODE_NAME` is received, the name is stored in the peer table and accessible via `mesh_peer_t.node_name`.
+
 ::: callout info title:"Message ID Assignment"
-The library assigns `message_id` automatically via an internal counter. You do not set it manually. IDs wrap to 1 after `UINT32_MAX`.
+The library assigns `message_id` automatically via an internal counter seeded from `esp_random()`. You do not set it manually. IDs wrap to 1 after `UINT32_MAX`.
 ::: /callout
 
 ## Next Steps

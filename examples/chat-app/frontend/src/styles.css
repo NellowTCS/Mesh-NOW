@@ -255,6 +255,16 @@ body {
     text-transform: uppercase;
 }
 
+.msg-time {
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.6);
+    margin-left: auto;
+}
+
+.msg-recv .msg-time {
+    color: var(--text-dim);
+}
+
 .msg-body {
     font-size: 0.9rem;
     line-height: 1.4;

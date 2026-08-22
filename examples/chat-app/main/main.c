@@ -51,6 +51,8 @@ static void web_set_name(const char *name)
     strncpy(node_name, name, sizeof(node_name) - 1);
     node_name[sizeof(node_name) - 1] = '\0';
 
+    mesh_now_set_name(node_name);
+
     nvs_handle_t handle;
     if (nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle) == ESP_OK) {
         nvs_set_str(handle, NVS_KEY_NAME, node_name);
@@ -120,6 +122,7 @@ void app_main(void)
 
     ESP_ERROR_CHECK(message_queue_init());
     mesh_now_set_receive_callback(mesh_now_receive_handler);
+    mesh_now_set_name(node_name);
 
     ESP_ERROR_CHECK(wifi_manager_init());
     wifi_manager_register_peer_callbacks(mesh_now_add_peer, mesh_now_remove_peer);

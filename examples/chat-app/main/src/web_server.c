@@ -12,6 +12,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <ctype.h>
+#include <cJSON.h>
 
 #include "index_html.h"
 #include "bundle_js.h"
@@ -24,50 +25,8 @@ static httpd_handle_t server = NULL;
 static QueueHandle_t message_queue = NULL;
 static web_server_callbacks_t callbacks = {0};
 
-// Node name (stored here, synced via callback)
 static char node_name[17] = {0};
 
-// JSON string escaping, writes escaped version of src into dst, returns bytes written
-static int json_escape(char *dst, size_t dst_size, const char *src)
-{
-    int out = 0;
-    for (int i = 0; src[i] && out < (int)dst_size - 2; i++)
-    {
-        char c = src[i];
-        if (c == '"' || c == '\\')
-        {
-            dst[out++] = '\\';
-            dst[out++] = c;
-        }
-        else if (c == '\n')
-        {
-            dst[out++] = '\\';
-            dst[out++] = 'n';
-        }
-        else if (c == '\r')
-        {
-            dst[out++] = '\\';
-            dst[out++] = 'r';
-        }
-        else if (c == '\t')
-        {
-            dst[out++] = '\\';
-            dst[out++] = 't';
-        }
-        else if ((unsigned char)c < 0x20)
-        {
-            out += snprintf(dst + out, dst_size - out, "\\u%04x", (unsigned char)c);
-        }
-        else
-        {
-            dst[out++] = c;
-        }
-    }
-    dst[out] = '\0';
-    return out;
-}
-
-// Basic URL decoder, returns bytes written
 static int url_decode(char *dst, size_t dst_size, const char *src)
 {
     int out = 0;
@@ -95,7 +54,6 @@ static int url_decode(char *dst, size_t dst_size, const char *src)
     return out;
 }
 
-// Parse form-encoded key from POST body, returns pointer to value (or NULL)
 static const char *form_get_value(const char *body, const char *key)
 {
     size_t key_len = strlen(key);
@@ -111,7 +69,6 @@ static const char *form_get_value(const char *body, const char *key)
     return NULL;
 }
 
-// Parse MAC string "xx:xx:xx:xx:xx:xx" into 6 bytes, returns true on success
 static bool parse_mac(uint8_t *out, const char *str)
 {
     unsigned int mac[6];
@@ -125,14 +82,16 @@ static bool parse_mac(uint8_t *out, const char *str)
     return true;
 }
 
-// Read full POST body into buffer
 static int read_body(httpd_req_t *req, char *buf, size_t buf_size)
 {
     int total = 0;
     int remaining = req->content_len;
     while (remaining > 0 && total < (int)buf_size - 1)
     {
-        int read = httpd_req_recv(req, buf + total, (remaining < (int)(buf_size - 1 - total)) ? remaining : (buf_size - 1 - total));
+        int read = httpd_req_recv(req, buf + total,
+                                   (remaining < (int)(buf_size - 1 - total))
+                                       ? remaining
+                                       : (buf_size - 1 - total));
         if (read <= 0)
             break;
         total += read;
@@ -141,8 +100,6 @@ static int read_body(httpd_req_t *req, char *buf, size_t buf_size)
     buf[total] = '\0';
     return total;
 }
-
-// Static file handlers
 
 static esp_err_t index_handler(httpd_req_t *req)
 {
@@ -164,8 +121,6 @@ static esp_err_t css_handler(httpd_req_t *req)
     httpd_resp_send(req, STYLES_CSS, STYLES_CSS_size);
     return ESP_OK;
 }
-
-// handlers
 
 static esp_err_t send_handler(httpd_req_t *req)
 {
@@ -306,56 +261,63 @@ static esp_err_t self_handler(httpd_req_t *req)
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
 
-    char json[128];
-    snprintf(json, sizeof(json),
-             "{\"mac\":\"%02x:%02x:%02x:%02x:%02x:%02x\",\"name\":\"%s\"}",
-             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
-             node_name[0] ? node_name : "unknown");
+    cJSON *json = cJSON_CreateObject();
+    char mac_str[18];
+    snprintf(mac_str, sizeof(mac_str),
+             "%02x:%02x:%02x:%02x:%02x:%02x",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    cJSON_AddStringToObject(json, "mac", mac_str);
+    cJSON_AddStringToObject(json, "name",
+                            node_name[0] ? node_name : "unknown");
 
+    char *str = cJSON_PrintUnformatted(json);
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_send(req, json, strlen(json));
+    httpd_resp_send(req, str, strlen(str));
+    cJSON_free(str);
+    cJSON_Delete(json);
     return ESP_OK;
 }
 
 static esp_err_t messages_handler(httpd_req_t *req)
 {
-    char json_response[4096];
-    int pos = 0;
-    pos += snprintf(json_response + pos, sizeof(json_response) - pos, "{\"messages\":[");
+    cJSON *root = cJSON_CreateObject();
+    cJSON *arr = cJSON_AddArrayToObject(root, "messages");
 
     message_t msg;
     int msg_count = 0;
-    bool first = true;
 
-    while (message_queue && xQueueReceive(message_queue, &msg, 0) == pdTRUE && msg_count < 20)
+    while (message_queue && xQueueReceive(message_queue, &msg, 0) == pdTRUE &&
+           msg_count < 20)
     {
-        if (!first)
-        {
-            json_response[pos++] = ',';
-        }
+        cJSON *item = cJSON_CreateObject();
 
-        char escaped[300];
-        json_escape(escaped, sizeof(escaped), msg.message);
+        char sender[18];
+        snprintf(sender, sizeof(sender),
+                 "%02x:%02x:%02x:%02x:%02x:%02x",
+                 msg.sender_mac[0], msg.sender_mac[1], msg.sender_mac[2],
+                 msg.sender_mac[3], msg.sender_mac[4], msg.sender_mac[5]);
+        cJSON_AddStringToObject(item, "sender", sender);
+        cJSON_AddStringToObject(item, "content", msg.message);
+        cJSON_AddNumberToObject(item, "timestamp", msg.timestamp);
+        cJSON_AddNumberToObject(item, "type", msg.type);
+        cJSON_AddNumberToObject(item, "group_id", msg.group_id);
 
-        pos += snprintf(json_response + pos, sizeof(json_response) - pos,
-                        "{\"sender\":\"%02x:%02x:%02x:%02x:%02x:%02x\""
-                        ",\"content\":\"%s\""
-                        ",\"timestamp\":%" PRIu32
-                        ",\"type\":%u"
-                        ",\"group_id\":%u"
-                        ",\"target\":\"%02x:%02x:%02x:%02x:%02x:%02x\"}",
-                        msg.sender_mac[0], msg.sender_mac[1], msg.sender_mac[2],
-                        msg.sender_mac[3], msg.sender_mac[4], msg.sender_mac[5],
-                        escaped, msg.timestamp, msg.type, msg.group_id,
-                        msg.target_mac[0], msg.target_mac[1], msg.target_mac[2],
-                        msg.target_mac[3], msg.target_mac[4], msg.target_mac[5]);
-        first = false;
+        char target[18];
+        snprintf(target, sizeof(target),
+                 "%02x:%02x:%02x:%02x:%02x:%02x",
+                 msg.target_mac[0], msg.target_mac[1], msg.target_mac[2],
+                 msg.target_mac[3], msg.target_mac[4], msg.target_mac[5]);
+        cJSON_AddStringToObject(item, "target", target);
+
+        cJSON_AddItemToArray(arr, item);
         msg_count++;
     }
 
-    pos += snprintf(json_response + pos, sizeof(json_response) - pos, "]}");
+    char *str = cJSON_PrintUnformatted(root);
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_send(req, json_response, pos);
+    httpd_resp_send(req, str, strlen(str));
+    cJSON_free(str);
+    cJSON_Delete(root);
     return ESP_OK;
 }
 
@@ -364,27 +326,36 @@ static esp_err_t peers_handler(httpd_req_t *req)
     int count = mesh_now_get_peer_count();
     mesh_peer_t *peers = mesh_now_get_peers();
 
-    char json[2048];
-    int pos = 0;
-    pos += snprintf(json + pos, sizeof(json) - pos, "{\"peers\":[");
+    cJSON *root = cJSON_CreateObject();
+    cJSON *arr = cJSON_AddArrayToObject(root, "peers");
 
-    bool first = true;
     for (int i = 0; i < count && i < MAX_PEERS; i++)
     {
         if (!peers[i].active)
             continue;
-        if (!first)
-            json[pos++] = ',';
-        pos += snprintf(json + pos, sizeof(json) - pos,
-                        "\"%02x:%02x:%02x:%02x:%02x:%02x\"",
-                        peers[i].peer_addr[0], peers[i].peer_addr[1], peers[i].peer_addr[2],
-                        peers[i].peer_addr[3], peers[i].peer_addr[4], peers[i].peer_addr[5]);
-        first = false;
+
+        cJSON *item = cJSON_CreateObject();
+
+        char mac[18];
+        snprintf(mac, sizeof(mac),
+                 "%02x:%02x:%02x:%02x:%02x:%02x",
+                 peers[i].peer_addr[0], peers[i].peer_addr[1],
+                 peers[i].peer_addr[2], peers[i].peer_addr[3],
+                 peers[i].peer_addr[4], peers[i].peer_addr[5]);
+        cJSON_AddStringToObject(item, "mac", mac);
+
+        if (peers[i].node_name[0] != '\0') {
+            cJSON_AddStringToObject(item, "name", peers[i].node_name);
+        }
+
+        cJSON_AddItemToArray(arr, item);
     }
 
-    pos += snprintf(json + pos, sizeof(json) - pos, "]}");
+    char *str = cJSON_PrintUnformatted(root);
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_send(req, json, pos);
+    httpd_resp_send(req, str, strlen(str));
+    cJSON_free(str);
+    cJSON_Delete(root);
     return ESP_OK;
 }
 
@@ -398,13 +369,16 @@ static esp_err_t wifi_info_handler(httpd_req_t *req)
         return ESP_OK;
     }
 
-    char json[256];
-    snprintf(json, sizeof(json),
-             "{\"ssid\":\"%s\",\"channel\":%d}",
-             (char *)wifi_config.ap.ssid, wifi_config.ap.channel);
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "ssid",
+                            (char *)wifi_config.ap.ssid);
+    cJSON_AddNumberToObject(json, "channel", wifi_config.ap.channel);
 
+    char *str = cJSON_PrintUnformatted(json);
     httpd_resp_set_type(req, "application/json");
-    httpd_resp_send(req, json, strlen(json));
+    httpd_resp_send(req, str, strlen(str));
+    cJSON_free(str);
+    cJSON_Delete(json);
     return ESP_OK;
 }
 
@@ -414,7 +388,8 @@ static esp_err_t presence_handler(httpd_req_t *req)
     read_body(req, body, sizeof(body));
 
     const char *raw_status = form_get_value(body, "status");
-    if (!raw_status || !callbacks.send_presence) {
+    if (!raw_status || !callbacks.send_presence)
+    {
         httpd_resp_send(req, "{\"ok\":false}", 12);
         return ESP_OK;
     }
@@ -434,7 +409,8 @@ static esp_err_t group_handler(httpd_req_t *req)
     read_body(req, body, sizeof(body));
 
     const char *raw_group = form_get_value(body, "group_id");
-    if (!raw_group || !callbacks.set_group) {
+    if (!raw_group || !callbacks.set_group)
+    {
         httpd_resp_send(req, "{\"ok\":false}", 12);
         return ESP_OK;
     }
@@ -455,7 +431,8 @@ static esp_err_t encryption_handler(httpd_req_t *req)
     read_body(req, body, sizeof(body));
 
     const char *raw_key = form_get_value(body, "key");
-    if (!raw_key || !callbacks.set_encryption) {
+    if (!raw_key || !callbacks.set_encryption)
+    {
         httpd_resp_send(req, "{\"ok\":false}", 12);
         return ESP_OK;
     }
@@ -476,8 +453,6 @@ static esp_err_t favicon_handler(httpd_req_t *req)
     httpd_resp_send(req, NULL, 0);
     return ESP_OK;
 }
-
-// Init / deinit
 
 esp_err_t web_server_init(QueueHandle_t queue, const web_server_callbacks_t *cbs)
 {

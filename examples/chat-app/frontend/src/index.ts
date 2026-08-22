@@ -15,8 +15,13 @@ interface SelfInfo {
     name: string;
 }
 
+interface PeerInfo {
+    mac: string;
+    name?: string;
+}
+
 interface PeersResponse {
-    peers: string[];
+    peers: PeerInfo[];
 }
 
 declare global {
@@ -297,7 +302,7 @@ class MeshNowApp {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body
                 });
-                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_DIRECT, 0, this.targetMac);
+                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_DIRECT, 0, this.targetMac, Math.floor(Date.now() / 1000));
             } else if (this.groupId > 0) {
                 const body = `group_id=${this.groupId}&message=${encodeURIComponent(text)}`;
                 await fetch('/send/group', {
@@ -305,14 +310,14 @@ class MeshNowApp {
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body
                 });
-                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_GROUP, this.groupId, '');
+                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_GROUP, this.groupId, '', Math.floor(Date.now() / 1000));
             } else {
                 await fetch('/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `message=${encodeURIComponent(text)}`
                 });
-                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_CHAT, 0, '');
+                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_CHAT, 0, '', Math.floor(Date.now() / 1000));
             }
         } catch (e) {
             this.addSystem('Failed to send', 'error');
@@ -378,7 +383,7 @@ class MeshNowApp {
 
                 const isSelf = msg.sender === this.selfMac;
                 const name = isSelf ? this.selfName : shortMac(msg.sender);
-                this.addMessage(msg.sender, name, msg.content, msg.type, msg.group_id, msg.target);
+                this.addMessage(msg.sender, name, msg.content, msg.type, msg.group_id, msg.target, msg.timestamp);
 
                 // Cap seen set
                 if (this.seenIds.size > 500) {
@@ -402,47 +407,48 @@ class MeshNowApp {
 
     // Rendering
 
-    private renderPeerList(peers: string[]): void {
+    private renderPeerList(peers: PeerInfo[]): void {
         this.peerListEl.innerHTML = '';
         if (peers.length === 0) {
             this.peerListEl.innerHTML = '<div class="peer-empty">No peers yet</div>';
             return;
         }
 
-        for (const mac of peers) {
+        for (const peer of peers) {
             const el = document.createElement('div');
             el.className = 'peer-item';
-            const color = macColor(mac);
-            const isTyping = this.typingPeers.has(mac);
+            const color = macColor(peer.mac);
+            const isTyping = this.typingPeers.has(peer.mac);
+            const displayName = peer.name || shortMac(peer.mac);
             el.innerHTML = `
                 <span class="peer-dot" style="background:${color}"></span>
-                <span class="peer-name">${shortMac(mac)}</span>
+                <span class="peer-name">${escapeHtml(displayName)}</span>
                 ${isTyping ? '<span class="peer-typing">typing...</span>' : ''}
             `;
             el.addEventListener('click', () => {
-                this.targetMac = mac;
-                this.targetSelect.value = mac;
+                this.targetMac = peer.mac;
+                this.targetSelect.value = peer.mac;
                 const chatTarget = this.container.querySelector('.chat-target')!;
-                chatTarget.textContent = `DM: ${shortMac(mac)}`;
+                chatTarget.textContent = `DM: ${escapeHtml(displayName)}`;
                 chatTarget.className = 'chat-target dm';
             });
             this.peerListEl.appendChild(el);
         }
     }
 
-    private updateTargetSelect(peers: string[]): void {
+    private updateTargetSelect(peers: PeerInfo[]): void {
         const current = this.targetSelect.value;
         this.targetSelect.innerHTML = '<option value="">Broadcast</option>';
-        for (const mac of peers) {
+        for (const peer of peers) {
             const opt = document.createElement('option');
-            opt.value = mac;
-            opt.textContent = shortMac(mac);
-            if (mac === current) opt.selected = true;
+            opt.value = peer.mac;
+            opt.textContent = peer.name || shortMac(peer.mac);
+            if (peer.mac === current) opt.selected = true;
             this.targetSelect.appendChild(opt);
         }
     }
 
-    private addMessage(senderMac: string, senderName: string, content: string, type: number, groupId: number, target: string): void {
+    private addMessage(senderMac: string, senderName: string, content: string, type: number, groupId: number, target: string, timestamp: number): void {
         const isSelf = senderMac === this.selfMac;
         const isDM = type === MSG_TYPE_DIRECT;
         const isGroup = type === MSG_TYPE_GROUP;
@@ -456,10 +462,13 @@ class MeshNowApp {
         if (isDM) badge = '<span class="msg-badge">DM</span>';
         else if (isGroup) badge = `<span class="msg-badge msg-badge-group">Group ${groupId}</span>`;
 
+        const time = formatTime(timestamp);
+
         el.innerHTML = `
             <div class="msg-header">
                 <span class="msg-sender" style="color:${color}">${escapeHtml(senderName)}</span>
                 ${badge}
+                <span class="msg-time">${time}</span>
             </div>
             <div class="msg-body">${escapeHtml(content)}</div>
         `;
