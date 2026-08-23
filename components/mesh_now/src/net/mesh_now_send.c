@@ -11,7 +11,8 @@
 static esp_err_t mesh_now_send_wire(const uint8_t *dest_mac,
                                      const uint8_t *wire, size_t wire_len,
                                      bool queue_for_retransmit,
-                                     uint32_t message_id)
+                                     uint32_t message_id,
+                                     uint8_t flags)
 {
     if (queue_for_retransmit) {
         int index = mesh_now_allocate_pending();
@@ -21,6 +22,7 @@ static esp_err_t mesh_now_send_wire(const uint8_t *dest_mac,
         }
         pending_messages[index].active = true;
         pending_messages[index].message_id = message_id;
+        pending_messages[index].flags = flags;
         memcpy(pending_messages[index].wire_buf, wire, wire_len);
         pending_messages[index].wire_len = wire_len;
         memcpy(pending_messages[index].dest_mac, dest_mac, ESP_NOW_ETH_ALEN);
@@ -56,7 +58,8 @@ static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
     }
 
     esp_err_t ret = mesh_now_send_wire(broadcast_mac, wire, wire_len,
-                                        queue_for_retransmit, msg->message_id);
+                                        queue_for_retransmit, msg->message_id,
+                                        msg->flags);
     if (ret == ESP_OK) {
         ESP_LOGI(TAG, "Sent message type %d id %u (%u bytes)",
                  msg->type, msg->message_id, (unsigned)wire_len);
@@ -122,11 +125,16 @@ static void retransmit_task(void *pvParameters)
                 continue;
             }
 
+            if (!(pending->flags & MSG_FLAG_REQUIRES_ACK)) {
+                pending->active = false;
+                continue;
+            }
+
             if (now_ms - pending->last_send_time_ms < RETRANSMIT_TIMEOUT_MS) {
                 continue;
             }
 
-            if (pending->retries >= 3) {
+            if (pending->retries >= MAX_RETRIES) {
                 ESP_LOGW(TAG, "Dropping pending message after %d retries",
                          pending->retries);
                 pending->active = false;

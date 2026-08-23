@@ -1,0 +1,55 @@
+menu "Mesh-NOW"
+
+    config MESH_NOW_BEACON_INTERVAL_MS
+        int "Beacon broadcast interval (ms)"
+        default 5000
+        help
+            How often beacons are broadcast for peer discovery.
+            Range: 1000 - 60000 ms.
+
+    config MESH_NOW_RETRANSMIT_TIMEOUT_MS
+        int "Retransmit timeout (ms)"
+        default 2000
+        help
+            How long to wait for an ACK before retransmitting a
+            direct message.
+
+    config MESH_NOW_MAX_RETRIES
+        int "Maximum retransmit retries"
+        default 3
+        range 1 10
+        help
+            Maximum number of retransmit attempts before dropping
+            a pending direct message.
+
+    config MESH_NOW_MAX_PENDING_MESSAGES
+        int "Maximum pending retransmit messages"
+        default 16
+        range 1 64
+        help
+            Number of slots for messages awaiting ACK confirmation.
+
+    config MESH_NOW_MAX_SEEN_MESSAGE_IDS
+        int "Seen message ID buffer size"
+        default 128
+        range 16 512
+        help
+            Ring buffer size for deduplicating recently received messages.
+
+    config MESH_NOW_DEFAULT_ROUTE_TTL
+        int "Default route TTL (hops)"
+        default 3
+        range 1 15
+        help
+            Default hop count for outgoing messages. A TTL of 3 means
+            the message can be relayed through up to 2 intermediate nodes.
+
+    config MESH_NOW_PEER_EXPIRY_SEC
+        int "Peer expiry time (seconds)"
+        default 30
+        range 5 300
+        help
+            How long a peer can go without a beacon before being
+            marked inactive.
+
+endmenu
