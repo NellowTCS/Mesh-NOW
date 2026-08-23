@@ -10,7 +10,9 @@ size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out, size_t out_size)
     mpack_writer_t writer;
     mpack_writer_init(&writer, (char *)out, out_size);
 
-    mpack_start_map(&writer, 8);
+    bool has_name = (local_node_name[0] != '\0') &&
+                    (msg->type == MSG_TYPE_BEACON);
+    mpack_build_map(&writer);
     mpack_write_cstr(&writer, "type");
     mpack_write_uint(&writer, msg->type);
     mpack_write_cstr(&writer, "flags");
@@ -32,8 +34,6 @@ size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out, size_t out_size)
     mpack_write_cstr(&writer, "content");
     mpack_write_str(&writer, msg->message, content_len);
 
-    bool has_name = (local_node_name[0] != '\0') &&
-                    (msg->type == MSG_TYPE_BEACON);
     if (has_name) {
         mpack_write_cstr(&writer, "node_name");
         mpack_write_str(&writer, local_node_name, strlen(local_node_name));

@@ -62,8 +62,11 @@ jobs:
           idf-version: ${{ env.IDF_VERSION }}
 
       - name: Build all targets
-        run: |
-          python examples/chat-app/scripts/build_all.py --ci
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
+          path: 'examples/chat-app'
+          command: python scripts/build_all.py --ci
 
       - name: Create release packages
         run: |
@@ -74,33 +77,33 @@ jobs:
           cp examples/chat-app/scripts/flash_mesh_now.py release/flash-tools/
           
           # Package firmware files
-          cd builds
+          cd examples/chat-app/builds
           for target in */; do
             target_name=${target%/}
             echo "Packaging $target_name..."
             
             # Create target-specific package
-            mkdir -p ../release/firmware/$target_name
-            cp $target_name/mesh-now.bin ../release/firmware/$target_name/
-            cp $target_name/bootloader.bin ../release/firmware/$target_name/
-            cp $target_name/partition-table.bin ../release/firmware/$target_name/
+            mkdir -p ../../release/firmware/$target_name
+            cp $target_name/mesh-now.bin ../../release/firmware/$target_name/
+            cp $target_name/bootloader.bin ../../release/firmware/$target_name/
+            cp $target_name/partition-table.bin ../../release/firmware/$target_name/
             
             # Copy and customize flash script
-            cp ../../examples/chat-app/scripts/flash.py ../release/firmware/$target_name/
+            cp ../../../examples/chat-app/scripts/flash.py ../../release/firmware/$target_name/
             # The flash.py script auto-detects the target, so no need to customize
             
             # Create target-specific README
-            cp ../../Docs/docs/getting-started/quickstart.md ../release/firmware/$target_name/README.md
-            sed -i "s/{TARGET}/$target_name/g" ../release/firmware/$target_name/README.md
+            cp ../../../Docs/docs/getting-started/quickstart.md ../../release/firmware/$target_name/README.md
+            sed -i "s/{TARGET}/$target_name/g" ../../release/firmware/$target_name/README.md
             # Add target-specific information (you can expand this)
-            sed -i "s/{ARCHITECTURE}/ESP32 Architecture/g" ../release/firmware/$target_name/README.md
-            sed -i "s/{RAM}/Target-specific RAM/g" ../release/firmware/$target_name/README.md
+            sed -i "s/{ARCHITECTURE}/ESP32 Architecture/g" ../../release/firmware/$target_name/README.md
+            sed -i "s/{RAM}/Target-specific RAM/g" ../../release/firmware/$target_name/README.md
             
             # Create compressed package
-            tar -czf ../release/mesh-now-$target_name-${{ steps.version.outputs.version }}.tar.gz $target_name/
+            tar -czf ../../release/mesh-now-$target_name-${{ steps.version.outputs.version }}.tar.gz $target_name/
           done
           
-          cd ..
+          cd ../../..
 
       - name: Create documentation package
         run: |

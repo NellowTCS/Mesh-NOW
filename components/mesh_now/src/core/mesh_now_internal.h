@@ -5,6 +5,8 @@
 #include "message_queue.h"
 #include <esp_now.h>
 #include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -68,6 +70,8 @@ extern char local_node_name[MESH_NOW_NODE_NAME_MAX + 1];
 extern pending_message_t pending_messages[MAX_PENDING_MESSAGES];
 extern uint32_t seen_message_ids[MAX_SEEN_MESSAGE_IDS];
 extern int seen_message_count;
+extern SemaphoreHandle_t state_mutex;
+extern int64_t time_offset_us;
 
 uint32_t mesh_now_generate_message_id(void);
 bool mesh_now_is_message_seen(uint32_t message_id);
@@ -78,6 +82,8 @@ void mesh_now_release_pending(int index);
 
 void mesh_now_build_nonce(uint32_t message_id, const uint8_t *sender_mac,
                           uint8_t nonce[AES_GCM_NONCE_LEN]);
+void mesh_now_sync_time(uint32_t remote_timestamp);
+uint32_t mesh_now_get_network_time_ms(void);
 esp_err_t mesh_now_aes_gcm_encrypt(const uint8_t *plaintext, size_t pt_len,
                                     const uint8_t *aad, size_t aad_len,
                                     const uint8_t key[16],

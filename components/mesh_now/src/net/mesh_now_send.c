@@ -20,7 +20,6 @@ static esp_err_t mesh_now_send_wire(const uint8_t *dest_mac,
             ESP_LOGW(TAG, "No pending slots available");
             return ESP_ERR_NO_MEM;
         }
-        pending_messages[index].active = true;
         pending_messages[index].message_id = message_id;
         pending_messages[index].flags = flags;
         memcpy(pending_messages[index].wire_buf, wire, wire_len);
@@ -34,7 +33,7 @@ static esp_err_t mesh_now_send_wire(const uint8_t *dest_mac,
     if (ret != ESP_OK && queue_for_retransmit) {
         int idx = mesh_now_find_pending(message_id);
         if (idx >= 0) {
-            pending_messages[idx].active = false;
+            mesh_now_release_pending(idx);
         }
     }
     return ret;
@@ -46,7 +45,7 @@ static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
     msg->message_id = mesh_now_generate_message_id();
     msg->hop_count = DEFAULT_ROUTE_TTL;
     esp_read_mac(msg->sender_mac, ESP_MAC_WIFI_STA);
-    msg->timestamp = esp_timer_get_time() / 1000;
+    msg->timestamp = mesh_now_get_network_time_ms();
 
     mesh_now_mark_message_seen(msg->message_id);
 
@@ -119,6 +118,7 @@ static void retransmit_task(void *pvParameters)
 {
     while (1) {
         int64_t now_ms = esp_timer_get_time() / 1000;
+        xSemaphoreTake(state_mutex, portMAX_DELAY);
         for (int i = 0; i < MAX_PENDING_MESSAGES; ++i) {
             pending_message_t *pending = &pending_messages[i];
             if (!pending->active) {
@@ -153,6 +153,7 @@ static void retransmit_task(void *pvParameters)
                 ESP_LOGW(TAG, "Retransmit failed: %s", esp_err_to_name(ret));
             }
         }
+        xSemaphoreGive(state_mutex);
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
@@ -171,7 +172,7 @@ static void beacon_task(void *pvParameters)
         beacon.message_id = mesh_now_generate_message_id();
         beacon.hop_count = 1;
         esp_read_mac(beacon.sender_mac, ESP_MAC_WIFI_STA);
-        beacon.timestamp = esp_timer_get_time() / 1000;
+        beacon.timestamp = mesh_now_get_network_time_ms();
         strncpy(beacon.message, "MESH-NOW-BEACON", MAX_MESH_MESSAGE_LEN - 1);
 
         mesh_now_mark_message_seen(beacon.message_id);
@@ -192,6 +193,7 @@ static void beacon_task(void *pvParameters)
         if (++sweep_counter >= 6) {
             sweep_counter = 0;
             int64_t now = esp_timer_get_time();
+            xSemaphoreTake(state_mutex, portMAX_DELAY);
             for (int i = 0; i < peer_count; i++) {
                 if (peers[i].active &&
                     (now - peers[i].last_seen) > PEER_EXPIRY_US) {
@@ -202,6 +204,7 @@ static void beacon_task(void *pvParameters)
                     peers[i].active = false;
                 }
             }
+            xSemaphoreGive(state_mutex);
         }
 
         vTaskDelay(pdMS_TO_TICKS(BEACON_INTERVAL_MS));
@@ -211,7 +214,7 @@ static void beacon_task(void *pvParameters)
 esp_err_t mesh_now_start_tasks(void)
 {
     BaseType_t task_ret = xTaskCreatePinnedToCore(
-        beacon_task, "beacon_task", 4096, NULL, 5,
+        beacon_task, "beacon_task", 8192, NULL, 5,
         &beacon_task_handle, 0);
     if (task_ret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create beacon task");
@@ -219,7 +222,7 @@ esp_err_t mesh_now_start_tasks(void)
     }
 
     task_ret = xTaskCreatePinnedToCore(
-        retransmit_task, "retransmit_task", 4096, NULL, 5,
+        retransmit_task, "retransmit_task", 8192, NULL, 5,
         &retransmit_task_handle, 0);
     if (task_ret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create retransmit task");

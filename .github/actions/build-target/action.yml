@@ -40,8 +40,9 @@ runs:
       with:
         esp_idf_version: ${{ inputs.idf-version }}
         target: ${{ inputs.target }}
+        path: 'examples/chat-app'
         command: |
-          python examples/chat-app/scripts/build.py --target ${{ inputs.target }} --ci
+          python scripts/build.py --target ${{ inputs.target }} --ci
           
           # Create build info
           echo "Target: ${{ inputs.target }}" > build_info.txt
@@ -53,7 +54,7 @@ runs:
       id: binary-info
       shell: bash
       run: |
-        BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
+        BINARY_SIZE=$(stat -c%s examples/chat-app/build/mesh-now.bin)
         BINARY_SIZE_KB=$((BINARY_SIZE / 1024))
         echo "size=$BINARY_SIZE_KB" >> $GITHUB_OUTPUT
         echo "Binary size: ${BINARY_SIZE_KB}KB"

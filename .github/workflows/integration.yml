@@ -45,12 +45,12 @@ jobs:
           echo "Validating ${{ matrix.target }} binary..."
           
           # Check if binary exists and has reasonable size
-          if [ ! -f "build/mesh-now.bin" ]; then
+          if [ ! -f "examples/chat-app/build/mesh-now.bin" ]; then
             echo "ERROR: Binary not found"
             exit 1
           fi
           
-          BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
+          BINARY_SIZE=$(stat -c%s examples/chat-app/build/mesh-now.bin)
           MIN_SIZE=500000  # 500KB minimum
           MAX_SIZE=2000000 # 2MB maximum
           
@@ -71,6 +71,7 @@ jobs:
         with:
           esp_idf_version: 'v5.5.1'
           target: ${{ matrix.target }}
+          path: 'examples/chat-app'
           command: |
             echo "Memory analysis for ${{ matrix.target }}:"
             idf.py size-components | head -20
@@ -119,8 +120,9 @@ jobs:
         with:
           esp_idf_version: 'v5.5.1'
           target: esp32
+          path: 'examples/chat-app'
           command: |
-            python examples/chat-app/scripts/build.py --target esp32 --ci
+            python scripts/build.py --target esp32 --ci
             
             # Enable additional logging for testing
             echo "CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y" >> sdkconfig.defaults
@@ -133,6 +135,7 @@ jobs:
         with:
           esp_idf_version: 'v5.5.1'
           target: esp32
+          path: 'examples/chat-app'
           command: |
             echo "Network component analysis:"
             idf.py size-components | grep -E "(lwip|wifi|esp_netif|esp_http|esp_now)"
@@ -165,15 +168,16 @@ jobs:
         with:
           esp_idf_version: ${{ matrix.idf_version }}
           target: esp32
+          path: 'examples/chat-app'
           command: |
             echo "Testing compatibility with ESP-IDF ${{ matrix.idf_version }}"
             
             # Test ESP32 build (most compatible)
-            python examples/chat-app/scripts/build.py --target esp32 --ci
+            python scripts/build.py --target esp32 --ci
 
       - name: Compare binary sizes
         run: |
-          BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
+          BINARY_SIZE=$(stat -c%s examples/chat-app/build/mesh-now.bin)
           echo "Binary size with ESP-IDF ${{ matrix.idf_version }}: $BINARY_SIZE bytes"
 
   # Integration test summary

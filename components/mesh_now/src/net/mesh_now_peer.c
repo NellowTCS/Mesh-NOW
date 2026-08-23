@@ -13,10 +13,13 @@ void mesh_now_add_peer(const uint8_t *mac)
         return;
     }
 
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
+
     if (esp_now_is_peer_exist(mac)) {
         for (int i = 0; i < peer_count; i++) {
             if (memcmp(peers[i].peer_addr, mac, ESP_NOW_ETH_ALEN) == 0) {
                 peers[i].last_seen = esp_timer_get_time();
+                xSemaphoreGive(state_mutex);
                 return;
             }
         }
@@ -25,6 +28,7 @@ void mesh_now_add_peer(const uint8_t *mac)
     if (peer_count >= MAX_PEERS) {
         ESP_LOGW(TAG, "Max peers reached, cannot add: %02x:%02x:%02x:%02x:%02x:%02x",
                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        xSemaphoreGive(state_mutex);
         return;
     }
 
@@ -38,12 +42,14 @@ void mesh_now_add_peer(const uint8_t *mac)
     if (rc != ESP_OK && rc != ESP_ERR_ESPNOW_EXIST) {
         ESP_LOGW(TAG, "esp_now_add_peer failed: %s",
                  esp_err_to_name(rc));
+        xSemaphoreGive(state_mutex);
         return;
     }
 
     for (int i = 0; i < peer_count; i++) {
         if (memcmp(peers[i].peer_addr, mac, ESP_NOW_ETH_ALEN) == 0) {
             peers[i].last_seen = esp_timer_get_time();
+            xSemaphoreGive(state_mutex);
             return;
         }
     }
@@ -54,12 +60,16 @@ void mesh_now_add_peer(const uint8_t *mac)
     peers[peer_count].node_name[0] = '\0';
     peer_count++;
 
+    xSemaphoreGive(state_mutex);
+
     ESP_LOGI(TAG, "Added peer: %02x:%02x:%02x:%02x:%02x:%02x",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
 void mesh_now_remove_peer(const uint8_t *mac)
 {
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
+
     for (int i = 0; i < peer_count; i++) {
         if (memcmp(peers[i].peer_addr, mac, ESP_NOW_ETH_ALEN) == 0) {
             esp_err_t rc = esp_now_del_peer(mac);
@@ -72,9 +82,12 @@ void mesh_now_remove_peer(const uint8_t *mac)
                 peers[j] = peers[j + 1];
             }
             peer_count--;
+            xSemaphoreGive(state_mutex);
             ESP_LOGI(TAG, "Removed peer: %02x:%02x:%02x:%02x:%02x:%02x",
                      mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
             return;
         }
     }
+
+    xSemaphoreGive(state_mutex);
 }

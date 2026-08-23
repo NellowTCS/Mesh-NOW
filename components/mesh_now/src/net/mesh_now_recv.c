@@ -95,8 +95,10 @@ static void esp_now_recv_cb(const uint8_t *mac_addr,
                  mesh_msg.node_name[0] ? " (" : "",
                  mesh_msg.node_name[0] ? mesh_msg.node_name : "");
         mesh_now_add_peer(mesh_msg.sender_mac);
+        mesh_now_sync_time(mesh_msg.timestamp);
 
         if (mesh_msg.node_name[0] != '\0') {
+            xSemaphoreTake(state_mutex, portMAX_DELAY);
             for (int i = 0; i < peer_count; i++) {
                 if (peers[i].active &&
                     memcmp(peers[i].peer_addr, mesh_msg.sender_mac,
@@ -107,6 +109,7 @@ static void esp_now_recv_cb(const uint8_t *mac_addr,
                     break;
                 }
             }
+            xSemaphoreGive(state_mutex);
         }
     } else if (mesh_msg.type == MSG_TYPE_ACK) {
         if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) != 0) {

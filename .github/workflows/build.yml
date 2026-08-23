@@ -91,9 +91,9 @@ jobs:
         with:
           name: mesh-now-${{ matrix.target }}-${{ github.sha }}
           path: |
-            build/mesh-now.bin
-            build/bootloader/bootloader.bin
-            build/partition_table/partition-table.bin
+            examples/chat-app/build/mesh-now.bin
+            examples/chat-app/build/bootloader/bootloader.bin
+            examples/chat-app/build/partition_table/partition-table.bin
             build_info.txt
           retention-days: 30
 
@@ -103,7 +103,7 @@ jobs:
         with:
           name: build-logs-${{ matrix.target }}-${{ github.sha }}
           path: |
-            build/log/
+            examples/chat-app/build/log/
           retention-days: 7
 
   # Size analysis job
@@ -134,6 +134,7 @@ jobs:
         with:
           esp_idf_version: ${{ env.IDF_VERSION }}
           target: esp32
+          path: 'examples/chat-app'
           command: |
             idf.py size
             idf.py size-components > size_analysis.txt
@@ -166,10 +167,10 @@ jobs:
       - name: Create release archive
         run: |
           mkdir -p release
-          cd builds
+          cd examples/chat-app/builds
           for target in */; do
             target_name=${target%/}
-            tar -czf ../release/mesh-now-${target_name}-${{ github.ref_name }}.tar.gz $target_name/
+            tar -czf ../../release/mesh-now-${target_name}-${{ github.ref_name }}.tar.gz $target_name/
           done
 
       - name: Generate release notes
