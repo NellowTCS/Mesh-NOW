@@ -52,6 +52,7 @@ static void web_set_name(const char *name)
     node_name[sizeof(node_name) - 1] = '\0';
 
     mesh_now_set_name(node_name);
+    mesh_now_announce_name();
 
     nvs_handle_t handle;
     if (nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle) == ESP_OK) {

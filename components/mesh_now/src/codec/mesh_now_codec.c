@@ -5,13 +5,24 @@
 
 #define TAG "MESH_NOW"
 
+// Snapshot the local name under the state mutex.
+static void copy_local_name(char *dst, size_t dst_size)
+{
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
+    strncpy(dst, local_node_name, dst_size - 1);
+    dst[dst_size - 1] = '\0';
+    xSemaphoreGive(state_mutex);
+}
+
 size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out, size_t out_size)
 {
     mpack_writer_t writer;
     mpack_writer_init(&writer, (char *)out, out_size);
 
-    bool has_name = (local_node_name[0] != '\0') &&
-                    (msg->type == MSG_TYPE_BEACON);
+    char name[MESH_NOW_NODE_NAME_MAX + 1];
+    copy_local_name(name, sizeof(name));
+
+    bool has_name = (name[0] != '\0') && (msg->type == MSG_TYPE_BEACON);
     mpack_build_map(&writer);
     mpack_write_cstr(&writer, "type");
     mpack_write_uint(&writer, msg->type);
@@ -36,7 +47,7 @@ size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out, size_t out_size)
 
     if (has_name) {
         mpack_write_cstr(&writer, "node_name");
-        mpack_write_str(&writer, local_node_name, strlen(local_node_name));
+        mpack_write_str(&writer, name, strlen(name));
     }
     mpack_complete_map(&writer);
 
@@ -122,7 +133,9 @@ esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg,
         msg->type != MSG_TYPE_ACK && msg->type != MSG_TYPE_BEACON) {
         flags |= MSG_FLAG_ENCRYPTED;
     }
-    bool add_name = (local_node_name[0] != '\0') && (msg->type == MSG_TYPE_BEACON);
+    char name[MESH_NOW_NODE_NAME_MAX + 1];
+    copy_local_name(name, sizeof(name));
+    bool add_name = (name[0] != '\0') && (msg->type == MSG_TYPE_BEACON);
     if (add_name) {
         flags |= MSG_FLAG_HAS_NODE_NAME;
     }

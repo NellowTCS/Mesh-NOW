@@ -167,6 +167,17 @@ static void retransmit_task(void *pvParameters)
     }
 }
 
+static void build_beacon(mesh_message_t *beacon)
+{
+    memset(beacon, 0, sizeof(mesh_message_t));
+    beacon->type = MSG_TYPE_BEACON;
+    beacon->message_id = mesh_now_generate_message_id();
+    beacon->hop_count = 1;
+    esp_read_mac(beacon->sender_mac, ESP_MAC_WIFI_STA);
+    beacon->timestamp = mesh_now_get_network_time_ms();
+    strncpy(beacon->message, "MESH-NOW-BEACON", MAX_MESH_MESSAGE_LEN - 1);
+}
+
 static void beacon_task(void *pvParameters)
 {
     ESP_LOGI(TAG, "Beacon task started, broadcasting every %d ms",
@@ -176,13 +187,7 @@ static void beacon_task(void *pvParameters)
 
     while (1) {
         mesh_message_t beacon;
-        memset(&beacon, 0, sizeof(mesh_message_t));
-        beacon.type = MSG_TYPE_BEACON;
-        beacon.message_id = mesh_now_generate_message_id();
-        beacon.hop_count = 1;
-        esp_read_mac(beacon.sender_mac, ESP_MAC_WIFI_STA);
-        beacon.timestamp = mesh_now_get_network_time_ms();
-        strncpy(beacon.message, "MESH-NOW-BEACON", MAX_MESH_MESSAGE_LEN - 1);
+        build_beacon(&beacon);
 
         mesh_now_mark_message_seen(beacon.message_id);
 
@@ -239,6 +244,24 @@ esp_err_t mesh_now_start_tasks(void)
     }
 
     return ESP_OK;
+}
+
+esp_err_t mesh_now_announce_name(void)
+{
+    // Send an immediate beacon so peers pick up a renamed node without
+    // waiting for the next periodic beacon interval.
+    mesh_message_t beacon;
+    build_beacon(&beacon);
+
+    mesh_now_mark_message_seen(beacon.message_id);
+
+    uint8_t wire[WIRE_BUF_SIZE];
+    size_t wire_len = 0;
+    esp_err_t err = mesh_now_prepare_wire(&beacon, wire, &wire_len, false);
+    if (err != ESP_OK) {
+        return err;
+    }
+    return esp_now_send(broadcast_mac, wire, wire_len);
 }
 
 esp_err_t mesh_now_send_broadcast(const char *message)

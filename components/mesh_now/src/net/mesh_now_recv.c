@@ -95,13 +95,13 @@ static void esp_now_recv_cb(const uint8_t *mac_addr,
     }
 
     if (mesh_msg.type == MSG_TYPE_BEACON) {
-        ESP_LOGD(TAG, "Received beacon from %02x:%02x:%02x:%02x:%02x:%02x"
-                 "%s%s",
+        ESP_LOGD(TAG, "Received beacon from %02x:%02x:%02x:%02x:%02x:%02x%s%s%s",
                  mesh_msg.sender_mac[0], mesh_msg.sender_mac[1],
                  mesh_msg.sender_mac[2], mesh_msg.sender_mac[3],
                  mesh_msg.sender_mac[4], mesh_msg.sender_mac[5],
                  mesh_msg.node_name[0] ? " (" : "",
-                 mesh_msg.node_name[0] ? mesh_msg.node_name : "");
+                 mesh_msg.node_name[0] ? mesh_msg.node_name : "",
+                 mesh_msg.node_name[0] ? ")" : "");
         mesh_now_add_peer(mesh_msg.sender_mac);
         mesh_now_sync_time(mesh_msg.timestamp);
 

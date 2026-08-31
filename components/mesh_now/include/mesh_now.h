@@ -73,6 +73,7 @@ esp_err_t mesh_now_set_group(uint8_t group_id);
 esp_err_t mesh_now_set_encryption_key(const uint8_t *key, size_t len);
 esp_err_t mesh_now_set_name(const char *name);
 const char* mesh_now_get_name(void);
+esp_err_t mesh_now_announce_name(void);
 int mesh_now_get_peer_count(void);
 mesh_peer_t* mesh_now_get_peers(void);
 bool mesh_now_is_encrypted(void);
