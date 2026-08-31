@@ -66,7 +66,7 @@ static void esp_now_recv_cb(const uint8_t *mac_addr,
         return;
     }
 
-    ESP_LOGI(TAG, "Received message from %02x:%02x:%02x:%02x:%02x:%02x, "
+    ESP_LOGD(TAG, "Received message from %02x:%02x:%02x:%02x:%02x:%02x, "
              "type: %d, id: %u",
              src_addr[0], src_addr[1], src_addr[2],
              src_addr[3], src_addr[4], src_addr[5],
@@ -80,14 +80,22 @@ static void esp_now_recv_cb(const uint8_t *mac_addr,
 
     if (mesh_msg.type != MSG_TYPE_BEACON && mesh_msg.type != MSG_TYPE_ACK) {
         if (mesh_now_is_message_seen(mesh_msg.message_id)) {
-            ESP_LOGW(TAG, "Duplicate message %u ignored", mesh_msg.message_id);
+            // A duplicate DIRECT addressed to us means the original was
+            // delivered but our ACK was lost. Re-ACK so the sender stops
+            // retrying and does not falsely drop the message.
+            if (mesh_msg.type == MSG_TYPE_DIRECT &&
+                memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) == 0) {
+                mesh_now_add_peer(mesh_msg.sender_mac);
+                mesh_now_send_ack(&mesh_msg);
+            }
+            ESP_LOGD(TAG, "Duplicate message %u ignored", mesh_msg.message_id);
             return;
         }
         mesh_now_mark_message_seen(mesh_msg.message_id);
     }
 
     if (mesh_msg.type == MSG_TYPE_BEACON) {
-        ESP_LOGI(TAG, "Received beacon from %02x:%02x:%02x:%02x:%02x:%02x"
+        ESP_LOGD(TAG, "Received beacon from %02x:%02x:%02x:%02x:%02x:%02x"
                  "%s%s",
                  mesh_msg.sender_mac[0], mesh_msg.sender_mac[1],
                  mesh_msg.sender_mac[2], mesh_msg.sender_mac[3],
@@ -122,7 +130,7 @@ static void esp_now_recv_cb(const uint8_t *mac_addr,
         int pending_index = mesh_now_find_pending(mesh_msg.message_id);
         if (pending_index >= 0) {
             mesh_now_release_pending(pending_index);
-            ESP_LOGI(TAG, "Received ACK for message %u", mesh_msg.message_id);
+            ESP_LOGD(TAG, "Received ACK for message %u", mesh_msg.message_id);
         }
     } else if (mesh_msg.type == MSG_TYPE_CHAT) {
         mesh_now_add_peer(mesh_msg.sender_mac);

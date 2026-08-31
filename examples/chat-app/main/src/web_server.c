@@ -25,8 +25,6 @@ static httpd_handle_t server = NULL;
 static QueueHandle_t message_queue = NULL;
 static web_server_callbacks_t callbacks = {0};
 
-static char node_name[17] = {0};
-
 static int url_decode(char *dst, size_t dst_size, const char *src)
 {
     int out = 0;
@@ -241,17 +239,15 @@ static esp_err_t name_handler(httpd_req_t *req)
 
     char decoded[17];
     url_decode(decoded, sizeof(decoded), raw_name);
-    strncpy(node_name, decoded, sizeof(node_name) - 1);
-    node_name[sizeof(node_name) - 1] = '\0';
 
     if (callbacks.set_name)
     {
-        callbacks.set_name(node_name);
+        callbacks.set_name(decoded);
     }
 
     httpd_resp_set_type(req, "application/json");
     char resp[64];
-    snprintf(resp, sizeof(resp), "{\"ok\":true,\"name\":\"%s\"}", node_name);
+    snprintf(resp, sizeof(resp), "{\"ok\":true,\"name\":\"%s\"}", mesh_now_get_name());
     httpd_resp_send(req, resp, strlen(resp));
     return ESP_OK;
 }
@@ -267,8 +263,9 @@ static esp_err_t self_handler(httpd_req_t *req)
              "%02x:%02x:%02x:%02x:%02x:%02x",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     cJSON_AddStringToObject(json, "mac", mac_str);
-    cJSON_AddStringToObject(json, "name",
-                            node_name[0] ? node_name : "unknown");
+
+    const char *name = mesh_now_get_name();
+    cJSON_AddStringToObject(json, "name", (name && name[0]) ? name : "unknown");
 
     char *str = cJSON_PrintUnformatted(json);
     httpd_resp_set_type(req, "application/json");
@@ -348,6 +345,9 @@ static esp_err_t peers_handler(httpd_req_t *req)
             cJSON_AddStringToObject(item, "name", peers[i].node_name);
         }
 
+        cJSON_AddBoolToObject(item, "online",
+                              mesh_now_peer_is_online(&peers[i]));
+
         cJSON_AddItemToArray(arr, item);
     }
 
@@ -356,6 +356,20 @@ static esp_err_t peers_handler(httpd_req_t *req)
     httpd_resp_send(req, str, strlen(str));
     cJSON_free(str);
     cJSON_Delete(root);
+    return ESP_OK;
+}
+
+static esp_err_t status_handler(httpd_req_t *req)
+{
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddNumberToObject(json, "group_id", mesh_now_get_group_id());
+    cJSON_AddBoolToObject(json, "encrypted", mesh_now_is_encrypted());
+
+    char *str = cJSON_PrintUnformatted(json);
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, str, strlen(str));
+    cJSON_free(str);
+    cJSON_Delete(json);
     return ESP_OK;
 }
 
@@ -484,6 +498,7 @@ esp_err_t web_server_init(QueueHandle_t queue, const web_server_callbacks_t *cbs
         {.uri = "/group", .method = HTTP_POST, .handler = group_handler},
         {.uri = "/encryption", .method = HTTP_POST, .handler = encryption_handler},
         {.uri = "/self", .method = HTTP_GET, .handler = self_handler},
+        {.uri = "/status", .method = HTTP_GET, .handler = status_handler},
         {.uri = "/messages", .method = HTTP_GET, .handler = messages_handler},
         {.uri = "/peers", .method = HTTP_GET, .handler = peers_handler},
         {.uri = "/wifi-info", .method = HTTP_GET, .handler = wifi_info_handler},

@@ -49,6 +49,13 @@ static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
 
     mesh_now_mark_message_seen(msg->message_id);
 
+    // Targeted traffic (DMs, typing) goes unicast: unicast runs at a much
+    // higher WiFi rate than broadcast and gets MAC-layer retries, so it
+    // costs a fraction of the airtime.
+    static const uint8_t zero_mac[ESP_NOW_ETH_ALEN] = {0};
+    const uint8_t *dest = memcmp(msg->target_mac, zero_mac, ESP_NOW_ETH_ALEN) != 0
+                              ? msg->target_mac : broadcast_mac;
+
     uint8_t wire[WIRE_BUF_SIZE];
     size_t wire_len = 0;
     esp_err_t err = mesh_now_prepare_wire(msg, wire, &wire_len, true);
@@ -56,11 +63,11 @@ static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
         return err;
     }
 
-    esp_err_t ret = mesh_now_send_wire(broadcast_mac, wire, wire_len,
+    esp_err_t ret = mesh_now_send_wire(dest, wire, wire_len,
                                         queue_for_retransmit, msg->message_id,
                                         msg->flags);
     if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "Sent message type %d id %u (%u bytes)",
+        ESP_LOGD(TAG, "Sent message type %d id %u (%u bytes)",
                  msg->type, msg->message_id, (unsigned)wire_len);
     }
     return ret;
@@ -107,7 +114,9 @@ void mesh_now_send_ack(const mesh_message_t *received_msg)
         return;
     }
 
-    esp_err_t ret = esp_now_send(broadcast_mac, wire, wire_len);
+    // Unicast back to the originator: broadcast ACKs waste airtime and get
+    // lost under load, which causes false retransmit drops on the sender.
+    esp_err_t ret = esp_now_send(received_msg->sender_mac, wire, wire_len);
     if (ret != ESP_OK) {
         ESP_LOGW(TAG, "Failed to send ACK for message %u: %s",
                  received_msg->message_id, esp_err_to_name(ret));
@@ -147,7 +156,7 @@ static void retransmit_task(void *pvParameters)
                                           pending->wire_buf,
                                           pending->wire_len);
             if (ret == ESP_OK) {
-                ESP_LOGI(TAG, "Retransmitted pending message (retry %d)",
+                ESP_LOGD(TAG, "Retransmitted pending message (retry %d)",
                          pending->retries);
             } else {
                 ESP_LOGW(TAG, "Retransmit failed: %s", esp_err_to_name(ret));

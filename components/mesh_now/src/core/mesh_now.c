@@ -4,6 +4,7 @@
 #include <esp_now.h>
 #include <esp_random.h>
 #include <esp_mac.h>
+#include <esp_timer.h>
 #include <string.h>
 
 #define TAG "MESH_NOW"
@@ -153,9 +154,31 @@ esp_err_t mesh_now_set_name(const char *name)
     if (name == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
+    // Safe without the mutex: app_main calls this before mesh_now_init()
+    // creates state_mutex, and only the main task runs at that point.
+    if (state_mutex != NULL) {
+        xSemaphoreTake(state_mutex, portMAX_DELAY);
+    }
     strncpy(local_node_name, name, MESH_NOW_NODE_NAME_MAX);
     local_node_name[MESH_NOW_NODE_NAME_MAX] = '\0';
+    if (state_mutex != NULL) {
+        xSemaphoreGive(state_mutex);
+    }
     return ESP_OK;
+}
+
+const char* mesh_now_get_name(void)
+{
+    static char name_copy[MESH_NOW_NODE_NAME_MAX + 1];
+    if (state_mutex != NULL) {
+        xSemaphoreTake(state_mutex, portMAX_DELAY);
+    }
+    strncpy(name_copy, local_node_name, sizeof(name_copy));
+    name_copy[MESH_NOW_NODE_NAME_MAX] = '\0';
+    if (state_mutex != NULL) {
+        xSemaphoreGive(state_mutex);
+    }
+    return name_copy;
 }
 
 int mesh_now_get_peer_count(void)
@@ -169,6 +192,23 @@ int mesh_now_get_peer_count(void)
 mesh_peer_t *mesh_now_get_peers(void)
 {
     return peers;
+}
+
+bool mesh_now_is_encrypted(void)
+{
+    return encryption_enabled;
+}
+
+uint8_t mesh_now_get_group_id(void)
+{
+    return local_group_id;
+}
+
+bool mesh_now_peer_is_online(const mesh_peer_t *peer)
+{
+    if (peer == NULL || !peer->active) return false;
+    int64_t now = esp_timer_get_time();
+    return (now - peer->last_seen) < PEER_EXPIRY_US;
 }
 
 esp_err_t mesh_now_init(void)

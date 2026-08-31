@@ -18,10 +18,16 @@ interface SelfInfo {
 interface PeerInfo {
     mac: string;
     name?: string;
+    online: boolean;
 }
 
 interface PeersResponse {
     peers: PeerInfo[];
+}
+
+interface StatusInfo {
+    group_id: number;
+    encrypted: boolean;
 }
 
 declare global {
@@ -82,7 +88,9 @@ class MeshNowApp {
     private seenIds = new Set<number>();
     private typingPeers = new Map<string, number>();
     private typingTimer: ReturnType<typeof setTimeout> | null = null;
+    private lastTypingSent = 0;
     private targetMac: string | null = null; // null = broadcast
+    private peerNames = new Map<string, string>();
 
     constructor() {
         this.buildUI();
@@ -137,7 +145,7 @@ class MeshNowApp {
                 </div>
             </div>
             <div class="sidebar-section">
-                <div class="sidebar-label">Encryption</div>
+                <div class="sidebar-label">Encryption <span class="encryption-status"></span></div>
                 <div class="group-controls">
                     <input type="text" class="encryption-input" placeholder="Key">
                     <button class="encryption-set-btn">Set</button>
@@ -248,6 +256,8 @@ class MeshNowApp {
                 body: `key=${encodeURIComponent(key)}`
             }).then(() => {
                 this.addSystem('Encryption key set');
+                const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
+                if (encStatus) encStatus.textContent = 'On';
                 encInput.value = '';
             }).catch(() => {});
         });
@@ -266,6 +276,26 @@ class MeshNowApp {
             this.nameEl.title = this.selfMac;
         } catch (e) {
             console.warn('Failed to load self info');
+        }
+
+        // Load mesh status (group, encryption)
+        try {
+            const resp = await fetch('/status');
+            const data: StatusInfo = await resp.json();
+            if (data.group_id > 0) {
+                this.groupId = data.group_id;
+                const groupInput = this.sidebarEl.querySelector('.group-input') as HTMLInputElement;
+                if (groupInput) groupInput.value = String(data.group_id);
+                const chatTarget = this.container.querySelector('.chat-target')!;
+                chatTarget.textContent = `Group ${data.group_id}`;
+                chatTarget.className = 'chat-target group';
+            }
+            if (data.encrypted) {
+                const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
+                if (encStatus) encStatus.textContent = 'On';
+            }
+        } catch (e) {
+            console.warn('Failed to load mesh status');
         }
 
         // Load WiFi info
@@ -327,7 +357,10 @@ class MeshNowApp {
     private async onTyping(): Promise<void> {
         if (this.typingTimer) clearTimeout(this.typingTimer);
 
-        if (this.targetMac) {
+        // Throttle
+        const now = Date.now();
+        if (this.targetMac && now - this.lastTypingSent > 1500) {
+            this.lastTypingSent = now;
             try {
                 const body = `target=${encodeURIComponent(this.targetMac)}&typing=true`;
                 await fetch('/typing', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
@@ -339,6 +372,7 @@ class MeshNowApp {
                 const body = `target=${encodeURIComponent(this.targetMac)}&typing=false`;
                 fetch('/typing', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body }).catch(() => { });
             }
+            this.lastTypingSent = 0;
         }, 2000);
     }
 
@@ -377,12 +411,13 @@ class MeshNowApp {
                 }
 
                 if (msg.type === MSG_TYPE_PRESENCE) {
-                    this.addSystem(`${shortMac(msg.sender)}: ${msg.content}`);
+                    const senderName = this.peerNames.get(msg.sender) || shortMac(msg.sender);
+                    this.addSystem(`${senderName}: ${msg.content}`);
                     continue;
                 }
 
                 const isSelf = msg.sender === this.selfMac;
-                const name = isSelf ? this.selfName : shortMac(msg.sender);
+                const name = isSelf ? this.selfName : (this.peerNames.get(msg.sender) || shortMac(msg.sender));
                 this.addMessage(msg.sender, name, msg.content, msg.type, msg.group_id, msg.target, msg.timestamp);
 
                 // Cap seen set
@@ -409,18 +444,24 @@ class MeshNowApp {
 
     private renderPeerList(peers: PeerInfo[]): void {
         this.peerListEl.innerHTML = '';
+        this.peerNames.clear();
+
         if (peers.length === 0) {
             this.peerListEl.innerHTML = '<div class="peer-empty">No peers yet</div>';
             return;
         }
 
         for (const peer of peers) {
+            const displayName = peer.name || shortMac(peer.mac);
+            this.peerNames.set(peer.mac, displayName);
+
             const el = document.createElement('div');
             el.className = 'peer-item';
             const color = macColor(peer.mac);
             const isTyping = this.typingPeers.has(peer.mac);
-            const displayName = peer.name || shortMac(peer.mac);
+            const statusClass = peer.online ? 'online' : 'offline';
             el.innerHTML = `
+                <span class="peer-status-dot ${statusClass}"></span>
                 <span class="peer-dot" style="background:${color}"></span>
                 <span class="peer-name">${escapeHtml(displayName)}</span>
                 ${isTyping ? '<span class="peer-typing">typing...</span>' : ''}
@@ -487,7 +528,7 @@ class MeshNowApp {
 
     private showTyping(mac: string): void {
         this.typingPeers.set(mac, Date.now());
-        const name = mac === this.selfMac ? this.selfName : shortMac(mac);
+        const name = mac === this.selfMac ? this.selfName : (this.peerNames.get(mac) || shortMac(mac));
         this.typingEl.textContent = `${name} is typing...`;
         this.typingEl.style.display = 'block';
     }
@@ -506,7 +547,7 @@ class MeshNowApp {
                 this.typingEl.style.display = 'none';
             } else {
                 const first = this.typingPeers.keys().next().value!;
-                const name = first === this.selfMac ? this.selfName : shortMac(first);
+                const name = first === this.selfMac ? this.selfName : (this.peerNames.get(first) || shortMac(first));
                 this.typingEl.textContent = `${name} is typing...`;
             }
         }

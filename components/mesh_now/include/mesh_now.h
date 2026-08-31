@@ -72,8 +72,12 @@ esp_err_t mesh_now_send_typing(const uint8_t *target_mac, bool typing);
 esp_err_t mesh_now_set_group(uint8_t group_id);
 esp_err_t mesh_now_set_encryption_key(const uint8_t *key, size_t len);
 esp_err_t mesh_now_set_name(const char *name);
+const char* mesh_now_get_name(void);
 int mesh_now_get_peer_count(void);
 mesh_peer_t* mesh_now_get_peers(void);
+bool mesh_now_is_encrypted(void);
+uint8_t mesh_now_get_group_id(void);
+bool mesh_now_peer_is_online(const mesh_peer_t *peer);
 
 size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out, size_t out_size);
 bool mesh_now_decode(const uint8_t *data, size_t len, mesh_message_t *msg);
