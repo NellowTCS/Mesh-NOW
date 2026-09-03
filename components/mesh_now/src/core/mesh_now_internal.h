@@ -77,7 +77,8 @@ extern int64_t time_offset_us;
 uint32_t mesh_now_generate_message_id(void);
 bool mesh_now_is_message_seen(uint32_t message_id);
 void mesh_now_mark_message_seen(uint32_t message_id);
-int mesh_now_allocate_pending(void);
+int mesh_now_add_pending(const uint8_t *dest_mac, const uint8_t *wire,
+                         size_t wire_len, uint32_t message_id, uint8_t flags);
 int mesh_now_find_pending(uint32_t message_id);
 void mesh_now_release_pending(int index);
 

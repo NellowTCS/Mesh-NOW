@@ -179,14 +179,16 @@ static void push_hello(void)
 
 static void push_peers(void)
 {
-    int count = mesh_now_get_peer_count();
-    mesh_peer_t *peers = mesh_now_get_peers();
+    // Snapshot the peer table under the mutex; building JSON from shared
+    // state directly would race with the beacon expiry task.
+    mesh_peer_t peers[MAX_PEERS];
+    int count = mesh_now_snapshot_peers(peers, MAX_PEERS);
 
     cJSON *root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "event", "peers");
     cJSON *arr = cJSON_AddArrayToObject(root, "peers");
 
-    for (int i = 0; i < count && i < MAX_PEERS; i++) {
+    for (int i = 0; i < count; i++) {
         if (!peers[i].active) {
             continue;
         }

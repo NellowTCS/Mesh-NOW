@@ -69,12 +69,12 @@ Both tasks are pinned to core 0. If your application uses core 0 heavily, adjust
 
 | Component | RAM |
 | :-------- | :-- |
-| Peer table (20 peers) | ~130 bytes |
-| Pending messages (16 slots) | ~2.6 KB |
+| Peer table (20 peers) | ~640 bytes |
+| Pending messages (16 slots) | ~4.6 KB |
 | Seen message IDs (128 entries) | ~512 bytes |
 | Beacon task stack | 4096 bytes |
 | Retransmit task stack | 4096 bytes |
-| **Total library overhead** | **~12 KB** |
+| **Total library overhead** | **~14 KB** |
 
 ## Next Steps
 

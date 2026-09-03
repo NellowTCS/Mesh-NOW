@@ -14,18 +14,11 @@ static esp_err_t mesh_now_send_wire(const uint8_t *dest_mac,
                                     uint32_t message_id, uint8_t flags)
 {
     if (queue_for_retransmit) {
-        int index = mesh_now_allocate_pending();
-        if (index < 0) {
+        if (mesh_now_add_pending(dest_mac, wire, wire_len, message_id, flags) <
+            0) {
             ESP_LOGW(TAG, "No pending slots available");
             return ESP_ERR_NO_MEM;
         }
-        pending_messages[index].message_id = message_id;
-        pending_messages[index].flags = flags;
-        memcpy(pending_messages[index].wire_buf, wire, wire_len);
-        pending_messages[index].wire_len = wire_len;
-        memcpy(pending_messages[index].dest_mac, dest_mac, ESP_NOW_ETH_ALEN);
-        pending_messages[index].retries = 0;
-        pending_messages[index].last_send_time_ms = esp_timer_get_time() / 1000;
     }
 
     esp_err_t ret = esp_now_send(dest_mac, wire, wire_len);

@@ -81,6 +81,10 @@ const char *mesh_now_get_name(void);
 esp_err_t mesh_now_announce_name(void);
 int mesh_now_get_peer_count(void);
 mesh_peer_t *mesh_now_get_peers(void);
+// Thread-safe copy of the peer table. Returns the number of entries written
+// (at most max_out). Prefer this over mesh_now_get_peers() when the caller
+// does not own the mutex (e.g. a UI streaming thread).
+int mesh_now_snapshot_peers(mesh_peer_t *out, size_t max_out);
 bool mesh_now_is_encrypted(void);
 uint8_t mesh_now_get_group_id(void);
 bool mesh_now_peer_is_online(const mesh_peer_t *peer);

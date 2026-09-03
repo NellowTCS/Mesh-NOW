@@ -7,7 +7,7 @@ Every Mesh-NOW message is serialized to MessagePack and sent as a binary ESP-NOW
 
 ## Wire Format
 
-Messages use a binary envelope with a 27-byte header followed by a MessagePack-encoded payload. See [Wire Format](../protocol/wire-format.md) for the full binary layout.
+Messages use a binary envelope with a 31-byte header followed by a MessagePack-encoded payload. See [Wire Format](../protocol/wire-format.md) for the full binary layout.
 
 The canonical protocol specification is [`mesh_now.ksy`](/mesh_now.ksy) at the repository root.
 
@@ -22,6 +22,7 @@ typedef struct {
     uint8_t group_id;          // Group identifier (0-255)
     uint8_t hop_count;         // Remaining hops before drop
     uint32_t message_id;       // Unique message identifier
+    uint32_t reply_to;         // Message id being acked (ACK frames only)
     uint8_t sender_mac[6];     // Sender MAC address
     uint8_t target_mac[6];     // Target MAC (direct messages)
     uint32_t timestamp;        // Milliseconds since init
@@ -43,6 +44,7 @@ typedef struct {
 | `group_id` | 1 byte | Group membership filter (0 = no group) |
 | `hop_count` | 1 byte | Remaining relay count; decremented at each hop |
 | `message_id` | 4 bytes | Monotonically increasing unique ID (random seed) |
+| `reply_to` | 4 bytes | For ACK frames, the `message_id` being acknowledged; 0 otherwise |
 | `sender_mac` | 6 bytes | MAC address of the originating node |
 | `target_mac` | 6 bytes | MAC address of the intended recipient |
 | `timestamp` | 4 bytes | Milliseconds since `mesh_now_init()` was called |

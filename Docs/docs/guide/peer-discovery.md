@@ -39,6 +39,8 @@ The peer table is a fixed-size array of `mesh_peer_t` entries:
 typedef struct {
     uint8_t peer_addr[6];  // MAC address
     bool active;           // Whether this peer is valid
+    int64_t last_seen;     // Monotonic ms of last contact
+    char node_name[17];    // Human-readable name (from beacons)
 } mesh_peer_t;
 
 #define MAX_PEERS 20
@@ -56,8 +58,11 @@ mesh_now_remove_peer(const uint8_t *mac);
 // Get current peer count
 int mesh_now_get_peer_count(void);
 
-// Get pointer to peer table
+// Get pointer to peer table (not thread-safe, internal state)
 mesh_peer_t* mesh_now_get_peers(void);
+
+// Thread-safe copy of the peer table
+int mesh_now_snapshot_peers(mesh_peer_t *out, size_t max_out);
 ```
 
 ::: callout warning title:"Self-Exclusion"
@@ -81,11 +86,16 @@ sequenceDiagram
 
 ## Peer Expiration
 
-::: callout info title:"Current Behavior"
-The current implementation does not expire peers. Once added, a peer remains in the table until explicitly removed via `mesh_now_remove_peer()` or until the node reboots.
-::: /callout
+Each peer records `last_seen` (monotonic ms) whenever it is contacted. The `beacon_task` periodically marks peers inactive once they have not been seen within `PEER_EXPIRY_US` (default 30 seconds, configurable via the `MESH_NOW_PEER_EXPIRY_SEC` Kconfig option). Expired peers remain in the table but report `online == false`.
 
-A future improvement could add a last-seen timestamp and expire peers that have not sent a beacon within a configurable window (e.g., 30 seconds).
+```c
+// Expired when no beacon/message received within the window:
+(now - peers[i].last_seen) > PEER_EXPIRY_US
+```
+
+::: callout info title:"Expiry vs. Removal"
+Expiry only flips a peer to inactive; it does not free the slot. A peer is fully removed from the ESP-NOW subsystem and the local table only via `mesh_now_remove_peer()` or on reboot.
+::: /callout
 
 ## Peer Events
 

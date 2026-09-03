@@ -66,15 +66,26 @@ void mesh_now_mark_message_seen(uint32_t message_id)
     xSemaphoreGive(state_mutex);
 }
 
-int mesh_now_allocate_pending(void)
+int mesh_now_add_pending(const uint8_t *dest_mac, const uint8_t *wire,
+                         size_t wire_len, uint32_t message_id, uint8_t flags)
 {
+    // Allocate and initialize a pending slot under a single mutex hold so the
+    // retransmit task never observes a partially-initialized entry.
     xSemaphoreTake(state_mutex, portMAX_DELAY);
     for (int i = 0; i < MAX_PENDING_MESSAGES; ++i) {
-        if (!pending_messages[i].active) {
-            pending_messages[i].active = true;
-            xSemaphoreGive(state_mutex);
-            return i;
+        if (pending_messages[i].active) {
+            continue;
         }
+        pending_messages[i].message_id = message_id;
+        pending_messages[i].flags = flags;
+        memcpy(pending_messages[i].wire_buf, wire, wire_len);
+        pending_messages[i].wire_len = wire_len;
+        memcpy(pending_messages[i].dest_mac, dest_mac, ESP_NOW_ETH_ALEN);
+        pending_messages[i].retries = 0;
+        pending_messages[i].last_send_time_ms = esp_timer_get_time() / 1000;
+        pending_messages[i].active = true;
+        xSemaphoreGive(state_mutex);
+        return i;
     }
     xSemaphoreGive(state_mutex);
     return -1;
@@ -207,10 +218,34 @@ uint8_t mesh_now_get_group_id(void)
 
 bool mesh_now_peer_is_online(const mesh_peer_t *peer)
 {
-    if (peer == NULL || !peer->active)
+    if (peer == NULL) {
         return false;
-    int64_t now = esp_timer_get_time();
-    return (now - peer->last_seen) < PEER_EXPIRY_US;
+    }
+    // Read both fields under the lock so an expiry in the beacon task cannot
+    // race with this check.
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
+    bool active = peer->active;
+    int64_t last_seen = peer->last_seen;
+    xSemaphoreGive(state_mutex);
+    if (!active) {
+        return false;
+    }
+    return (esp_timer_get_time() - last_seen) < PEER_EXPIRY_US;
+}
+
+int mesh_now_snapshot_peers(mesh_peer_t *out, size_t max_out)
+{
+    if (out == NULL || max_out == 0) {
+        return 0;
+    }
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
+    size_t to_copy = peer_count < (int)max_out ? peer_count : max_out;
+    for (size_t i = 0; i < to_copy; i++) {
+        out[i] = peers[i];
+    }
+    int count = (int)to_copy;
+    xSemaphoreGive(state_mutex);
+    return count;
 }
 
 esp_err_t mesh_now_init(void)

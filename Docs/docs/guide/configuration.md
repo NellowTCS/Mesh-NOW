@@ -3,23 +3,22 @@ title: "Configuration"
 description: "All compile-time constants, tuning knobs, and runtime settings."
 ---
 
-Mesh-NOW is configured via compile-time `#define` constants and runtime API calls.
+Mesh-NOW is configured via compile-time tokens and runtime API calls. Runtime-tunable values (beacon interval, retry/ACK timings, peer expiry) are **Kconfig options** under the `Mesh-NOW` menu, exposed through `idf.py menuconfig` as `CONFIG_MESH_NOW_*`. Structural limits that affect the wire format or ABI are hard `#define`s in `mesh_now.h`.
 
 ## Compile-Time Constants
 
-Defined in `mesh_now.c` and `mesh_now.h`:
-
-| Constant | Default | File | Description |
-| :------- | :------ | :--- | :---------- |
+| Constant | Default | Defined | Description |
+| :------- | :------ | :------ | :---------- |
+| `CONFIG_MESH_NOW_BEACON_INTERVAL_MS` | 5000 | Kconfig | Beacon broadcast interval (ms) |
+| `CONFIG_MESH_NOW_RETRANSMIT_TIMEOUT_MS` | 2000 | Kconfig | Retransmit timeout (ms) |
+| `CONFIG_MESH_NOW_MAX_RETRIES` | 3 | Kconfig | Maximum retransmission attempts |
+| `CONFIG_MESH_NOW_MAX_PENDING_MESSAGES` | 16 | Kconfig | Pending message table size |
+| `CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS` | 128 | Kconfig | Duplicate detection buffer size |
+| `CONFIG_MESH_NOW_DEFAULT_ROUTE_TTL` | 3 | Kconfig | Default hop count for messages |
+| `CONFIG_MESH_NOW_PEER_EXPIRY_SEC` | 30 | Kconfig | Seconds without contact before a peer goes inactive |
 | `MAX_MESH_MESSAGE_LEN` | 128 | `mesh_now.h` | Maximum payload length in bytes |
-| `DEFAULT_ROUTE_TTL` | 3 | `mesh_now.h` | Default hop count for messages |
 | `MAX_PEERS` | 20 | `mesh_now.h` | Maximum number of tracked peers |
-| `BEACON_INTERVAL_MS` | 5000 | `mesh_now.c` | Beacon broadcast interval (ms) |
-| `RETRANSMIT_TIMEOUT_MS` | 2000 | `mesh_now.c` | Retransmit timeout (ms) |
-| `MAX_PENDING_MESSAGES` | 16 | `mesh_now.c` | Pending message table size |
-| `MAX_SEEN_MESSAGE_IDS` | 128 | `mesh_now.c` | Duplicate detection buffer size |
-| `MAX_ENCRYPTION_KEY` | 32 | `mesh_now.c` | Maximum encryption key length (bytes) |
-| `MAX_GROUP_ID` | 255 | `mesh_now.c` | Maximum group identifier |
+| `MAX_ENCRYPTION_KEY` | 16 | `mesh_now.h` | Encryption key length (bytes) |
 
 ## FreeRTOS Task Configuration
 
@@ -35,8 +34,9 @@ Defined in `mesh_now.c` and `mesh_now.h`:
 ### Encryption Key
 
 ```c
-// Set at any time after init
-uint8_t key[] = {0x01, 0x02, 0x03, 0x04};
+// Set at any time after init. The key must be exactly 16 bytes (AES-128).
+uint8_t key[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                   0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10};
 mesh_now_set_encryption_key(key, sizeof(key));
 ```
 
@@ -64,10 +64,12 @@ mesh_now_remove_peer(mac);
 
 ## Tuning Guide
 
+All of these are Kconfig options, set in `idf.py menuconfig` under the `Mesh-NOW` menu (or via `sdkconfig.defaults`).
+
 ### Increase Range (Higher TTL)
 
-```c
-#define DEFAULT_ROUTE_TTL 5  // 5 hops instead of 3
+```text
+CONFIG_MESH_NOW_DEFAULT_ROUTE_TTL=5   # 5 hops instead of 3
 ```
 
 ::: callout warning title:"Trade-off"
@@ -76,32 +78,32 @@ Higher TTL increases range but also increases network load. Every hop re-broadca
 
 ### Reduce Latency (Faster Beacons)
 
-```c
-#define BEACON_INTERVAL_MS 2000  // Beacon every 2 seconds
+```text
+CONFIG_MESH_NOW_BEACON_INTERVAL_MS=2000   # Beacon every 2 seconds
 ```
 
 Faster beacons mean quicker peer discovery but more airtime usage.
 
 ### Increase Capacity (More Peers)
 
+`MAX_PEERS` is a compile-time `#define` in `mesh_now.h`:
+
 ```c
 #define MAX_PEERS 40  // Track up to 40 peers
 ```
 
-Each peer uses ~6.5 bytes of RAM. 40 peers = ~260 bytes.
+Each peer entry uses ~32 bytes of RAM (address, activity flag, 8-byte timestamp, name). 40 peers = ~1280 bytes.
 
 ### Increase Reliability (More Retries)
 
-In `retransmit_task`, change:
-
-```c
-if (pending->retries >= 5) {  // 5 retries instead of 3
+```text
+CONFIG_MESH_NOW_MAX_RETRIES=5   # 5 retries instead of 3
 ```
 
 ### Increase Throughput (Larger Payload)
 
 ::: callout warning title:"ESP-NOW Limit"
-ESP-NOW frames are limited to 250 bytes. The `mesh_message_t` struct is 154 bytes. Increasing `MAX_MESH_MESSAGE_LEN` beyond 128 bytes may exceed the ESP-NOW frame limit.
+ESP-NOW frames are limited to 250 bytes. The `mesh_message_t` struct is ~172 bytes. Increasing `MAX_MESH_MESSAGE_LEN` beyond 128 bytes may exceed the ESP-NOW frame limit (the wire header is 31 bytes plus the MessagePack-typed payload).
 ::: /callout
 
 ## Platform-Specific Configs

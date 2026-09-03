@@ -190,8 +190,23 @@ mesh_peer_t* mesh_now_get_peers(void);
 **Returns:** Pointer to the internal `mesh_peer_t` array (max `MAX_PEERS` entries).
 
 ::: callout warning title:"Thread Safety"
-The returned pointer references internal state. Do not free it. Access is not thread-safe -- do not read while another task is modifying the peer table.
+The returned pointer references internal state. Do not free it. Access is not thread-safe -- do not read while another task is modifying the peer table. Prefer `mesh_now_snapshot_peers()` (below) from application threads like a UI streaming loop.
 ::: /callout
+
+### `mesh_now_snapshot_peers`
+
+Thread-safe copy of the peer table. Best used when the caller does not own the internal mutex (e.g. a UI thread serializing peers over a stream).
+
+```c
+int mesh_now_snapshot_peers(mesh_peer_t *out, size_t max_out);
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `out` | `mesh_peer_t*` | Destination buffer caller must allocate |
+| `max_out` | `size_t` | Capacity of `out` (entries) |
+
+**Returns:** Number of entries written, at most `max_out`. Entries are a point-in-time copy taken under the mutex.
 
 ## Configuration
 
@@ -234,9 +249,9 @@ esp_err_t mesh_now_set_encryption_key(const uint8_t *key, size_t len);
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
 | `key` | `const uint8_t*` | Encryption key bytes |
-| `len` | `size_t` | Key length (1-32 bytes) |
+| `len` | `size_t` | Key length (must be exactly 16 bytes) |
 
-**Returns:** `ESP_OK` on success, `ESP_ERR_INVALID_ARG` if key is NULL, length is 0, or length > 32.
+**Returns:** `ESP_OK` on success, `ESP_ERR_INVALID_ARG` if key is NULL or `len` is not 16.
 
 ## Types
 
@@ -249,10 +264,12 @@ typedef struct {
     uint8_t group_id;
     uint8_t hop_count;
     uint32_t message_id;
+    uint32_t reply_to;
     uint8_t sender_mac[6];
     uint8_t target_mac[6];
     uint32_t timestamp;
     char message[128];
+    char node_name[17];
 } mesh_message_t;
 ```
 
@@ -262,6 +279,8 @@ typedef struct {
 typedef struct {
     uint8_t peer_addr[6];
     bool active;
+    int64_t last_seen;
+    char node_name[17];
 } mesh_peer_t;
 ```
 
