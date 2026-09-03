@@ -139,7 +139,8 @@ esp_err_t mesh_now_set_group(uint8_t group_id)
 
 esp_err_t mesh_now_set_encryption_key(const uint8_t *key, size_t len)
 {
-    if (key == NULL || len == 0 || len > MAX_ENCRYPTION_KEY) {
+    // AES-128-GCM requires exactly a 16-byte key.
+    if (key == NULL || len != AES_GCM_KEY_LEN) {
         return ESP_ERR_INVALID_ARG;
     }
 

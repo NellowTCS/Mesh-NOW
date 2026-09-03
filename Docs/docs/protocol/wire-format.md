@@ -19,14 +19,15 @@ Offset  Size    Field
 5       1       group_id
 6       1       hop_count
 7       4       message_id (LE)
-11      6       sender_mac
-17      6       target_mac
-23      4       timestamp (LE)
-27      ...     payload (MessagePack or encrypted)
+11      4       reply_to (LE)
+15      6       sender_mac
+21      6       target_mac
+27      4       timestamp (LE)
+31      ...     payload (MessagePack or encrypted)
 ------  ------  -----
 ```
 
-The header is always 27 bytes. The payload follows immediately after.
+The header is always 31 bytes. The payload follows immediately after.
 
 ## Field Encoding
 
@@ -38,7 +39,7 @@ Fixed bytes `0x4d 0x4e` ("MN"). Identifies a Mesh-NOW frame.
 
 ### `version` (1 byte)
 
-Protocol version. Currently `1`.
+Protocol version. Currently `2`.
 
 ### `flags` (1 byte)
 
@@ -77,6 +78,10 @@ Remaining relay count. Set to `DEFAULT_ROUTE_TTL` (3) on send, decremented at ea
 
 Monotonically increasing `uint32_t`. Assigned by the sender, seeded from `esp_random()` on first use. Used for duplicate detection and ACK matching.
 
+### `reply_to` (4 bytes)
+
+For `ACK` frames, the `message_id` of the message being acknowledged. For all other frame types this is `0`. Allowing each ACK to carry its own `message_id` (rather than reusing the acked message's id) lets ACKs participate in seen-message dedup, so routed ACKs are not re-flooded by every relay.
+
 ### `sender_mac` / `target_mac` (6 bytes each)
 
 IEEE 802.11 MAC addresses. Set automatically by the library.
@@ -113,9 +118,10 @@ Offset  Size    Field
 The 12-byte nonce is built from:
 
 - `message_id` (4 bytes, little-endian)
-- `sender_mac` (8 bytes, first 8 of the 6-byte MAC padded to 8)
+- `sender_mac` (6 bytes)
+- a fixed `0x00 0x00` pad (2 bytes)
 
-This ensures each message has a unique nonce as long as message IDs are unique per sender.
+This ensures each message has a unique nonce as long as message IDs are unique per sender; the fixed pad is a domain separator and the sender MAC disambiguates nodes sharing a network key.
 
 ### Auth Tag
 
@@ -135,16 +141,18 @@ Total AAD: 18 bytes.
 
 ## Wire Size Comparison
 
-| Message       | Legacy (fixed 152B) | New (variable) | Savings |
-|:--------------|:--------------------|:---------------|:--------|
-| ACK           | 152 bytes           | ~30 bytes      | 80%     |
-| Typing        | 152 bytes           | ~35 bytes      | 77%     |
-| Short "ok"    | 152 bytes           | ~40 bytes      | 74%     |
-| 100-char chat | 152 bytes           | ~130 bytes     | 14%     |
-| Full 128B     | 152 bytes           | ~160 bytes     | -5%     |
+The payload carries only the message data, so total frame size is the 31-byte header plus a small typed map plus the message text.
+
+| Message       | Legacy (fixed 152B) | New | Savings |
+|:--------------|:--------------------|:----|:--------|
+| ACK           | 152 bytes           | 41 bytes   | 73% |
+| Typing        | 152 bytes           | 47 bytes   | 69% |
+| Short "ok"    | 152 bytes           | 43 bytes   | 72% |
+| 100-char chat | 152 bytes           | 142 bytes  | 7% |
+| Full 128B     | 152 bytes           | 170 bytes (198 encrypted) | -12% |
 
 ::: callout info title:"ESP-NOW Compatibility"
-ESP-NOW supports frames up to 250 bytes. The new wire format is variable-length, typically well within this limit for short messages.
+ESP-NOW supports frames up to 250 bytes. A max-length 128-char message encodes to 170 bytes unencrypted and 198 bytes encrypted, both comfortably within the cap.
 ::: /callout
 
 ## Next Steps

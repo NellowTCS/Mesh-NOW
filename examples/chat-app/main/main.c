@@ -10,7 +10,7 @@
 
 #include "mesh_now.h"
 #include "wifi_manager.h"
-#include "web_server.h"
+#include "serial_api.h"
 #include "message_queue.h"
 
 #define TAG "MESH_NOW_MAIN"
@@ -19,34 +19,34 @@
 
 static char node_name[17] = {0};
 
-// Callbacks for web server
+// Callbacks for the serial API
 
-static void web_send_broadcast(const char *message)
+static void app_send_broadcast(const char *message)
 {
     mesh_now_send_message(message);
 }
 
-static void web_send_direct(const uint8_t *target_mac, const char *message)
+static void app_send_direct(const uint8_t *target_mac, const char *message)
 {
     mesh_now_send_direct(target_mac, message);
 }
 
-static void web_send_group(uint8_t group_id, const char *message)
+static void app_send_group(uint8_t group_id, const char *message)
 {
     mesh_now_send_group(group_id, message);
 }
 
-static void web_send_presence(const char *status)
+static void app_send_presence(const char *status)
 {
     mesh_now_send_presence(status);
 }
 
-static void web_typing(const uint8_t *target_mac, bool typing)
+static void app_typing(const uint8_t *target_mac, bool typing)
 {
     mesh_now_send_typing(target_mac, typing);
 }
 
-static void web_set_name(const char *name)
+static void app_set_name(const char *name)
 {
     strncpy(node_name, name, sizeof(node_name) - 1);
     node_name[sizeof(node_name) - 1] = '\0';
@@ -62,12 +62,12 @@ static void web_set_name(const char *name)
     }
 }
 
-static void web_set_group(uint8_t group_id)
+static void app_set_group(uint8_t group_id)
 {
     mesh_now_set_group(group_id);
 }
 
-static void web_set_encryption(const uint8_t *key, size_t len)
+static void app_set_encryption(const uint8_t *key, size_t len)
 {
     mesh_now_set_encryption_key(key, len);
 }
@@ -126,28 +126,26 @@ void app_main(void)
     mesh_now_set_name(node_name);
 
     ESP_ERROR_CHECK(wifi_manager_init());
-    wifi_manager_register_peer_callbacks(mesh_now_add_peer, mesh_now_remove_peer);
 
     ESP_ERROR_CHECK(mesh_now_init());
 
-    web_server_callbacks_t web_cbs = {
-        .send_broadcast = web_send_broadcast,
-        .send_direct = web_send_direct,
-        .send_group = web_send_group,
-        .send_presence = web_send_presence,
-        .send_typing = web_typing,
-        .set_name = web_set_name,
-        .set_group = web_set_group,
-        .set_encryption = web_set_encryption,
+    serial_api_callbacks_t serial_cbs = {
+        .send_broadcast = app_send_broadcast,
+        .send_direct = app_send_direct,
+        .send_group = app_send_group,
+        .send_presence = app_send_presence,
+        .send_typing = app_typing,
+        .set_name = app_set_name,
+        .set_group = app_set_group,
+        .set_encryption = app_set_encryption,
     };
-    ESP_ERROR_CHECK(web_server_init(message_queue_get_handle(), &web_cbs));
+    ESP_ERROR_CHECK(serial_api_init(message_queue_get_handle(), &serial_cbs));
 
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
     ESP_LOGI(TAG, "Device MAC: %02x:%02x:%02x:%02x:%02x:%02x",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    ESP_LOGI(TAG, "Connect to WiFi AP 'MESH-NOW-*' with password 'password'");
-    ESP_LOGI(TAG, "Open http://192.168.4.1 in your browser");
+    ESP_LOGI(TAG, "Connect the web UI via Web Serial over USB");
 
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(1000));

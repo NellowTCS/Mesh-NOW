@@ -9,11 +9,16 @@
 void mesh_now_build_nonce(uint32_t message_id, const uint8_t *sender_mac,
                           uint8_t nonce[AES_GCM_NONCE_LEN])
 {
+    // 12-byte GCM nonce: message_id (4 LE) || sender_mac (6) || fixed pad (2).
+    // The last two bytes are a fixed domain separator; uniqueness still holds because
+    // message_id increments and sender_mac is unique per node sharing the network key.
     nonce[0] = (message_id >> 0) & 0xff;
     nonce[1] = (message_id >> 8) & 0xff;
     nonce[2] = (message_id >> 16) & 0xff;
     nonce[3] = (message_id >> 24) & 0xff;
-    memcpy(nonce + 4, sender_mac, 8);
+    memcpy(nonce + 4, sender_mac, ESP_NOW_ETH_ALEN);
+    nonce[10] = 0x00;
+    nonce[11] = 0x00;
 }
 
 esp_err_t mesh_now_aes_gcm_encrypt(const uint8_t *plaintext, size_t pt_len,

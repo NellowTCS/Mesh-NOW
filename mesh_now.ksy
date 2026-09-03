@@ -6,15 +6,15 @@ meta:
 
 doc: |
   Binary mesh networking protocol using ESP-NOW.
-  The header is always 27 bytes. The payload follows immediately.
+  The header is always 31 bytes. The payload follows immediately.
 
-  Multi-byte integer fields (message_id, timestamp) are little-endian,
-  matching native ESP32 byte order.
+  Multi-byte integer fields (message_id, reply_to, timestamp) are
+  little-endian, matching native ESP32 byte order.
 
   The payload is either a raw MessagePack-encoded map (unencrypted) or
-  an AES-128-GCM encrypted envelope. The inner MessagePack map contains:
-    - content (str): message text
-    - node_name (str, optional): present in beacons when HAS_NODE_NAME flag is set
+  an AES-128-GCM encrypted envelope. The inner MessagePack map carries
+  only the message data (content and, for beacons, node_name); all
+  routing and identity metadata lives in the fixed header.
 
 seq:
   - id: header
@@ -44,6 +44,8 @@ types:
         type: u1
       - id: message_id
         type: u4
+      - id: reply_to
+        type: u4
       - id: sender_mac
         size: 6
       - id: target_mac
@@ -59,7 +61,8 @@ types:
   encrypted_payload:
     doc: |
       AES-128-GCM encrypted envelope.
-      Nonce: message_id (4 bytes LE) || sender_mac (8 bytes) = 12 bytes.
+      Nonce: message_id (4 bytes LE) || sender_mac (6 bytes) ||
+             fixed pad (2 bytes) = 12 bytes.
       Auth tag: 16 bytes appended after ciphertext.
       AAD covers: msg_type, sender_mac, target_mac, group_id, timestamp.
     seq:
@@ -72,9 +75,10 @@ types:
 
   message:
     doc: |
-      MessagePack-encoded payload. The inner map contains 'content'
-      (str) and optionally 'node_name' (str, present in beacons when the
-      HAS_NODE_NAME flag is set in the header).
+      MessagePack-encoded payload carrying only the message data.
+      The inner map contains 'content' (str) and optionally 'node_name'
+      (str, present in beacons when the HAS_NODE_NAME flag is set in the
+      header).
     seq:
       - id: data
         size-eos: true

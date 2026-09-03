@@ -102,7 +102,10 @@ void mesh_now_send_ack(const mesh_message_t *received_msg)
     mesh_message_t ack_msg;
     memset(&ack_msg, 0, sizeof(mesh_message_t));
     ack_msg.type = MSG_TYPE_ACK;
-    ack_msg.message_id = received_msg->message_id;
+    // Give the ACK its own fresh message id so it can participate in
+    // seen-message dedup
+    ack_msg.message_id = mesh_now_generate_message_id();
+    ack_msg.reply_to = received_msg->message_id;
     ack_msg.hop_count = DEFAULT_ROUTE_TTL;
     esp_read_mac(ack_msg.sender_mac, ESP_MAC_WIFI_STA);
     memcpy(ack_msg.target_mac, received_msg->sender_mac, ESP_NOW_ETH_ALEN);

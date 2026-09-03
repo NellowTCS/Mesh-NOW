@@ -78,7 +78,7 @@ static void esp_now_recv_cb(const uint8_t *mac_addr,
         return;
     }
 
-    if (mesh_msg.type != MSG_TYPE_BEACON && mesh_msg.type != MSG_TYPE_ACK) {
+    if (mesh_msg.type != MSG_TYPE_BEACON) {
         if (mesh_now_is_message_seen(mesh_msg.message_id)) {
             // A duplicate DIRECT addressed to us means the original was
             // delivered but our ACK was lost. Re-ACK so the sender stops
@@ -127,10 +127,10 @@ static void esp_now_recv_cb(const uint8_t *mac_addr,
             return;
         }
 
-        int pending_index = mesh_now_find_pending(mesh_msg.message_id);
+        int pending_index = mesh_now_find_pending(mesh_msg.reply_to);
         if (pending_index >= 0) {
             mesh_now_release_pending(pending_index);
-            ESP_LOGD(TAG, "Received ACK for message %u", mesh_msg.message_id);
+            ESP_LOGD(TAG, "Received ACK for message %u", mesh_msg.reply_to);
         }
     } else if (mesh_msg.type == MSG_TYPE_CHAT) {
         mesh_now_add_peer(mesh_msg.sender_mac);

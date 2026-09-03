@@ -24,22 +24,6 @@ size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out, size_t out_size)
 
     bool has_name = (name[0] != '\0') && (msg->type == MSG_TYPE_BEACON);
     mpack_build_map(&writer);
-    mpack_write_cstr(&writer, "type");
-    mpack_write_uint(&writer, msg->type);
-    mpack_write_cstr(&writer, "flags");
-    mpack_write_uint(&writer, msg->flags & ~MSG_FLAG_ENCRYPTED);
-    mpack_write_cstr(&writer, "group_id");
-    mpack_write_uint(&writer, msg->group_id);
-    mpack_write_cstr(&writer, "hop_count");
-    mpack_write_uint(&writer, msg->hop_count);
-    mpack_write_cstr(&writer, "message_id");
-    mpack_write_uint(&writer, msg->message_id);
-    mpack_write_cstr(&writer, "sender");
-    mpack_write_bin(&writer, (const char *)msg->sender_mac, ESP_NOW_ETH_ALEN);
-    mpack_write_cstr(&writer, "target");
-    mpack_write_bin(&writer, (const char *)msg->target_mac, ESP_NOW_ETH_ALEN);
-    mpack_write_cstr(&writer, "timestamp");
-    mpack_write_uint(&writer, msg->timestamp);
 
     size_t content_len = strnlen(msg->message, MAX_MESH_MESSAGE_LEN);
     mpack_write_cstr(&writer, "content");
@@ -69,27 +53,6 @@ bool mesh_now_decode(const uint8_t *data, size_t len, mesh_message_t *msg)
     }
 
     mpack_node_t root = mpack_tree_root(&tree);
-
-    memset(msg, 0, sizeof(mesh_message_t));
-
-    msg->type = (uint8_t)mpack_node_u8(mpack_node_map_cstr(root, "type"));
-    msg->flags = (uint8_t)mpack_node_u8(mpack_node_map_cstr(root, "flags"));
-    msg->group_id = (uint8_t)mpack_node_u8(mpack_node_map_cstr(root, "group_id"));
-    msg->hop_count = (uint8_t)mpack_node_u8(mpack_node_map_cstr(root, "hop_count"));
-    msg->message_id = mpack_node_u32(mpack_node_map_cstr(root, "message_id"));
-    msg->timestamp = mpack_node_u32(mpack_node_map_cstr(root, "timestamp"));
-
-    mpack_node_t sender_node = mpack_node_map_cstr(root, "sender");
-    size_t sender_len = mpack_node_bin_size(sender_node);
-    if (sender_len == ESP_NOW_ETH_ALEN) {
-        memcpy(msg->sender_mac, mpack_node_bin_data(sender_node), ESP_NOW_ETH_ALEN);
-    }
-
-    mpack_node_t target_node = mpack_node_map_cstr(root, "target");
-    size_t target_len = mpack_node_bin_size(target_node);
-    if (target_len == ESP_NOW_ETH_ALEN) {
-        memcpy(msg->target_mac, mpack_node_bin_data(target_node), ESP_NOW_ETH_ALEN);
-    }
 
     mpack_node_t content_node = mpack_node_map_cstr(root, "content");
     size_t content_len = mpack_node_strlen(content_node);
@@ -127,7 +90,7 @@ esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg,
     size_t pos = 0;
     wire[pos++] = MESH_NOW_MAGIC_0;
     wire[pos++] = MESH_NOW_MAGIC_1;
-    wire[pos++] = 1;
+    wire[pos++] = MESH_NOW_WIRE_VERSION;
     uint8_t flags = msg->flags & ~(MSG_FLAG_ENCRYPTED | MSG_FLAG_HAS_NODE_NAME);
     if (do_encrypt && encryption_enabled && encryption_key_len > 0 &&
         msg->type != MSG_TYPE_ACK && msg->type != MSG_TYPE_BEACON) {
@@ -147,6 +110,10 @@ esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg,
     wire[pos++] = (msg->message_id >> 8) & 0xff;
     wire[pos++] = (msg->message_id >> 16) & 0xff;
     wire[pos++] = (msg->message_id >> 24) & 0xff;
+    wire[pos++] = (msg->reply_to >> 0) & 0xff;
+    wire[pos++] = (msg->reply_to >> 8) & 0xff;
+    wire[pos++] = (msg->reply_to >> 16) & 0xff;
+    wire[pos++] = (msg->reply_to >> 24) & 0xff;
     memcpy(wire + pos, msg->sender_mac, ESP_NOW_ETH_ALEN);
     pos += ESP_NOW_ETH_ALEN;
     memcpy(wire + pos, msg->target_mac, ESP_NOW_ETH_ALEN);
@@ -191,7 +158,7 @@ esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg,
 bool mesh_now_decode_wire(const uint8_t *data, size_t len,
                            mesh_message_t *msg)
 {
-    if (len < 28) {
+    if (len < MESH_NOW_HEADER_LEN) {
         return false;
     }
     if (data[0] != MESH_NOW_MAGIC_0 || data[1] != MESH_NOW_MAGIC_1) {
@@ -200,7 +167,7 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len,
 
     size_t pos = 2;
     uint8_t version = data[pos++];
-    if (version != 1) {
+    if (version != MESH_NOW_WIRE_VERSION) {
         return false;
     }
     uint8_t flags = data[pos++];
@@ -212,6 +179,12 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len,
                           ((uint32_t)data[pos + 1] << 8) |
                           ((uint32_t)data[pos + 2] << 16) |
                           ((uint32_t)data[pos + 3] << 24);
+    pos += 4;
+
+    uint32_t reply_to = (uint32_t)data[pos] |
+                        ((uint32_t)data[pos + 1] << 8) |
+                        ((uint32_t)data[pos + 2] << 16) |
+                        ((uint32_t)data[pos + 3] << 24);
     pos += 4;
 
     uint8_t sender_mac[ESP_NOW_ETH_ALEN];
@@ -234,6 +207,7 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len,
     msg->group_id = group_id;
     msg->hop_count = hop_count;
     msg->message_id = message_id;
+    msg->reply_to = reply_to;
     memcpy(msg->sender_mac, sender_mac, ESP_NOW_ETH_ALEN);
     memcpy(msg->target_mac, target_mac, ESP_NOW_ETH_ALEN);
     msg->timestamp = timestamp;

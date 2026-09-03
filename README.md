@@ -12,7 +12,7 @@ Mesh-NOW is a protocol and library that turns any ESP32 into a mesh networking n
 - **7 message types** - beacon, chat, direct, ACK, group, presence, typing
 - **Reliable delivery** - ACK-based retransmission for direct messages (3 retries, 2s timeout)
 - **Group messaging** - scoped broadcasts with configurable group IDs
-- **Payload encryption** - optional XOR cipher with up to 32-byte keys
+- **Payload encryption** - optional AES-128-GCM with a 16-byte key
 - **FreeRTOS integration** - message queue, pinned tasks, callback support
 - **5 ESP32 targets** - ESP32, S2, S3, C3, C6
 

@@ -22,7 +22,6 @@ test-targets *args:
 # Frontend pipeline
 frontend:
     python3 examples/chat-app/frontend/build_frontend.py --ci
-    python3 {{scripts}}/embed_frontend.py --ci
 
 fe-install:
     cd examples/chat-app/frontend && npm install

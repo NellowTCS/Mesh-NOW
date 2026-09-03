@@ -21,7 +21,7 @@ Encryption uses AES-128-GCM via mbedtls (bundled in ESP-IDF, hardware-accelerate
 ### Encrypt Path
 
 1. The message is serialized to MessagePack (plaintext).
-2. A 12-byte nonce is built from `message_id` (4 bytes LE) and `sender_mac` (8 bytes).
+2. A 12-byte nonce is built from `message_id` (4 bytes LE), `sender_mac` (6 bytes), and a fixed 2-byte pad.
 3. AES-128-GCM encrypts the plaintext with the key and nonce.
 4. AAD (additional authenticated data) covers: `msg_type`, `sender_mac`, `target_mac`, `group_id`, `timestamp`.
 5. The 16-byte auth tag is appended after the ciphertext.
@@ -52,10 +52,11 @@ Each message gets a unique 12-byte nonce:
 
 ```
 Bytes 0-3:  message_id (little-endian)
-Bytes 4-11: sender_mac (first 8 bytes)
+Bytes 4-9:  sender_mac (6 bytes)
+Bytes 10-11: fixed 0x00 pad
 ```
 
-This guarantees nonce uniqueness as long as message IDs are unique per sender. Message IDs are seeded from `esp_random()` and increment monotonically.
+This guarantees nonce uniqueness as long as message IDs are unique per sender. Message IDs are seeded from `esp_random()` and increment monotonically. The fixed last two bytes are a domain separator; uniqueness holds because message IDs increment and each sender's MAC is unique per shared network key.
 
 ## Key Requirements
 

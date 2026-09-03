@@ -25,12 +25,17 @@ extern "C" {
 #define MESH_NOW_MAGIC_0 0x4d
 #define MESH_NOW_MAGIC_1 0x4e
 
+// Wire format version. Decoders reject any other version.
+#define MESH_NOW_WIRE_VERSION 1
+#define MESH_NOW_HEADER_LEN   31
+
 typedef struct {
     uint8_t type;
     uint8_t flags;
     uint8_t group_id;
     uint8_t hop_count;
     uint32_t message_id;
+    uint32_t reply_to;
     uint8_t sender_mac[ESP_NOW_ETH_ALEN];
     uint8_t target_mac[ESP_NOW_ETH_ALEN];
     uint32_t timestamp;

@@ -75,6 +75,29 @@ body {
     display: inline-block;
 }
 
+.status-dot.offline {
+    background: #6b7280;
+}
+
+.connect-btn {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.connect-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .header-name {
     margin-top: 6px;
     font-size: 0.8rem;

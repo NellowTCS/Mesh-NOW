@@ -1,18 +1,13 @@
 import './styles.css';
 import { initDevTools } from './devtools';
+import { serial as polyfillSerial } from 'web-serial-polyfill';
 
-interface Message {
-    sender: string;
-    content: string;
-    timestamp: number;
-    type: number;
-    group_id: number;
-    target: string;
-}
-
-interface SelfInfo {
+// Wire protocol payloads;
+interface HelloInfo {
     mac: string;
     name: string;
+    group_id: number;
+    encrypted: boolean;
 }
 
 interface PeerInfo {
@@ -21,14 +16,29 @@ interface PeerInfo {
     online: boolean;
 }
 
-interface PeersResponse {
+interface EventPeers {
     peers: PeerInfo[];
 }
 
-interface StatusInfo {
+interface EventMessage {
+    type: number;
+    timestamp: number;
+    sender: string;
+    content: string;
     group_id: number;
-    encrypted: boolean;
+    target: string;
 }
+
+interface SystemEvent {
+    text: string;
+}
+
+// Native Web Serial on desktop; the polyfill implements the same interface on
+// top of WebUSB for platforms (Android Chrome) where navigator.serial is
+// missing.
+const serial: Serial = 'serial' in navigator
+    ? navigator.serial
+    : (polyfillSerial as unknown as Serial);
 
 declare global {
     interface Window {
@@ -81,22 +91,29 @@ class MeshNowApp {
     private nameEl!: HTMLElement;
     private targetSelect!: HTMLSelectElement;
     private sidebarEl!: HTMLElement;
+    private connectBtn!: HTMLButtonElement;
     private groupId = 0;
 
     private selfMac = '';
     private selfName = '';
-    private seenIds = new Set<number>();
+    private seenIds = new Set<string>();
     private typingPeers = new Map<string, number>();
     private typingTimer: ReturnType<typeof setTimeout> | null = null;
     private lastTypingSent = 0;
+    private lastPeerSig = '';
     private targetMac: string | null = null; // null = broadcast
     private peerNames = new Map<string, string>();
+    private port: SerialPort | null = null;
+    private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
+    private readBuffer = '';
+    private connected = false;
 
     constructor() {
         this.buildUI();
         this.bindEvents();
         this.init();
-        this.startPolling();
+        this.cleanTypingTimer();
     }
 
     private buildUI(): void {
@@ -113,11 +130,12 @@ class MeshNowApp {
                 <div class="header-meta">
                     <span class="status-dot"></span>
                     <span class="peer-count">0 peers</span>
+                    <button class="connect-btn">Connect</button>
                 </div>
             </div>
             <div class="header-name">
                 <span class="name-label">Name:</span>
-                <span class="name-value" title="Click to edit"></span>
+                <span class="name-value" title="Click to edit">unknown</span>
             </div>
         `;
         this.container.appendChild(header);
@@ -125,6 +143,7 @@ class MeshNowApp {
         this.statusEl = header.querySelector('.status-dot')!;
         this.peerCountEl = header.querySelector('.peer-count')!;
         this.nameEl = header.querySelector('.name-value')!;
+        this.connectBtn = header.querySelector('.connect-btn')!;
 
         // Main content area
         const main = document.createElement('div');
@@ -196,6 +215,7 @@ class MeshNowApp {
     }
 
     private bindEvents(): void {
+        this.connectBtn.addEventListener('click', () => this.toggleConnect());
         this.sendBtn.addEventListener('click', () => this.sendMessage());
         this.messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.sendMessage();
@@ -227,21 +247,17 @@ class MeshNowApp {
         groupBtn.addEventListener('click', () => {
             const id = parseInt(groupInput.value) || 0;
             this.groupId = id;
-            fetch('/group', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `group_id=${id}`
-            }).then(() => {
-                const chatTarget = this.container.querySelector('.chat-target')!;
-                if (id > 0 && !this.targetMac) {
-                    chatTarget.textContent = `Group ${id}`;
-                    chatTarget.className = 'chat-target group';
-                } else if (!this.targetMac) {
-                    chatTarget.textContent = 'Broadcast';
-                    chatTarget.className = 'chat-target';
-                }
-                this.addSystem(id > 0 ? `Joined group ${id}` : 'Left group');
-            }).catch(() => {});
+            console.log('set: group=' + id);
+            this.sendFrame({ cmd: 'group', group_id: id });
+            const chatTarget = this.container.querySelector('.chat-target')!;
+            if (id > 0 && !this.targetMac) {
+                chatTarget.textContent = `Group ${id}`;
+                chatTarget.className = 'chat-target group';
+            } else if (!this.targetMac) {
+                chatTarget.textContent = 'Broadcast';
+                chatTarget.className = 'chat-target';
+            }
+            this.addSystem(id > 0 ? `Joined group ${id}` : 'Left group');
         });
 
         // Encryption set
@@ -250,194 +266,280 @@ class MeshNowApp {
         encBtn.addEventListener('click', () => {
             const key = encInput.value;
             if (!key) return;
-            fetch('/encryption', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `key=${encodeURIComponent(key)}`
-            }).then(() => {
-                this.addSystem('Encryption key set');
-                const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
-                if (encStatus) encStatus.textContent = 'On';
-                encInput.value = '';
-            }).catch(() => {});
+            console.log('set: encryption key (' + key.length + ' chars)');
+            this.sendFrame({ cmd: 'encryption', key });
+            this.addSystem('Encryption key set');
+            const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
+            if (encStatus) encStatus.textContent = 'On';
+            encInput.value = '';
         });
     }
 
-    private async init(): Promise<void> {
+    private init(): void {
         try { initDevTools(); } catch (e) { /* ok */ }
-
-        // Load self info
-        try {
-            const resp = await fetch('/self');
-            const data: SelfInfo = await resp.json();
-            this.selfMac = data.mac;
-            this.selfName = data.name;
-            this.nameEl.textContent = this.selfName;
-            this.nameEl.title = this.selfMac;
-        } catch (e) {
-            console.warn('Failed to load self info');
-        }
-
-        // Load mesh status (group, encryption)
-        try {
-            const resp = await fetch('/status');
-            const data: StatusInfo = await resp.json();
-            if (data.group_id > 0) {
-                this.groupId = data.group_id;
-                const groupInput = this.sidebarEl.querySelector('.group-input') as HTMLInputElement;
-                if (groupInput) groupInput.value = String(data.group_id);
-                const chatTarget = this.container.querySelector('.chat-target')!;
-                chatTarget.textContent = `Group ${data.group_id}`;
-                chatTarget.className = 'chat-target group';
-            }
-            if (data.encrypted) {
-                const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
-                if (encStatus) encStatus.textContent = 'On';
-            }
-        } catch (e) {
-            console.warn('Failed to load mesh status');
-        }
-
-        // Load WiFi info
-        try {
-            const resp = await fetch('/wifi-info');
-            const data = await resp.json();
-            this.addSystem(`Connected to ${data.ssid}`);
-        } catch (e) {
-            this.addSystem('Connected to mesh network');
-        }
-
-        this.updatePeers();
+        this.setConnected(false);
     }
 
-    private startPolling(): void {
-        setInterval(() => this.pollMessages(), 1000);
-        setInterval(() => this.updatePeers(), 3000);
+    private cleanTypingTimer(): void {
         setInterval(() => this.cleanTyping(), 1000);
+    }
+
+    // Connection
+
+    private async toggleConnect(): Promise<void> {
+        if (this.connected) {
+            await this.disconnect();
+            this.onDisconnect();
+            return;
+        }
+        try {
+            await this.connect();
+            this.addSystem('Connecting...');
+        } catch (e) {
+            this.addSystem(`Connect failed: ${(e as Error).message}`, 'error');
+        }
+    }
+
+    private async connect(): Promise<void> {
+        if (this.port) {
+            throw new Error('Already connected');
+        }
+        const port = await serial.requestPort();
+        await port.open({ baudRate: 115200 });
+        const readable = port.readable;
+        if (!readable) {
+            await port.close();
+            throw new Error('Port opened without a readable stream');
+        }
+        this.port = port;
+        this.reader = readable.getReader();
+        this.connected = true;
+        console.log('serial: opened ' + port.getInfo().usbVendorId + ':' + port.getInfo().usbProductId);
+        this.sendFrame({ cmd: 'hello' });
+        this.readLoop().catch((e) => {
+            this.addSystem(`Read error: ${(e as Error).message}`, 'error');
+            this.onDisconnect();
+        });
+    }
+
+    private async disconnect(): Promise<void> {
+        try {
+            await this.reader?.cancel();
+        } catch { /* stream may already be closed */ }
+        try {
+            await this.writer?.close();
+        } catch { /* stream may already be closed */ }
+        try {
+            await this.port?.close();
+        } catch { /* port may already be closed */ }
+        this.reader = null;
+        this.writer = null;
+        this.port = null;
+        this.readBuffer = '';
+        this.connected = false;
+        console.log('serial: closed');
+    }
+
+    private async readLoop(): Promise<void> {
+        const decoder = new TextDecoder();
+        while (this.reader && this.connected) {
+            const res = await this.reader.read();
+            if (res.done) {
+                this.onDisconnect();
+                return;
+            }
+            this.readBuffer += decoder.decode(res.value, { stream: true });
+            let nl = this.readBuffer.indexOf('\n');
+            while (nl >= 0) {
+                const line = this.readBuffer.slice(0, nl).trim();
+                this.readBuffer = this.readBuffer.slice(nl + 1);
+                if (line) this.handleFrame(line);
+                nl = this.readBuffer.indexOf('\n');
+            }
+        }
+    }
+
+    // Frames are newline-delimited JSON. The ESP-IDF console shares this
+    // port and emits non-JSON log lines, so unparseable lines are dropped.
+    private handleFrame(line: string): void {
+        let frame: unknown;
+        try {
+            frame = JSON.parse(line);
+        } catch {
+            return;
+        }
+        const event = (frame as Record<string, unknown>).event;
+        switch (event) {
+            case 'hello':
+                this.onHello(frame as HelloInfo);
+                break;
+            case 'message':
+                this.onMessage(frame as EventMessage);
+                break;
+            case 'peers':
+                this.onPeers(frame as EventPeers);
+                break;
+            case 'system':
+                this.addSystem((frame as SystemEvent).text);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private sendFrame(payload: Record<string, unknown>): void {
+        if (!this.connected || !this.port) return;
+        if (!this.writer) {
+            const writable = this.port.writable;
+            if (!writable) return;
+            this.writer = writable.getWriter();
+        }
+        this.writer.write(new TextEncoder().encode(JSON.stringify(payload) + '\n')).catch((e) => {
+            this.addSystem(`Write error: ${(e as Error).message}`, 'error');
+            this.onDisconnect();
+        });
+    }
+
+    private setConnected(connected: boolean): void {
+        this.statusEl.className = 'status-dot ' + (connected ? 'online' : 'offline');
+        this.connectBtn.textContent = connected ? 'Disconnect' : 'Connect';
+        this.sendBtn.disabled = !connected;
+    }
+
+    private onDisconnect(): void {
+        this.setConnected(false);
+        this.selfMac = '';
+        this.selfName = '';
+        this.nameEl.textContent = 'unknown';
+        this.nameEl.title = '';
+        this.peerNames.clear();
+        this.typingPeers.clear();
+        this.renderPeerList([]);
+        this.updateTargetSelect([]);
+        this.peerCountEl.textContent = '0 peers';
+        const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
+        if (encStatus) encStatus.textContent = '';
+        this.typingEl.style.display = 'none';
+        this.addSystem('Disconnected');
+    }
+
+    // Transport events
+
+    private onHello(h: HelloInfo): void {
+        this.setConnected(true);
+        this.selfMac = h.mac;
+        this.selfName = h.name;
+        this.nameEl.textContent = h.name;
+        this.nameEl.title = h.mac;
+        this.groupId = h.group_id;
+
+        const groupInput = this.sidebarEl.querySelector('.group-input') as HTMLInputElement;
+        if (groupInput) groupInput.value = String(h.group_id);
+        const chatTarget = this.container.querySelector('.chat-target')!;
+        if (h.group_id > 0 && !this.targetMac) {
+            chatTarget.textContent = `Group ${h.group_id}`;
+            chatTarget.className = 'chat-target group';
+        }
+        const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
+        if (encStatus) encStatus.textContent = h.encrypted ? 'On' : '';
+
+        console.log('hello: mac=' + h.mac + ' name=' + h.name + ' group=' + h.group_id + ' encrypted=' + h.encrypted);
+        this.addSystem(`Connected to ${h.mac} as ${h.name}`);
+    }
+
+    private onMessage(msg: EventMessage): void {
+        const dedupKey = `${msg.type}:${msg.timestamp}:${msg.sender}`;
+        if (this.seenIds.has(dedupKey)) return;
+        this.seenIds.add(dedupKey);
+        if (this.seenIds.size > 500) {
+            const first = this.seenIds.values().next().value!;
+            this.seenIds.delete(first);
+        }
+
+        if (msg.type === MSG_TYPE_TYPING) {
+            console.log('recv: typing ' + shortMac(msg.sender) + '=' + msg.content);
+            this.showTyping(msg.sender);
+            return;
+        }
+
+        if (msg.type === MSG_TYPE_PRESENCE) {
+            console.log('recv: presence ' + shortMac(msg.sender) + '=' + msg.content);
+            const senderName = this.peerNames.get(msg.sender) || shortMac(msg.sender);
+            this.addSystem(`${senderName}: ${msg.content}`);
+            return;
+        }
+
+        const isSelf = msg.sender === this.selfMac;
+        const name = isSelf ? this.selfName : (this.peerNames.get(msg.sender) || shortMac(msg.sender));
+        console.log('recv: type=' + msg.type + ' from=' + shortMac(msg.sender) + ' "' + msg.content + '"');
+        this.addMessage(msg.sender, name, msg.content, msg.type, msg.group_id, msg.target, msg.timestamp);
+    }
+
+    private onPeers(p: EventPeers): void {
+        const peers = p.peers || [];
+        this.peerCountEl.textContent = `${peers.length} peer${peers.length !== 1 ? 's' : ''}`;
+        const sig = peers.map(x => x.mac + (x.online ? '+':'')).sort().join(',');
+        if (sig !== this.lastPeerSig) {
+            this.lastPeerSig = sig;
+            console.log('peers: ' + (peers.length ? sig : '(none)'));
+        }
+        this.renderPeerList(peers);
+        this.updateTargetSelect(peers);
     }
 
     // Sending
 
-    private async sendMessage(): Promise<void> {
+    private sendMessage(): void {
         const text = this.messageInput.value.trim();
-        if (!text) return;
+        if (!text || !this.connected) return;
 
         this.messageInput.value = '';
 
         try {
             if (this.targetMac) {
-                const body = `target=${encodeURIComponent(this.targetMac)}&message=${encodeURIComponent(text)}`;
-                await fetch('/send/direct', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body
-                });
-                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_DIRECT, 0, this.targetMac, Math.floor(Date.now() / 1000));
+                console.log('send: DM -> ' + shortMac(this.targetMac) + ' "' + text + '"');
+                this.sendFrame({ cmd: 'send', target: this.targetMac, message: text });
+                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_DIRECT, 0, this.targetMac, Date.now());
             } else if (this.groupId > 0) {
-                const body = `group_id=${this.groupId}&message=${encodeURIComponent(text)}`;
-                await fetch('/send/group', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body
-                });
-                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_GROUP, this.groupId, '', Math.floor(Date.now() / 1000));
+                console.log('send: group ' + this.groupId + ' "' + text + '"');
+                this.sendFrame({ cmd: 'send', group: this.groupId, message: text });
+                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_GROUP, this.groupId, '', Date.now());
             } else {
-                await fetch('/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `message=${encodeURIComponent(text)}`
-                });
-                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_CHAT, 0, '', Math.floor(Date.now() / 1000));
+                console.log('send: broadcast "' + text + '"');
+                this.sendFrame({ cmd: 'send', message: text });
+                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_CHAT, 0, '', Date.now());
             }
         } catch (e) {
             this.addSystem('Failed to send', 'error');
         }
     }
 
-    private async onTyping(): Promise<void> {
+    private onTyping(): void {
         if (this.typingTimer) clearTimeout(this.typingTimer);
 
         // Throttle
         const now = Date.now();
-        if (this.targetMac && now - this.lastTypingSent > 1500) {
+        if (this.targetMac && this.connected && now - this.lastTypingSent > 1500) {
             this.lastTypingSent = now;
-            try {
-                const body = `target=${encodeURIComponent(this.targetMac)}&typing=true`;
-                await fetch('/typing', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-            } catch (e) { /* ok */ }
+            this.sendFrame({ cmd: 'typing', target: this.targetMac, typing: true });
         }
 
         this.typingTimer = setTimeout(() => {
-            if (this.targetMac) {
-                const body = `target=${encodeURIComponent(this.targetMac)}&typing=false`;
-                fetch('/typing', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body }).catch(() => { });
+            if (this.targetMac && this.connected) {
+                this.sendFrame({ cmd: 'typing', target: this.targetMac, typing: false });
             }
             this.lastTypingSent = 0;
         }, 2000);
     }
 
-    private async editName(): Promise<void> {
+    private editName(): void {
         const name = prompt('Set your node name:', this.selfName);
         if (!name || name === this.selfName) return;
 
-        try {
-            await fetch('/name', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `name=${encodeURIComponent(name)}`
-            });
-            this.selfName = name;
-            this.nameEl.textContent = name;
-        } catch (e) {
-            this.addSystem('Failed to set name', 'error');
-        }
-    }
-
-    // Polling
-
-    private async pollMessages(): Promise<void> {
-        try {
-            const resp = await fetch('/messages');
-            const data = await resp.json();
-            if (!data.messages) return;
-
-            for (const msg of data.messages) {
-                if (this.seenIds.has(msg.timestamp + msg.type)) continue;
-                this.seenIds.add(msg.timestamp + msg.type);
-
-                if (msg.type === MSG_TYPE_TYPING) {
-                    this.showTyping(msg.sender);
-                    continue;
-                }
-
-                if (msg.type === MSG_TYPE_PRESENCE) {
-                    const senderName = this.peerNames.get(msg.sender) || shortMac(msg.sender);
-                    this.addSystem(`${senderName}: ${msg.content}`);
-                    continue;
-                }
-
-                const isSelf = msg.sender === this.selfMac;
-                const name = isSelf ? this.selfName : (this.peerNames.get(msg.sender) || shortMac(msg.sender));
-                this.addMessage(msg.sender, name, msg.content, msg.type, msg.group_id, msg.target, msg.timestamp);
-
-                // Cap seen set
-                if (this.seenIds.size > 500) {
-                    const first = this.seenIds.values().next().value!;
-                    this.seenIds.delete(first);
-                }
-            }
-        } catch (e) { /* ok */ }
-    }
-
-    private async updatePeers(): Promise<void> {
-        try {
-            const resp = await fetch('/peers');
-            const data: PeersResponse = await resp.json();
-            const peers = data.peers || [];
-            this.peerCountEl.textContent = `${peers.length} peer${peers.length !== 1 ? 's' : ''}`;
-            this.renderPeerList(peers);
-            this.updateTargetSelect(peers);
-        } catch (e) { /* ok */ }
+        console.log('set: name="' + name + '"');
+        this.sendFrame({ cmd: 'name', name });
+        this.selfName = name;
+        this.nameEl.textContent = name;
     }
 
     // Rendering
@@ -497,7 +599,7 @@ class MeshNowApp {
         const el = document.createElement('div');
         el.className = `msg ${isSelf ? 'msg-sent' : 'msg-recv'} ${isDM ? 'msg-dm' : ''} ${isGroup ? 'msg-group' : ''}`;
 
-        const color = isSelf ? 'var(--accent)' : macColor(senderMac);
+        const color = isSelf ? 'rgba(255,255,255,0.95)' : macColor(senderMac);
 
         let badge = '';
         if (isDM) badge = '<span class="msg-badge">DM</span>';

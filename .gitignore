@@ -23,6 +23,7 @@ sdkconfig.old
 *.elf
 *.map
 *.csv
+dependencies.lock
 
 # Generated frontend headers
 examples/chat-app/main/*_html.h
