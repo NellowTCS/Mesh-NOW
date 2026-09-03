@@ -16,9 +16,11 @@ try:
     from rich.panel import Panel
     from rich.text import Text
     from rich.prompt import Prompt
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
 
 def setup_console():
     """Setup console for output"""
@@ -27,13 +29,18 @@ def setup_console():
     else:
         return None
 
+
 def run_command(cmd, console=None, ci_mode=False, cwd=None):
     """Run a command and return success"""
     try:
         if ci_mode:
-            result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd, shell=True, cwd=cwd, capture_output=True, text=True
+            )
         else:
-            result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd, shell=True, cwd=cwd, capture_output=True, text=True
+            )
 
         if result.returncode != 0:
             if console and not ci_mode:
@@ -45,6 +52,7 @@ def run_command(cmd, console=None, ci_mode=False, cwd=None):
         if console and not ci_mode:
             console.print(f"[red]Error running command: {e}[/red]")
         return False, str(e)
+
 
 def check_firmware_files(console, ci_mode=False):
     """Check if required firmware files exist"""
@@ -67,6 +75,7 @@ def check_firmware_files(console, ci_mode=False):
 
     return True
 
+
 def get_file_size(file_path):
     """Get file size in human readable format"""
     size = Path(file_path).stat().st_size
@@ -76,11 +85,14 @@ def get_file_size(file_path):
         size /= 1024.0
     return f"{size:.1f}TB"
 
+
 def flash_firmware(target, port, console, ci_mode=False):
     """Flash firmware to ESP32"""
     if console and not ci_mode:
         console.print(f"[bold blue]Flashing firmware to {target} on {port}[/bold blue]")
-        console.print("[yellow]Make sure your ESP32 is in download mode (hold BOOT while pressing RESET)[/yellow]")
+        console.print(
+            "[yellow]Make sure your ESP32 is in download mode (hold BOOT while pressing RESET)[/yellow]"
+        )
         console.print()
 
         # Show file sizes
@@ -97,7 +109,9 @@ def flash_firmware(target, port, console, ci_mode=False):
         if console and not ci_mode:
             console.print("[red]esptool.py not found. Installing...[/red]")
             # Try to install
-            install_success = run_command(f"{sys.executable} -m pip install esptool", console, ci_mode)[0]
+            install_success = run_command(
+                f"{sys.executable} -m pip install esptool", console, ci_mode
+            )[0]
             if not install_success:
                 console.print("[red]Failed to install esptool.py[/red]")
                 return False
@@ -119,6 +133,7 @@ def flash_firmware(target, port, console, ci_mode=False):
 
             # Simulate progress (esptool doesn't provide progress info)
             import time
+
             for i in range(0, 101, 10):
                 progress.update(task, completed=i)
                 time.sleep(0.2)
@@ -145,12 +160,21 @@ def flash_firmware(target, port, console, ci_mode=False):
             console.print("[red]Flash failed![/red]")
         return False
 
+
 def main():
     parser = argparse.ArgumentParser(description="Flash ESP32 firmware")
-    parser.add_argument("target", nargs="?", default="esp32",
-                       help="ESP32 target (esp32, esp32s2, esp32s3, esp32c3, esp32c6)")
-    parser.add_argument("port", nargs="?", default="/dev/ttyUSB0" if os.name != 'nt' else "COM1",
-                       help="Serial port")
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default="esp32",
+        help="ESP32 target (esp32, esp32s2, esp32s3, esp32c3, esp32c6)",
+    )
+    parser.add_argument(
+        "port",
+        nargs="?",
+        default="/dev/ttyUSB0" if os.name != 'nt' else "COM1",
+        help="Serial port",
+    )
     parser.add_argument("--ci", action="store_true", help="CI mode - minimal output")
     args = parser.parse_args()
 
@@ -174,6 +198,7 @@ def main():
 
     if not success:
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

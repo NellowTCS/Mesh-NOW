@@ -15,9 +15,11 @@ try:
     from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.panel import Panel
     from rich.text import Text
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
 
 def setup_console():
     """Setup console for output"""
@@ -25,6 +27,7 @@ def setup_console():
         return Console()
     else:
         return None
+
 
 def run_command(cmd, console=None, ci_mode=False):
     """Run a command and return success"""
@@ -45,21 +48,28 @@ def run_command(cmd, console=None, ci_mode=False):
             console.print(f"[red]Error running command: {e}[/red]")
         return False, str(e)
 
+
 def check_python():
     """Check if Python is available"""
     try:
-        result = subprocess.run([sys.executable, "--version"], capture_output=True, text=True)
+        result = subprocess.run(
+            [sys.executable, "--version"], capture_output=True, text=True
+        )
         return result.returncode == 0, result.stdout.strip()
     except:
         return False, ""
 
+
 def check_pip():
     """Check if pip is available"""
     try:
-        result = subprocess.run([sys.executable, "-m", "pip", "--version"], capture_output=True, text=True)
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "--version"], capture_output=True, text=True
+        )
         return result.returncode == 0, result.stdout.strip()
     except:
         return False, ""
+
 
 def install_esptool(console, ci_mode=False):
     """Install esptool.py"""
@@ -96,10 +106,14 @@ def install_esptool(console, ci_mode=False):
             console=console,
         ) as progress:
             task = progress.add_task("Installing esptool...", total=None)
-            success, output = run_command(f"{sys.executable} -m pip install esptool", console, ci_mode)
+            success, output = run_command(
+                f"{sys.executable} -m pip install esptool", console, ci_mode
+            )
             progress.update(task, completed=True)
     else:
-        success, output = run_command(f"{sys.executable} -m pip install esptool", console, ci_mode)
+        success, output = run_command(
+            f"{sys.executable} -m pip install esptool", console, ci_mode
+        )
 
     if not success:
         if console and not ci_mode:
@@ -122,6 +136,7 @@ def install_esptool(console, ci_mode=False):
         print(f"esptool.py installed: {version_output.strip()}")
 
     return True
+
 
 def main():
     parser = argparse.ArgumentParser(description="Install ESP32 flashing tools")
@@ -146,6 +161,7 @@ def main():
     else:
         if console and not args.ci:
             console.print("[green]Installation completed successfully![/green]")
+
 
 if __name__ == "__main__":
     main()

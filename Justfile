@@ -32,6 +32,13 @@ fe-watch:
 fe-serve:
     cd examples/chat-app/frontend && npm run serve
 
+# Formatting
+format *flags:
+    python3 scripts/format.py {{flags}}
+
+format-check:
+    python3 scripts/format.py --check
+
 # Protocol
 protocol:
     ./scripts/compile_protocol.sh

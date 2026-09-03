@@ -24,7 +24,7 @@ void mesh_now_handle_message(const mesh_message_t *mesh_msg)
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 static void esp_now_send_cb(const esp_now_send_info_t *send_info,
-                              esp_now_send_status_t status)
+                            esp_now_send_status_t status)
 {
     if (status != ESP_NOW_SEND_SUCCESS) {
         ESP_LOGW(TAG, "Send failed to %02x:%02x:%02x:%02x:%02x:%02x",
@@ -35,42 +35,43 @@ static void esp_now_send_cb(const esp_now_send_info_t *send_info,
 }
 #else
 static void esp_now_send_cb(const uint8_t *mac_addr,
-                              esp_now_send_status_t status)
+                            esp_now_send_status_t status)
 {
     if (status != ESP_NOW_SEND_SUCCESS) {
         ESP_LOGW(TAG, "Send failed to %02x:%02x:%02x:%02x:%02x:%02x",
-                 mac_addr[0], mac_addr[1], mac_addr[2],
-                 mac_addr[3], mac_addr[4], mac_addr[5]);
+                 mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3],
+                 mac_addr[4], mac_addr[5]);
     }
 }
 #endif
 
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 static void esp_now_recv_cb(const esp_now_recv_info_t *recv_info,
-                              const uint8_t *data, int len)
+                            const uint8_t *data, int len)
 {
     const uint8_t *src_addr = recv_info->src_addr;
 #else
-static void esp_now_recv_cb(const uint8_t *mac_addr,
-                              const uint8_t *data, int len)
+static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
+                            int len)
 {
     const uint8_t *src_addr = mac_addr;
 #endif
 
     mesh_message_t mesh_msg;
     if (!mesh_now_decode_wire(data, len, &mesh_msg)) {
-        ESP_LOGW(TAG, "Failed to decode wire message from "
+        ESP_LOGW(TAG,
+                 "Failed to decode wire message from "
                  "%02x:%02x:%02x:%02x:%02x:%02x (len=%d)",
-                 src_addr[0], src_addr[1], src_addr[2],
-                 src_addr[3], src_addr[4], src_addr[5], len);
+                 src_addr[0], src_addr[1], src_addr[2], src_addr[3],
+                 src_addr[4], src_addr[5], len);
         return;
     }
 
-    ESP_LOGD(TAG, "Received message from %02x:%02x:%02x:%02x:%02x:%02x, "
+    ESP_LOGD(TAG,
+             "Received message from %02x:%02x:%02x:%02x:%02x:%02x, "
              "type: %d, id: %u",
-             src_addr[0], src_addr[1], src_addr[2],
-             src_addr[3], src_addr[4], src_addr[5],
-             mesh_msg.type, mesh_msg.message_id);
+             src_addr[0], src_addr[1], src_addr[2], src_addr[3], src_addr[4],
+             src_addr[5], mesh_msg.type, mesh_msg.message_id);
 
     uint8_t my_mac[ESP_NOW_ETH_ALEN];
     esp_read_mac(my_mac, ESP_MAC_WIFI_STA);
@@ -95,7 +96,8 @@ static void esp_now_recv_cb(const uint8_t *mac_addr,
     }
 
     if (mesh_msg.type == MSG_TYPE_BEACON) {
-        ESP_LOGD(TAG, "Received beacon from %02x:%02x:%02x:%02x:%02x:%02x%s%s%s",
+        ESP_LOGD(TAG,
+                 "Received beacon from %02x:%02x:%02x:%02x:%02x:%02x%s%s%s",
                  mesh_msg.sender_mac[0], mesh_msg.sender_mac[1],
                  mesh_msg.sender_mac[2], mesh_msg.sender_mac[3],
                  mesh_msg.sender_mac[4], mesh_msg.sender_mac[5],

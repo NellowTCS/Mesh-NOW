@@ -7,7 +7,9 @@
     "build": "webpack --mode=production",
     "dev": "webpack --mode=development --watch",
     "serve": "webpack serve --mode=development",
-    "clean": "rm -rf dist/*"
+    "clean": "rm -rf dist/*",
+    "format": "prettier --write \"src/**/*.{ts,css}\" \"*.js\"",
+    "format:check": "prettier --check \"src/**/*.{ts,css}\" \"*.js\""
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
@@ -17,6 +19,7 @@
     "css-loader": "^7.1.5",
     "html-webpack-plugin": "^5.6.8",
     "mini-css-extract-plugin": "^2.10.2",
+    "prettier": "^3.9.6",
     "ts-loader": "^9.6.2",
     "typescript": "^5.9.3",
     "webpack": "^5.110.2",

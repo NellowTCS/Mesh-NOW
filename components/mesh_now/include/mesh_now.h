@@ -15,12 +15,12 @@ extern "C" {
 #ifndef CONFIG_MESH_NOW_DEFAULT_ROUTE_TTL
 #define CONFIG_MESH_NOW_DEFAULT_ROUTE_TTL 3
 #endif
-#define DEFAULT_ROUTE_TTL CONFIG_MESH_NOW_DEFAULT_ROUTE_TTL
+#define DEFAULT_ROUTE_TTL      CONFIG_MESH_NOW_DEFAULT_ROUTE_TTL
 #define MESH_NOW_NODE_NAME_MAX 16
 
-#define MSG_FLAG_REQUIRES_ACK   0x01
-#define MSG_FLAG_ENCRYPTED      0x02
-#define MSG_FLAG_HAS_NODE_NAME  0x04
+#define MSG_FLAG_REQUIRES_ACK  0x01
+#define MSG_FLAG_ENCRYPTED     0x02
+#define MSG_FLAG_HAS_NODE_NAME 0x04
 
 #define MESH_NOW_MAGIC_0 0x4d
 #define MESH_NOW_MAGIC_1 0x4e
@@ -58,7 +58,7 @@ typedef struct {
     char node_name[MESH_NOW_NODE_NAME_MAX + 1];
 } mesh_peer_t;
 
-#define MAX_PEERS 20
+#define MAX_PEERS     20
 #define BROADCAST_MAC {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
 
 typedef void (*mesh_now_receive_callback_t)(const mesh_message_t *message);
@@ -77,15 +77,16 @@ esp_err_t mesh_now_send_typing(const uint8_t *target_mac, bool typing);
 esp_err_t mesh_now_set_group(uint8_t group_id);
 esp_err_t mesh_now_set_encryption_key(const uint8_t *key, size_t len);
 esp_err_t mesh_now_set_name(const char *name);
-const char* mesh_now_get_name(void);
+const char *mesh_now_get_name(void);
 esp_err_t mesh_now_announce_name(void);
 int mesh_now_get_peer_count(void);
-mesh_peer_t* mesh_now_get_peers(void);
+mesh_peer_t *mesh_now_get_peers(void);
 bool mesh_now_is_encrypted(void);
 uint8_t mesh_now_get_group_id(void);
 bool mesh_now_peer_is_online(const mesh_peer_t *peer);
 
-size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out, size_t out_size);
+size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out,
+                       size_t out_size);
 bool mesh_now_decode(const uint8_t *data, size_t len, mesh_message_t *msg);
 
 #ifdef __cplusplus

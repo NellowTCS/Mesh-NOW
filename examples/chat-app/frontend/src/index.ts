@@ -36,9 +36,10 @@ interface SystemEvent {
 // Native Web Serial on desktop; the polyfill implements the same interface on
 // top of WebUSB for platforms (Android Chrome) where navigator.serial is
 // missing.
-const serial: Serial = 'serial' in navigator
-    ? navigator.serial
-    : (polyfillSerial as unknown as Serial);
+const serial: Serial =
+    'serial' in navigator
+        ? navigator.serial
+        : (polyfillSerial as unknown as Serial);
 
 declare global {
     interface Window {
@@ -236,14 +237,17 @@ class MeshNowApp {
                 chatTarget.textContent = `DM: ${shortMac(val)}`;
                 chatTarget.className = 'chat-target dm';
             } else {
-                chatTarget.textContent = this.groupId > 0 ? `Group ${this.groupId}` : 'Broadcast';
+                chatTarget.textContent =
+                    this.groupId > 0 ? `Group ${this.groupId}` : 'Broadcast';
                 chatTarget.className = 'chat-target';
             }
         });
 
         // Group set
         const groupBtn = this.sidebarEl.querySelector('.group-set-btn')!;
-        const groupInput = this.sidebarEl.querySelector('.group-input') as HTMLInputElement;
+        const groupInput = this.sidebarEl.querySelector(
+            '.group-input'
+        ) as HTMLInputElement;
         groupBtn.addEventListener('click', () => {
             const id = parseInt(groupInput.value) || 0;
             this.groupId = id;
@@ -262,21 +266,29 @@ class MeshNowApp {
 
         // Encryption set
         const encBtn = this.sidebarEl.querySelector('.encryption-set-btn')!;
-        const encInput = this.sidebarEl.querySelector('.encryption-input') as HTMLInputElement;
+        const encInput = this.sidebarEl.querySelector(
+            '.encryption-input'
+        ) as HTMLInputElement;
         encBtn.addEventListener('click', () => {
             const key = encInput.value;
             if (!key) return;
             console.log('set: encryption key (' + key.length + ' chars)');
             this.sendFrame({ cmd: 'encryption', key });
             this.addSystem('Encryption key set');
-            const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
+            const encStatus = this.sidebarEl.querySelector(
+                '.encryption-status'
+            ) as HTMLElement;
             if (encStatus) encStatus.textContent = 'On';
             encInput.value = '';
         });
     }
 
     private init(): void {
-        try { initDevTools(); } catch (e) { /* ok */ }
+        try {
+            initDevTools();
+        } catch (e) {
+            /* ok */
+        }
         this.setConnected(false);
     }
 
@@ -314,7 +326,12 @@ class MeshNowApp {
         this.port = port;
         this.reader = readable.getReader();
         this.connected = true;
-        console.log('serial: opened ' + port.getInfo().usbVendorId + ':' + port.getInfo().usbProductId);
+        console.log(
+            'serial: opened ' +
+                port.getInfo().usbVendorId +
+                ':' +
+                port.getInfo().usbProductId
+        );
         this.sendFrame({ cmd: 'hello' });
         this.readLoop().catch((e) => {
             this.addSystem(`Read error: ${(e as Error).message}`, 'error');
@@ -325,13 +342,19 @@ class MeshNowApp {
     private async disconnect(): Promise<void> {
         try {
             await this.reader?.cancel();
-        } catch { /* stream may already be closed */ }
+        } catch {
+            /* stream may already be closed */
+        }
         try {
             await this.writer?.close();
-        } catch { /* stream may already be closed */ }
+        } catch {
+            /* stream may already be closed */
+        }
         try {
             await this.port?.close();
-        } catch { /* port may already be closed */ }
+        } catch {
+            /* port may already be closed */
+        }
         this.reader = null;
         this.writer = null;
         this.port = null;
@@ -394,14 +417,17 @@ class MeshNowApp {
             if (!writable) return;
             this.writer = writable.getWriter();
         }
-        this.writer.write(new TextEncoder().encode(JSON.stringify(payload) + '\n')).catch((e) => {
-            this.addSystem(`Write error: ${(e as Error).message}`, 'error');
-            this.onDisconnect();
-        });
+        this.writer
+            .write(new TextEncoder().encode(JSON.stringify(payload) + '\n'))
+            .catch((e) => {
+                this.addSystem(`Write error: ${(e as Error).message}`, 'error');
+                this.onDisconnect();
+            });
     }
 
     private setConnected(connected: boolean): void {
-        this.statusEl.className = 'status-dot ' + (connected ? 'online' : 'offline');
+        this.statusEl.className =
+            'status-dot ' + (connected ? 'online' : 'offline');
         this.connectBtn.textContent = connected ? 'Disconnect' : 'Connect';
         this.sendBtn.disabled = !connected;
     }
@@ -417,7 +443,9 @@ class MeshNowApp {
         this.renderPeerList([]);
         this.updateTargetSelect([]);
         this.peerCountEl.textContent = '0 peers';
-        const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
+        const encStatus = this.sidebarEl.querySelector(
+            '.encryption-status'
+        ) as HTMLElement;
         if (encStatus) encStatus.textContent = '';
         this.typingEl.style.display = 'none';
         this.addSystem('Disconnected');
@@ -433,17 +461,30 @@ class MeshNowApp {
         this.nameEl.title = h.mac;
         this.groupId = h.group_id;
 
-        const groupInput = this.sidebarEl.querySelector('.group-input') as HTMLInputElement;
+        const groupInput = this.sidebarEl.querySelector(
+            '.group-input'
+        ) as HTMLInputElement;
         if (groupInput) groupInput.value = String(h.group_id);
         const chatTarget = this.container.querySelector('.chat-target')!;
         if (h.group_id > 0 && !this.targetMac) {
             chatTarget.textContent = `Group ${h.group_id}`;
             chatTarget.className = 'chat-target group';
         }
-        const encStatus = this.sidebarEl.querySelector('.encryption-status') as HTMLElement;
+        const encStatus = this.sidebarEl.querySelector(
+            '.encryption-status'
+        ) as HTMLElement;
         if (encStatus) encStatus.textContent = h.encrypted ? 'On' : '';
 
-        console.log('hello: mac=' + h.mac + ' name=' + h.name + ' group=' + h.group_id + ' encrypted=' + h.encrypted);
+        console.log(
+            'hello: mac=' +
+                h.mac +
+                ' name=' +
+                h.name +
+                ' group=' +
+                h.group_id +
+                ' encrypted=' +
+                h.encrypted
+        );
         this.addSystem(`Connected to ${h.mac} as ${h.name}`);
     }
 
@@ -457,28 +498,54 @@ class MeshNowApp {
         }
 
         if (msg.type === MSG_TYPE_TYPING) {
-            console.log('recv: typing ' + shortMac(msg.sender) + '=' + msg.content);
+            console.log(
+                'recv: typing ' + shortMac(msg.sender) + '=' + msg.content
+            );
             this.showTyping(msg.sender);
             return;
         }
 
         if (msg.type === MSG_TYPE_PRESENCE) {
-            console.log('recv: presence ' + shortMac(msg.sender) + '=' + msg.content);
-            const senderName = this.peerNames.get(msg.sender) || shortMac(msg.sender);
+            console.log(
+                'recv: presence ' + shortMac(msg.sender) + '=' + msg.content
+            );
+            const senderName =
+                this.peerNames.get(msg.sender) || shortMac(msg.sender);
             this.addSystem(`${senderName}: ${msg.content}`);
             return;
         }
 
         const isSelf = msg.sender === this.selfMac;
-        const name = isSelf ? this.selfName : (this.peerNames.get(msg.sender) || shortMac(msg.sender));
-        console.log('recv: type=' + msg.type + ' from=' + shortMac(msg.sender) + ' "' + msg.content + '"');
-        this.addMessage(msg.sender, name, msg.content, msg.type, msg.group_id, msg.target, msg.timestamp);
+        const name = isSelf
+            ? this.selfName
+            : this.peerNames.get(msg.sender) || shortMac(msg.sender);
+        console.log(
+            'recv: type=' +
+                msg.type +
+                ' from=' +
+                shortMac(msg.sender) +
+                ' "' +
+                msg.content +
+                '"'
+        );
+        this.addMessage(
+            msg.sender,
+            name,
+            msg.content,
+            msg.type,
+            msg.group_id,
+            msg.target,
+            msg.timestamp
+        );
     }
 
     private onPeers(p: EventPeers): void {
         const peers = p.peers || [];
         this.peerCountEl.textContent = `${peers.length} peer${peers.length !== 1 ? 's' : ''}`;
-        const sig = peers.map(x => x.mac + (x.online ? '+':'')).sort().join(',');
+        const sig = peers
+            .map((x) => x.mac + (x.online ? '+' : ''))
+            .sort()
+            .join(',');
         if (sig !== this.lastPeerSig) {
             this.lastPeerSig = sig;
             console.log('peers: ' + (peers.length ? sig : '(none)'));
@@ -497,17 +564,55 @@ class MeshNowApp {
 
         try {
             if (this.targetMac) {
-                console.log('send: DM -> ' + shortMac(this.targetMac) + ' "' + text + '"');
-                this.sendFrame({ cmd: 'send', target: this.targetMac, message: text });
-                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_DIRECT, 0, this.targetMac, Date.now());
+                console.log(
+                    'send: DM -> ' +
+                        shortMac(this.targetMac) +
+                        ' "' +
+                        text +
+                        '"'
+                );
+                this.sendFrame({
+                    cmd: 'send',
+                    target: this.targetMac,
+                    message: text,
+                });
+                this.addMessage(
+                    this.selfMac,
+                    this.selfName,
+                    text,
+                    MSG_TYPE_DIRECT,
+                    0,
+                    this.targetMac,
+                    Date.now()
+                );
             } else if (this.groupId > 0) {
                 console.log('send: group ' + this.groupId + ' "' + text + '"');
-                this.sendFrame({ cmd: 'send', group: this.groupId, message: text });
-                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_GROUP, this.groupId, '', Date.now());
+                this.sendFrame({
+                    cmd: 'send',
+                    group: this.groupId,
+                    message: text,
+                });
+                this.addMessage(
+                    this.selfMac,
+                    this.selfName,
+                    text,
+                    MSG_TYPE_GROUP,
+                    this.groupId,
+                    '',
+                    Date.now()
+                );
             } else {
                 console.log('send: broadcast "' + text + '"');
                 this.sendFrame({ cmd: 'send', message: text });
-                this.addMessage(this.selfMac, this.selfName, text, MSG_TYPE_CHAT, 0, '', Date.now());
+                this.addMessage(
+                    this.selfMac,
+                    this.selfName,
+                    text,
+                    MSG_TYPE_CHAT,
+                    0,
+                    '',
+                    Date.now()
+                );
             }
         } catch (e) {
             this.addSystem('Failed to send', 'error');
@@ -519,14 +624,26 @@ class MeshNowApp {
 
         // Throttle
         const now = Date.now();
-        if (this.targetMac && this.connected && now - this.lastTypingSent > 1500) {
+        if (
+            this.targetMac &&
+            this.connected &&
+            now - this.lastTypingSent > 1500
+        ) {
             this.lastTypingSent = now;
-            this.sendFrame({ cmd: 'typing', target: this.targetMac, typing: true });
+            this.sendFrame({
+                cmd: 'typing',
+                target: this.targetMac,
+                typing: true,
+            });
         }
 
         this.typingTimer = setTimeout(() => {
             if (this.targetMac && this.connected) {
-                this.sendFrame({ cmd: 'typing', target: this.targetMac, typing: false });
+                this.sendFrame({
+                    cmd: 'typing',
+                    target: this.targetMac,
+                    typing: false,
+                });
             }
             this.lastTypingSent = 0;
         }, 2000);
@@ -549,7 +666,8 @@ class MeshNowApp {
         this.peerNames.clear();
 
         if (peers.length === 0) {
-            this.peerListEl.innerHTML = '<div class="peer-empty">No peers yet</div>';
+            this.peerListEl.innerHTML =
+                '<div class="peer-empty">No peers yet</div>';
             return;
         }
 
@@ -571,7 +689,8 @@ class MeshNowApp {
             el.addEventListener('click', () => {
                 this.targetMac = peer.mac;
                 this.targetSelect.value = peer.mac;
-                const chatTarget = this.container.querySelector('.chat-target')!;
+                const chatTarget =
+                    this.container.querySelector('.chat-target')!;
                 chatTarget.textContent = `DM: ${escapeHtml(displayName)}`;
                 chatTarget.className = 'chat-target dm';
             });
@@ -591,7 +710,15 @@ class MeshNowApp {
         }
     }
 
-    private addMessage(senderMac: string, senderName: string, content: string, type: number, groupId: number, target: string, timestamp: number): void {
+    private addMessage(
+        senderMac: string,
+        senderName: string,
+        content: string,
+        type: number,
+        groupId: number,
+        target: string,
+        timestamp: number
+    ): void {
         const isSelf = senderMac === this.selfMac;
         const isDM = type === MSG_TYPE_DIRECT;
         const isGroup = type === MSG_TYPE_GROUP;
@@ -603,7 +730,8 @@ class MeshNowApp {
 
         let badge = '';
         if (isDM) badge = '<span class="msg-badge">DM</span>';
-        else if (isGroup) badge = `<span class="msg-badge msg-badge-group">Group ${groupId}</span>`;
+        else if (isGroup)
+            badge = `<span class="msg-badge msg-badge-group">Group ${groupId}</span>`;
 
         const time = formatTime(timestamp);
 
@@ -630,7 +758,10 @@ class MeshNowApp {
 
     private showTyping(mac: string): void {
         this.typingPeers.set(mac, Date.now());
-        const name = mac === this.selfMac ? this.selfName : (this.peerNames.get(mac) || shortMac(mac));
+        const name =
+            mac === this.selfMac
+                ? this.selfName
+                : this.peerNames.get(mac) || shortMac(mac);
         this.typingEl.textContent = `${name} is typing...`;
         this.typingEl.style.display = 'block';
     }
@@ -649,7 +780,10 @@ class MeshNowApp {
                 this.typingEl.style.display = 'none';
             } else {
                 const first = this.typingPeers.keys().next().value!;
-                const name = first === this.selfMac ? this.selfName : (this.peerNames.get(first) || shortMac(first));
+                const name =
+                    first === this.selfMac
+                        ? this.selfName
+                        : this.peerNames.get(first) || shortMac(first);
                 this.typingEl.textContent = `${name} is typing...`;
             }
         }

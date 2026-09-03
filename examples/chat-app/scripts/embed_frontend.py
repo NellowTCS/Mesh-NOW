@@ -14,9 +14,11 @@ try:
     from rich.console import Console
     from rich.panel import Panel
     from rich.text import Text
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
 
 def setup_console():
     """Setup console for output"""
@@ -25,10 +27,13 @@ def setup_console():
     else:
         return None
 
+
 def file_to_header(input_file, output_file, var_name, console=None, ci_mode=False):
     """Convert a file to a C header"""
     if console and not ci_mode:
-        console.print(f"[dim]Converting {input_file.name} to {output_file.name}...[/dim]")
+        console.print(
+            f"[dim]Converting {input_file.name} to {output_file.name}...[/dim]"
+        )
 
     try:
         # Read the file as binary
@@ -49,7 +54,7 @@ def file_to_header(input_file, output_file, var_name, console=None, ci_mode=Fals
 
             # Group into lines of 12 bytes for readability
             for i in range(0, len(hex_bytes), 12):
-                line_bytes = hex_bytes[i:i+12]
+                line_bytes = hex_bytes[i : i + 12]
                 f.write("    " + ", ".join(line_bytes) + ",\n")
 
             f.write("};\n")
@@ -64,6 +69,7 @@ def file_to_header(input_file, output_file, var_name, console=None, ci_mode=Fals
         if console and not ci_mode:
             console.print(f"[red]Error converting {input_file.name}: {e}[/red]")
         return False
+
 
 def main():
     parser = argparse.ArgumentParser(description="Convert frontend files to C headers")
@@ -137,6 +143,7 @@ def main():
         else:
             console.print("[red]No files were converted[/red]")
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

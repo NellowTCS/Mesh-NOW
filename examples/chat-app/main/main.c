@@ -13,9 +13,9 @@
 #include "serial_api.h"
 #include "message_queue.h"
 
-#define TAG "MESH_NOW_MAIN"
+#define TAG           "MESH_NOW_MAIN"
 #define NVS_NAMESPACE "mesh_now"
-#define NVS_KEY_NAME "node_name"
+#define NVS_KEY_NAME  "node_name"
 
 static char node_name[17] = {0};
 
@@ -94,10 +94,12 @@ static void load_name_from_nvs(void)
     nvs_handle_t handle;
     if (nvs_open(NVS_NAMESPACE, NVS_READONLY, &handle) == ESP_OK) {
         size_t len = sizeof(node_name);
-        if (nvs_get_str(handle, NVS_KEY_NAME, node_name, &len) != ESP_OK || node_name[0] == '\0') {
+        if (nvs_get_str(handle, NVS_KEY_NAME, node_name, &len) != ESP_OK ||
+            node_name[0] == '\0') {
             uint8_t mac[6];
             esp_read_mac(mac, ESP_MAC_WIFI_STA);
-            snprintf(node_name, sizeof(node_name), "Node-%02X%02X", mac[4], mac[5]);
+            snprintf(node_name, sizeof(node_name), "Node-%02X%02X", mac[4],
+                     mac[5]);
         }
         nvs_close(handle);
     } else {
@@ -112,7 +114,8 @@ void app_main(void)
     ESP_LOGI(TAG, "Starting Mesh-NOW ESP32 Chat Application");
 
     esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
+        ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
@@ -143,8 +146,8 @@ void app_main(void)
 
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
-    ESP_LOGI(TAG, "Device MAC: %02x:%02x:%02x:%02x:%02x:%02x",
-             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    ESP_LOGI(TAG, "Device MAC: %02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1],
+             mac[2], mac[3], mac[4], mac[5]);
     ESP_LOGI(TAG, "Connect the web UI via Web Serial over USB");
 
     while (1) {

@@ -2,12 +2,13 @@
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 
-#define TAG "MSG_QUEUE"
+#define TAG        "MSG_QUEUE"
 #define QUEUE_SIZE 50
 
 static QueueHandle_t message_queue = NULL;
 
-esp_err_t message_queue_init(void) {
+esp_err_t message_queue_init(void)
+{
     if (message_queue) {
         return ESP_OK; // Already initialized
     }
@@ -22,7 +23,8 @@ esp_err_t message_queue_init(void) {
     return ESP_OK;
 }
 
-esp_err_t message_queue_deinit(void) {
+esp_err_t message_queue_deinit(void)
+{
     if (message_queue) {
         vQueueDelete(message_queue);
         message_queue = NULL;
@@ -31,11 +33,13 @@ esp_err_t message_queue_deinit(void) {
     return ESP_OK;
 }
 
-QueueHandle_t message_queue_get_handle(void) {
+QueueHandle_t message_queue_get_handle(void)
+{
     return message_queue;
 }
 
-esp_err_t message_queue_send(const message_t *msg) {
+esp_err_t message_queue_send(const message_t *msg)
+{
     if (!message_queue || !msg) {
         return ESP_FAIL;
     }
@@ -48,7 +52,8 @@ esp_err_t message_queue_send(const message_t *msg) {
     return ESP_OK;
 }
 
-esp_err_t message_queue_receive(message_t *msg, TickType_t timeout) {
+esp_err_t message_queue_receive(message_t *msg, TickType_t timeout)
+{
     if (!message_queue || !msg) {
         return ESP_FAIL;
     }

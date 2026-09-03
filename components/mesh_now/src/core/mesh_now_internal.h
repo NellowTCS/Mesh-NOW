@@ -33,17 +33,17 @@
 #define CONFIG_MESH_NOW_PEER_EXPIRY_SEC 30
 #endif
 
-#define BEACON_INTERVAL_MS CONFIG_MESH_NOW_BEACON_INTERVAL_MS
+#define BEACON_INTERVAL_MS    CONFIG_MESH_NOW_BEACON_INTERVAL_MS
 #define RETRANSMIT_TIMEOUT_MS CONFIG_MESH_NOW_RETRANSMIT_TIMEOUT_MS
-#define MAX_RETRIES CONFIG_MESH_NOW_MAX_RETRIES
-#define MAX_PENDING_MESSAGES CONFIG_MESH_NOW_MAX_PENDING_MESSAGES
-#define MAX_SEEN_MESSAGE_IDS CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS
-#define MAX_ENCRYPTION_KEY AES_GCM_KEY_LEN
-#define PEER_EXPIRY_US ((int64_t)CONFIG_MESH_NOW_PEER_EXPIRY_SEC * 1000000LL)
-#define AES_GCM_TAG_LEN 16
+#define MAX_RETRIES           CONFIG_MESH_NOW_MAX_RETRIES
+#define MAX_PENDING_MESSAGES  CONFIG_MESH_NOW_MAX_PENDING_MESSAGES
+#define MAX_SEEN_MESSAGE_IDS  CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS
+#define MAX_ENCRYPTION_KEY    AES_GCM_KEY_LEN
+#define PEER_EXPIRY_US    ((int64_t)CONFIG_MESH_NOW_PEER_EXPIRY_SEC * 1000000LL)
+#define AES_GCM_TAG_LEN   16
 #define AES_GCM_NONCE_LEN 12
-#define AES_GCM_KEY_LEN 16
-#define WIRE_BUF_SIZE 256
+#define AES_GCM_KEY_LEN   16
+#define WIRE_BUF_SIZE     256
 
 typedef struct {
     bool active;
@@ -86,24 +86,22 @@ void mesh_now_build_nonce(uint32_t message_id, const uint8_t *sender_mac,
 void mesh_now_sync_time(uint32_t remote_timestamp);
 uint32_t mesh_now_get_network_time_ms(void);
 esp_err_t mesh_now_aes_gcm_encrypt(const uint8_t *plaintext, size_t pt_len,
-                                    const uint8_t *aad, size_t aad_len,
-                                    const uint8_t key[16],
-                                    const uint8_t nonce[AES_GCM_NONCE_LEN],
-                                    uint8_t *ciphertext,
-                                    uint8_t tag[AES_GCM_TAG_LEN]);
+                                   const uint8_t *aad, size_t aad_len,
+                                   const uint8_t key[16],
+                                   const uint8_t nonce[AES_GCM_NONCE_LEN],
+                                   uint8_t *ciphertext,
+                                   uint8_t tag[AES_GCM_TAG_LEN]);
 esp_err_t mesh_now_aes_gcm_decrypt(const uint8_t *ciphertext, size_t ct_len,
-                                    const uint8_t *aad, size_t aad_len,
-                                    const uint8_t key[16],
-                                    const uint8_t nonce[AES_GCM_NONCE_LEN],
-                                    const uint8_t tag[AES_GCM_TAG_LEN],
-                                    uint8_t *plaintext);
+                                   const uint8_t *aad, size_t aad_len,
+                                   const uint8_t key[16],
+                                   const uint8_t nonce[AES_GCM_NONCE_LEN],
+                                   const uint8_t tag[AES_GCM_TAG_LEN],
+                                   uint8_t *plaintext);
 size_t mesh_now_build_aad(const mesh_message_t *msg, uint8_t *aad);
 
-esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg,
-                                 uint8_t *wire, size_t *wire_len,
-                                 bool do_encrypt);
-bool mesh_now_decode_wire(const uint8_t *data, size_t len,
-                           mesh_message_t *msg);
+esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg, uint8_t *wire,
+                                size_t *wire_len, bool do_encrypt);
+bool mesh_now_decode_wire(const uint8_t *data, size_t len, mesh_message_t *msg);
 
 void mesh_now_add_peer(const uint8_t *mac);
 void mesh_now_remove_peer(const uint8_t *mac);

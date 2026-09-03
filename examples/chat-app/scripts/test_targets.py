@@ -12,9 +12,11 @@ from pathlib import Path
 try:
     from rich.console import Console
     from rich.table import Table
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
 
 def check_idf_setup(console):
     """Check if ESP-IDF environment is set up"""
@@ -25,10 +27,13 @@ def check_idf_setup(console):
         sys.exit(1)
     return idf_path
 
+
 def run_command(cmd, cwd=None, console=None, silent=True):
     """Run a command silently and return success"""
     try:
-        result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=silent, text=True)
+        result = subprocess.run(
+            cmd, shell=True, cwd=cwd, capture_output=silent, text=True
+        )
         if not result.returncode == 0 and console:
             console.print(f"[red]Command failed: {cmd}[/red]")
             if result.stderr:
@@ -38,6 +43,7 @@ def run_command(cmd, cwd=None, console=None, silent=True):
         if console:
             console.print(f"[red]Exception running command: {e}[/red]")
         return False
+
 
 def test_target(target, console, script_dir):
     """Test configuration for a target"""
@@ -59,19 +65,23 @@ def test_target(target, console, script_dir):
     # The config file validation is sufficient to ensure the target is configured
     return "Configuration OK"
 
+
 def main():
     # Setup console
     if RICH_AVAILABLE:
         console = Console()
     else:
+
         class PlainConsole:
             def print(self, *args, **kwargs):
                 if args:
                     import re
+
                     text = re.sub(r'\[.*?\]', '', str(args[0]))
                     print(text)
                 else:
                     print()
+
         console = PlainConsole()
 
     # Check IDF setup
@@ -106,6 +116,7 @@ def main():
     else:
         for result in results:
             console.print(f"   {result}")
+
 
 if __name__ == "__main__":
     main()

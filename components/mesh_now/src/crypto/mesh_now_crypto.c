@@ -10,8 +10,9 @@ void mesh_now_build_nonce(uint32_t message_id, const uint8_t *sender_mac,
                           uint8_t nonce[AES_GCM_NONCE_LEN])
 {
     // 12-byte GCM nonce: message_id (4 LE) || sender_mac (6) || fixed pad (2).
-    // The last two bytes are a fixed domain separator; uniqueness still holds because
-    // message_id increments and sender_mac is unique per node sharing the network key.
+    // The last two bytes are a fixed domain separator; uniqueness still holds
+    // because message_id increments and sender_mac is unique per node sharing
+    // the network key.
     nonce[0] = (message_id >> 0) & 0xff;
     nonce[1] = (message_id >> 8) & 0xff;
     nonce[2] = (message_id >> 16) & 0xff;
@@ -22,11 +23,11 @@ void mesh_now_build_nonce(uint32_t message_id, const uint8_t *sender_mac,
 }
 
 esp_err_t mesh_now_aes_gcm_encrypt(const uint8_t *plaintext, size_t pt_len,
-                                    const uint8_t *aad, size_t aad_len,
-                                    const uint8_t key[16],
-                                    const uint8_t nonce[AES_GCM_NONCE_LEN],
-                                    uint8_t *ciphertext,
-                                    uint8_t tag[AES_GCM_TAG_LEN])
+                                   const uint8_t *aad, size_t aad_len,
+                                   const uint8_t key[16],
+                                   const uint8_t nonce[AES_GCM_NONCE_LEN],
+                                   uint8_t *ciphertext,
+                                   uint8_t tag[AES_GCM_TAG_LEN])
 {
     esp_gcm_context ctx;
     esp_aes_gcm_init(&ctx);
@@ -37,21 +38,19 @@ esp_err_t mesh_now_aes_gcm_encrypt(const uint8_t *plaintext, size_t pt_len,
         return ESP_FAIL;
     }
 
-    ret = esp_aes_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT,
-                                     pt_len, nonce, AES_GCM_NONCE_LEN,
-                                     aad, aad_len,
-                                     plaintext, ciphertext,
-                                     AES_GCM_TAG_LEN, tag);
+    ret = esp_aes_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, pt_len, nonce,
+                                    AES_GCM_NONCE_LEN, aad, aad_len, plaintext,
+                                    ciphertext, AES_GCM_TAG_LEN, tag);
     esp_aes_gcm_free(&ctx);
     return (ret == 0) ? ESP_OK : ESP_FAIL;
 }
 
 esp_err_t mesh_now_aes_gcm_decrypt(const uint8_t *ciphertext, size_t ct_len,
-                                    const uint8_t *aad, size_t aad_len,
-                                    const uint8_t key[16],
-                                    const uint8_t nonce[AES_GCM_NONCE_LEN],
-                                    const uint8_t tag[AES_GCM_TAG_LEN],
-                                    uint8_t *plaintext)
+                                   const uint8_t *aad, size_t aad_len,
+                                   const uint8_t key[16],
+                                   const uint8_t nonce[AES_GCM_NONCE_LEN],
+                                   const uint8_t tag[AES_GCM_TAG_LEN],
+                                   uint8_t *plaintext)
 {
     esp_gcm_context ctx;
     esp_aes_gcm_init(&ctx);
@@ -62,11 +61,9 @@ esp_err_t mesh_now_aes_gcm_decrypt(const uint8_t *ciphertext, size_t ct_len,
         return ESP_FAIL;
     }
 
-    ret = esp_aes_gcm_auth_decrypt(&ctx, ct_len,
-                                    nonce, AES_GCM_NONCE_LEN,
-                                    aad, aad_len,
-                                    tag, AES_GCM_TAG_LEN,
-                                    ciphertext, plaintext);
+    ret = esp_aes_gcm_auth_decrypt(&ctx, ct_len, nonce, AES_GCM_NONCE_LEN, aad,
+                                   aad_len, tag, AES_GCM_TAG_LEN, ciphertext,
+                                   plaintext);
     esp_aes_gcm_free(&ctx);
     return (ret == 0) ? ESP_OK : ESP_ERR_INVALID_STATE;
 }

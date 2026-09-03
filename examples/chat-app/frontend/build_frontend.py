@@ -14,9 +14,11 @@ try:
     from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.panel import Panel
     from rich.text import Text
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
 
 def setup_console():
     """Setup console for output"""
@@ -25,13 +27,18 @@ def setup_console():
     else:
         return None
 
+
 def run_command(cmd, console=None, ci_mode=False, cwd=None):
     """Run a command and return success"""
     try:
         if ci_mode:
-            result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd, shell=True, cwd=cwd, capture_output=True, text=True
+            )
         else:
-            result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd, shell=True, cwd=cwd, capture_output=True, text=True
+            )
 
         if result.returncode != 0:
             if console and not ci_mode:
@@ -43,6 +50,7 @@ def run_command(cmd, console=None, ci_mode=False, cwd=None):
         if console and not ci_mode:
             console.print(f"[red]Error running command: {e}[/red]")
         return False, str(e)
+
 
 def check_nodejs(console, ci_mode=False):
     """Check if Node.js is available"""
@@ -58,6 +66,7 @@ def check_nodejs(console, ci_mode=False):
         console.print(f"[green]✓ Node.js found: {version}[/green]")
     return True, version
 
+
 def check_npm(console, ci_mode=False):
     """Check if npm is available"""
     success, output = run_command("npm --version", console, ci_mode)
@@ -71,6 +80,7 @@ def check_npm(console, ci_mode=False):
     if console and not ci_mode:
         console.print(f"[green]✓ npm found: {version}[/green]")
     return True, version
+
 
 def install_dependencies(console, script_dir, ci_mode=False):
     """Install npm dependencies if needed"""
@@ -92,6 +102,7 @@ def install_dependencies(console, script_dir, ci_mode=False):
             console.print("[green]✓ Dependencies already installed[/green]")
 
     return True
+
 
 def build_frontend(console, script_dir, ci_mode=False):
     """Build the frontend"""
@@ -124,6 +135,7 @@ def build_frontend(console, script_dir, ci_mode=False):
                 console.print(f"  {file_path.name}: {size_str}")
 
     return True
+
 
 def main():
     parser = argparse.ArgumentParser(description="Build Mesh-NOW frontend")
@@ -166,6 +178,7 @@ def main():
     if console and not args.ci:
         console.print()
         console.print("[green]Frontend build completed![/green]")
+
 
 if __name__ == "__main__":
     main()

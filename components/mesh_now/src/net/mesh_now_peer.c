@@ -26,7 +26,8 @@ void mesh_now_add_peer(const uint8_t *mac)
     }
 
     if (peer_count >= MAX_PEERS) {
-        ESP_LOGW(TAG, "Max peers reached, cannot add: %02x:%02x:%02x:%02x:%02x:%02x",
+        ESP_LOGW(TAG,
+                 "Max peers reached, cannot add: %02x:%02x:%02x:%02x:%02x:%02x",
                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         xSemaphoreGive(state_mutex);
         return;
@@ -40,8 +41,7 @@ void mesh_now_add_peer(const uint8_t *mac)
 
     esp_err_t rc = esp_now_add_peer(&peer);
     if (rc != ESP_OK && rc != ESP_ERR_ESPNOW_EXIST) {
-        ESP_LOGW(TAG, "esp_now_add_peer failed: %s",
-                 esp_err_to_name(rc));
+        ESP_LOGW(TAG, "esp_now_add_peer failed: %s", esp_err_to_name(rc));
         xSemaphoreGive(state_mutex);
         return;
     }
@@ -62,8 +62,8 @@ void mesh_now_add_peer(const uint8_t *mac)
 
     xSemaphoreGive(state_mutex);
 
-    ESP_LOGI(TAG, "Added peer: %02x:%02x:%02x:%02x:%02x:%02x",
-             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    ESP_LOGI(TAG, "Added peer: %02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1],
+             mac[2], mac[3], mac[4], mac[5]);
 }
 
 void mesh_now_remove_peer(const uint8_t *mac)
@@ -83,8 +83,8 @@ void mesh_now_remove_peer(const uint8_t *mac)
             }
             peer_count--;
             xSemaphoreGive(state_mutex);
-            ESP_LOGI(TAG, "Removed peer: %02x:%02x:%02x:%02x:%02x:%02x",
-                     mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+            ESP_LOGI(TAG, "Removed peer: %02x:%02x:%02x:%02x:%02x:%02x", mac[0],
+                     mac[1], mac[2], mac[3], mac[4], mac[5]);
             return;
         }
     }

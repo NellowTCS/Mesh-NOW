@@ -77,9 +77,8 @@ bool mesh_now_decode(const uint8_t *data, size_t len, mesh_message_t *msg)
     return true;
 }
 
-esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg,
-                                 uint8_t *wire, size_t *wire_len,
-                                 bool do_encrypt)
+esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg, uint8_t *wire,
+                                size_t *wire_len, bool do_encrypt)
 {
     uint8_t plaintext[WIRE_BUF_SIZE];
     size_t pt_len = mesh_now_encode(msg, plaintext, sizeof(plaintext));
@@ -132,10 +131,9 @@ esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg,
 
         uint8_t tag[AES_GCM_TAG_LEN];
         uint8_t ciphertext[WIRE_BUF_SIZE];
-        esp_err_t err = mesh_now_aes_gcm_encrypt(plaintext, pt_len,
-                                                  aad, aad_len,
-                                                  encryption_key, nonce,
-                                                  ciphertext, tag);
+        esp_err_t err =
+            mesh_now_aes_gcm_encrypt(plaintext, pt_len, aad, aad_len,
+                                     encryption_key, nonce, ciphertext, tag);
         if (err != ESP_OK) {
             return err;
         }
@@ -155,8 +153,7 @@ esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg,
     return ESP_OK;
 }
 
-bool mesh_now_decode_wire(const uint8_t *data, size_t len,
-                           mesh_message_t *msg)
+bool mesh_now_decode_wire(const uint8_t *data, size_t len, mesh_message_t *msg)
 {
     if (len < MESH_NOW_HEADER_LEN) {
         return false;
@@ -175,14 +172,12 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len,
     uint8_t group_id = data[pos++];
     uint8_t hop_count = data[pos++];
 
-    uint32_t message_id = (uint32_t)data[pos] |
-                          ((uint32_t)data[pos + 1] << 8) |
+    uint32_t message_id = (uint32_t)data[pos] | ((uint32_t)data[pos + 1] << 8) |
                           ((uint32_t)data[pos + 2] << 16) |
                           ((uint32_t)data[pos + 3] << 24);
     pos += 4;
 
-    uint32_t reply_to = (uint32_t)data[pos] |
-                        ((uint32_t)data[pos + 1] << 8) |
+    uint32_t reply_to = (uint32_t)data[pos] | ((uint32_t)data[pos + 1] << 8) |
                         ((uint32_t)data[pos + 2] << 16) |
                         ((uint32_t)data[pos + 3] << 24);
     pos += 4;
@@ -195,8 +190,7 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len,
     memcpy(target_mac, data + pos, ESP_NOW_ETH_ALEN);
     pos += ESP_NOW_ETH_ALEN;
 
-    uint32_t timestamp = (uint32_t)data[pos] |
-                         ((uint32_t)data[pos + 1] << 8) |
+    uint32_t timestamp = (uint32_t)data[pos] | ((uint32_t)data[pos + 1] << 8) |
                          ((uint32_t)data[pos + 2] << 16) |
                          ((uint32_t)data[pos + 3] << 24);
     pos += 4;
@@ -241,12 +235,12 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len,
         size_t aad_len = mesh_now_build_aad(&aad_msg, aad);
 
         uint8_t plaintext[WIRE_BUF_SIZE];
-        esp_err_t err = mesh_now_aes_gcm_decrypt(data + pos, ct_len,
-                                                   aad, aad_len,
-                                                   encryption_key, nonce,
-                                                   tag, plaintext);
+        esp_err_t err =
+            mesh_now_aes_gcm_decrypt(data + pos, ct_len, aad, aad_len,
+                                     encryption_key, nonce, tag, plaintext);
         if (err != ESP_OK) {
-            ESP_LOGW(TAG, "AES-GCM decryption failed for message %u", message_id);
+            ESP_LOGW(TAG, "AES-GCM decryption failed for message %u",
+                     message_id);
             return false;
         }
 

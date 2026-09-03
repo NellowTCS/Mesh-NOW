@@ -1,0 +1,36 @@
+---
+# Style for the Mesh-NOW ESP-IDF components and chat-app firmware.
+
+BasedOnStyle: LLVM
+IndentWidth: 4
+ContinuationIndentWidth: 4
+ColumnLimit: 80
+TabWidth: 4
+UseTab: Never
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterControlStatement: Never
+  AfterFunction: true
+  AfterClass: false
+  AfterStruct: false
+  AfterEnum: false
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+
+SortIncludes: false
+IncludeBlocks: Preserve
+
+AlignConsecutiveMacros: true
+AlignTrailingComments: true
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+...

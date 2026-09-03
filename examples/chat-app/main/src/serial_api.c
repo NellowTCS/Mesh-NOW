@@ -18,10 +18,10 @@
 
 #define TAG "SERIAL_API"
 
-#define RX_BUF_SIZE 128
-#define LINE_BUF_SIZE 1024
+#define RX_BUF_SIZE            128
+#define LINE_BUF_SIZE          1024
 #define PEERS_PUSH_INTERVAL_MS 3000
-#define ENCRYPTION_KEY_MAX 32
+#define ENCRYPTION_KEY_MAX     32
 
 #if !SOC_USB_SERIAL_JTAG_SUPPORTED
 // Chips without native USB-Serial/JTAG (classic ESP32, ESP32-S2) expose the
@@ -68,8 +68,8 @@ static esp_err_t serial_io_init(void)
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .source_clk = UART_SCLK_DEFAULT,
     };
-    esp_err_t err = uart_driver_install(SERIAL_UART, RX_BUF_SIZE, RX_BUF_SIZE,
-                                        0, NULL, 0);
+    esp_err_t err =
+        uart_driver_install(SERIAL_UART, RX_BUF_SIZE, RX_BUF_SIZE, 0, NULL, 0);
     if (err == ESP_ERR_INVALID_STATE) {
         // The console driver already owns the port, so configuring
         // baud and pins is unnecessary and would return the same error.
@@ -108,16 +108,16 @@ static void serial_io_write(const char *buf, size_t len, TickType_t timeout)
 
 static char *mac_to_str(const uint8_t mac[6], char out[18])
 {
-    snprintf(out, 18, "%02x:%02x:%02x:%02x:%02x:%02x",
-             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    snprintf(out, 18, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2],
+             mac[3], mac[4], mac[5]);
     return out;
 }
 
 static bool parse_mac(uint8_t out[6], const char *str)
 {
     unsigned int mac[6];
-    if (sscanf(str, "%02x:%02x:%02x:%02x:%02x:%02x",
-               &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]) != 6) {
+    if (sscanf(str, "%02x:%02x:%02x:%02x:%02x:%02x", &mac[0], &mac[1], &mac[2],
+               &mac[3], &mac[4], &mac[5]) != 6) {
         return false;
     }
     for (int i = 0; i < 6; i++) {
@@ -171,8 +171,7 @@ static void push_hello(void)
     cJSON_AddStringToObject(root, "mac", mac_to_str(mac, mac_str));
 
     const char *name = mesh_now_get_name();
-    cJSON_AddStringToObject(root, "name",
-                            (name && name[0]) ? name : "unknown");
+    cJSON_AddStringToObject(root, "name", (name && name[0]) ? name : "unknown");
     cJSON_AddNumberToObject(root, "group_id", mesh_now_get_group_id());
     cJSON_AddBoolToObject(root, "encrypted", mesh_now_is_encrypted());
     send_json(root);
@@ -370,7 +369,8 @@ static void serial_task(void *arg)
         }
 
         message_t msg;
-        while (incoming_queue && xQueueReceive(incoming_queue, &msg, 0) == pdTRUE) {
+        while (incoming_queue &&
+               xQueueReceive(incoming_queue, &msg, 0) == pdTRUE) {
             push_message(&msg);
         }
 
@@ -403,8 +403,8 @@ esp_err_t serial_api_init(QueueHandle_t queue,
         return err;
     }
 
-    BaseType_t task_ret = xTaskCreate(serial_task, "serial_api", 8192, NULL,
-                                      5, NULL);
+    BaseType_t task_ret =
+        xTaskCreate(serial_task, "serial_api", 8192, NULL, 5, NULL);
     if (task_ret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create serial task");
         return ESP_FAIL;
@@ -413,8 +413,8 @@ esp_err_t serial_api_init(QueueHandle_t queue,
 #if SOC_USB_SERIAL_JTAG_SUPPORTED
     ESP_LOGI(TAG, "Serial API ready (USB-Serial/JTAG, JSON lines)");
 #else
-    ESP_LOGI(TAG, "Serial API ready (UART%d @ %d, JSON lines)",
-             SERIAL_UART, SERIAL_UART_BAUD);
+    ESP_LOGI(TAG, "Serial API ready (UART%d @ %d, JSON lines)", SERIAL_UART,
+             SERIAL_UART_BAUD);
 #endif
     return ESP_OK;
 }

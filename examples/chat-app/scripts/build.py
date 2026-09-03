@@ -19,9 +19,11 @@ try:
     from rich.columns import Columns
     from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
     from rich.table import Table
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
 
 def check_idf_setup(console):
     """Check if ESP-IDF environment is set up"""
@@ -32,10 +34,13 @@ def check_idf_setup(console):
         sys.exit(1)
     return idf_path
 
+
 def run_command(cmd, cwd=None, console=None):
     """Run a command and return success"""
     try:
-        result = subprocess.run(cmd, shell=True, cwd=cwd, capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, shell=True, cwd=cwd, capture_output=True, text=True
+        )
         if result.returncode != 0:
             if console:
                 console.print(f"[red]Command failed: {cmd}[/red]")
@@ -47,6 +52,7 @@ def run_command(cmd, cwd=None, console=None):
             console.print(f"[red]Error running command: {e}[/red]")
         return False
 
+
 def get_targets():
     """Get available targets with descriptions"""
     return {
@@ -56,6 +62,7 @@ def get_targets():
         4: ("esp32c3", "ESP32-C3 DevKitM (Single-core RISC-V, 400KB RAM)"),
         5: ("esp32c6", "ESP32-C6 DevKitC (Single-core RISC-V, 512KB RAM + 802.15.4)"),
     }
+
 
 def show_menu(console, targets):
     """Show target selection menu"""
@@ -68,6 +75,7 @@ def show_menu(console, targets):
     console.print("[cyan]6)[/cyan] Build all targets")
     console.print("[cyan]0)[/cyan] Exit")
     console.print()
+
 
 def build_target(target, console, script_dir, progress=None):
     """Build for a specific target"""
@@ -112,7 +120,7 @@ def build_target(target, console, script_dir, progress=None):
     artifacts = [
         ("mesh-now.bin", "build/mesh-now.bin"),
         ("bootloader.bin", "build/bootloader/bootloader.bin"),
-        ("partition-table.bin", "build/partition_table/partition-table.bin")
+        ("partition-table.bin", "build/partition_table/partition-table.bin"),
     ]
 
     for name, src in artifacts:
@@ -136,6 +144,7 @@ def build_target(target, console, script_dir, progress=None):
 
     return True
 
+
 def build_all_targets(console, script_dir, ci_mode=False):
     """Build all targets"""
     targets = ["esp32", "esp32s2", "esp32s3", "esp32c3", "esp32c6"]
@@ -152,7 +161,7 @@ def build_all_targets(console, script_dir, ci_mode=False):
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
-            console=console
+            console=console,
         ) as progress:
             for target in targets:
                 if build_target(target, console, script_dir, progress):
@@ -178,14 +187,24 @@ def build_all_targets(console, script_dir, ci_mode=False):
     if table:
         table.add_column("Status", style="bold")
         table.add_column("Targets")
-        table.add_row("Successful", f"{len(successful_builds)}: {', '.join(successful_builds)}")
+        table.add_row(
+            "Successful", f"{len(successful_builds)}: {', '.join(successful_builds)}"
+        )
         if failed_builds:
-            table.add_row("Failed", f"{len(failed_builds)}: {', '.join(failed_builds)}", style="red")
+            table.add_row(
+                "Failed",
+                f"{len(failed_builds)}: {', '.join(failed_builds)}",
+                style="red",
+            )
         console.print(table)
     else:
-        console.print(f"Successful builds ({len(successful_builds)}): {', '.join(successful_builds)}")
+        console.print(
+            f"Successful builds ({len(successful_builds)}): {', '.join(successful_builds)}"
+        )
         if failed_builds:
-            console.print(f"Failed builds ({len(failed_builds)}): {', '.join(failed_builds)}")
+            console.print(
+                f"Failed builds ({len(failed_builds)}): {', '.join(failed_builds)}"
+            )
 
     console.print()
     console.print("Build artifacts location:")
@@ -207,8 +226,11 @@ def build_all_targets(console, script_dir, ci_mode=False):
         return True
     else:
         console.print()
-        console.print("[red]Some builds failed. Check the output above for details.[/red]")
+        console.print(
+            "[red]Some builds failed. Check the output above for details.[/red]"
+        )
         return False
+
 
 def build_frontend(console, project_dir, ci_mode=False):
     """Build the frontend"""
@@ -223,7 +245,11 @@ def build_frontend(console, project_dir, ci_mode=False):
             console.print("[red]Frontend build script not found[/red]")
         return False
 
-    success = run_command(f"python {build_script} {'--ci' if ci_mode else ''}", cwd=frontend_dir, console=console)
+    success = run_command(
+        f"python {build_script} {'--ci' if ci_mode else ''}",
+        cwd=frontend_dir,
+        console=console,
+    )
     if not success:
         if console and not ci_mode:
             console.print("[red]Frontend build failed[/red]")
@@ -232,6 +258,7 @@ def build_frontend(console, project_dir, ci_mode=False):
     if console and not ci_mode:
         console.print("[green]✓ Frontend built successfully[/green]")
     return True
+
 
 def embed_frontend(console, project_dir, ci_mode=False):
     """Embed frontend files into ESP32 firmware"""
@@ -245,7 +272,11 @@ def embed_frontend(console, project_dir, ci_mode=False):
             console.print("[red]Embed script not found[/red]")
         return False
 
-    success = run_command(f"python {embed_script} {'--ci' if ci_mode else ''}", cwd=project_dir, console=console)
+    success = run_command(
+        f"python {embed_script} {'--ci' if ci_mode else ''}",
+        cwd=project_dir,
+        console=console,
+    )
     if not success:
         if console and not ci_mode:
             console.print("[red]Frontend embedding failed[/red]")
@@ -255,11 +286,20 @@ def embed_frontend(console, project_dir, ci_mode=False):
         console.print("[green]✓ Frontend embedded successfully[/green]")
     return True
 
+
 def main():
     parser = argparse.ArgumentParser(description="Mesh-NOW Target Selector and Builder")
-    parser.add_argument('--ci', action='store_true', help='Disable colors and TUI for CI')
-    parser.add_argument('--target', type=str, help='Build specific target (non-interactive)')
-    parser.add_argument('--with-frontend', action='store_true', help='Build and embed frontend before ESP32 build')
+    parser.add_argument(
+        '--ci', action='store_true', help='Disable colors and TUI for CI'
+    )
+    parser.add_argument(
+        '--target', type=str, help='Build specific target (non-interactive)'
+    )
+    parser.add_argument(
+        '--with-frontend',
+        action='store_true',
+        help='Build and embed frontend before ESP32 build',
+    )
     args = parser.parse_args()
 
     # Setup console
@@ -272,10 +312,12 @@ def main():
                 if args:
                     # Strip rich markup for plain output
                     import re
+
                     text = re.sub(r'\[.*?\]', '', str(args[0]))
                     print(text)
                 else:
                     print()
+
         console = PlainConsole()
 
     # Check IDF setup
@@ -287,7 +329,9 @@ def main():
     # Handle frontend building if requested
     if args.with_frontend:
         if console and not args.ci:
-            console.print(Panel.fit("[bold green]Frontend Integration Enabled[/bold green]"))
+            console.print(
+                Panel.fit("[bold green]Frontend Integration Enabled[/bold green]")
+            )
             console.print()
 
         if not build_frontend(console, script_dir.parent, args.ci):
@@ -334,6 +378,7 @@ def main():
         else:
             console.print("[red]Invalid choice. Please select 0-6.[/red]")
             console.print()
+
 
 if __name__ == "__main__":
     main()

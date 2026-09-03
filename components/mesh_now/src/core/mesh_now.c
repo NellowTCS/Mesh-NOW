@@ -168,7 +168,7 @@ esp_err_t mesh_now_set_name(const char *name)
     return ESP_OK;
 }
 
-const char* mesh_now_get_name(void)
+const char *mesh_now_get_name(void)
 {
     static char name_copy[MESH_NOW_NODE_NAME_MAX + 1];
     if (state_mutex != NULL) {
@@ -207,7 +207,8 @@ uint8_t mesh_now_get_group_id(void)
 
 bool mesh_now_peer_is_online(const mesh_peer_t *peer)
 {
-    if (peer == NULL || !peer->active) return false;
+    if (peer == NULL || !peer->active)
+        return false;
     int64_t now = esp_timer_get_time();
     return (now - peer->last_seen) < PEER_EXPIRY_US;
 }
@@ -240,8 +241,7 @@ esp_err_t mesh_now_init(void)
 
     ret = esp_now_add_peer(&broadcast_peer);
     if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to add broadcast peer: %s",
-                 esp_err_to_name(ret));
+        ESP_LOGE(TAG, "Failed to add broadcast peer: %s", esp_err_to_name(ret));
         return ret;
     }
 

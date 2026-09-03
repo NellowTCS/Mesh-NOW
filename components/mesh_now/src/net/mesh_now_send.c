@@ -9,10 +9,9 @@
 #define TAG "MESH_NOW"
 
 static esp_err_t mesh_now_send_wire(const uint8_t *dest_mac,
-                                     const uint8_t *wire, size_t wire_len,
-                                     bool queue_for_retransmit,
-                                     uint32_t message_id,
-                                     uint8_t flags)
+                                    const uint8_t *wire, size_t wire_len,
+                                    bool queue_for_retransmit,
+                                    uint32_t message_id, uint8_t flags)
 {
     if (queue_for_retransmit) {
         int index = mesh_now_allocate_pending();
@@ -40,7 +39,7 @@ static esp_err_t mesh_now_send_wire(const uint8_t *dest_mac,
 }
 
 static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
-                                               bool queue_for_retransmit)
+                                              bool queue_for_retransmit)
 {
     msg->message_id = mesh_now_generate_message_id();
     msg->hop_count = DEFAULT_ROUTE_TTL;
@@ -53,8 +52,10 @@ static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
     // higher WiFi rate than broadcast and gets MAC-layer retries, so it
     // costs a fraction of the airtime.
     static const uint8_t zero_mac[ESP_NOW_ETH_ALEN] = {0};
-    const uint8_t *dest = memcmp(msg->target_mac, zero_mac, ESP_NOW_ETH_ALEN) != 0
-                              ? msg->target_mac : broadcast_mac;
+    const uint8_t *dest =
+        memcmp(msg->target_mac, zero_mac, ESP_NOW_ETH_ALEN) != 0
+            ? msg->target_mac
+            : broadcast_mac;
 
     uint8_t wire[WIRE_BUF_SIZE];
     size_t wire_len = 0;
@@ -63,12 +64,12 @@ static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
         return err;
     }
 
-    esp_err_t ret = mesh_now_send_wire(dest, wire, wire_len,
-                                        queue_for_retransmit, msg->message_id,
-                                        msg->flags);
+    esp_err_t ret =
+        mesh_now_send_wire(dest, wire, wire_len, queue_for_retransmit,
+                           msg->message_id, msg->flags);
     if (ret == ESP_OK) {
-        ESP_LOGD(TAG, "Sent message type %d id %u (%u bytes)",
-                 msg->type, msg->message_id, (unsigned)wire_len);
+        ESP_LOGD(TAG, "Sent message type %d id %u (%u bytes)", msg->type,
+                 msg->message_id, (unsigned)wire_len);
     }
     return ret;
 }
@@ -86,14 +87,15 @@ void mesh_now_route_message(mesh_message_t *msg)
     size_t wire_len = 0;
     esp_err_t err = mesh_now_prepare_wire(&forward, wire, &wire_len, true);
     if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to encode routed message: %s", esp_err_to_name(err));
+        ESP_LOGW(TAG, "Failed to encode routed message: %s",
+                 esp_err_to_name(err));
         return;
     }
 
     esp_err_t ret = esp_now_send(broadcast_mac, wire, wire_len);
     if (ret != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to route message %u: %s",
-                 forward.message_id, esp_err_to_name(ret));
+        ESP_LOGW(TAG, "Failed to route message %u: %s", forward.message_id,
+                 esp_err_to_name(ret));
     }
 }
 
@@ -155,9 +157,8 @@ static void retransmit_task(void *pvParameters)
 
             pending->retries++;
             pending->last_send_time_ms = now_ms;
-            esp_err_t ret = esp_now_send(pending->dest_mac,
-                                          pending->wire_buf,
-                                          pending->wire_len);
+            esp_err_t ret = esp_now_send(pending->dest_mac, pending->wire_buf,
+                                         pending->wire_len);
             if (ret == ESP_OK) {
                 ESP_LOGD(TAG, "Retransmitted pending message (retry %d)",
                          pending->retries);
@@ -231,16 +232,14 @@ static void beacon_task(void *pvParameters)
 esp_err_t mesh_now_start_tasks(void)
 {
     BaseType_t task_ret = xTaskCreatePinnedToCore(
-        beacon_task, "beacon_task", 8192, NULL, 5,
-        &beacon_task_handle, 0);
+        beacon_task, "beacon_task", 8192, NULL, 5, &beacon_task_handle, 0);
     if (task_ret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create beacon task");
         return ESP_FAIL;
     }
 
-    task_ret = xTaskCreatePinnedToCore(
-        retransmit_task, "retransmit_task", 8192, NULL, 5,
-        &retransmit_task_handle, 0);
+    task_ret = xTaskCreatePinnedToCore(retransmit_task, "retransmit_task", 8192,
+                                       NULL, 5, &retransmit_task_handle, 0);
     if (task_ret != pdPASS) {
         ESP_LOGE(TAG, "Failed to create retransmit task");
         return ESP_FAIL;
@@ -329,7 +328,8 @@ esp_err_t mesh_now_send_typing(const uint8_t *target_mac, bool typing)
     memset(&msg, 0, sizeof(mesh_message_t));
     msg.type = MSG_TYPE_TYPING;
     memcpy(msg.target_mac, target_mac, ESP_NOW_ETH_ALEN);
-    strncpy(msg.message, typing ? "typing" : "stopped", sizeof(msg.message) - 1);
+    strncpy(msg.message, typing ? "typing" : "stopped",
+            sizeof(msg.message) - 1);
     msg.message[sizeof(msg.message) - 1] = '\0';
     return mesh_now_send_message_packet(&msg, false);
 }

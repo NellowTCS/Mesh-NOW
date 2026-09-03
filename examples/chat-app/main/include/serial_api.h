@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 // JSON over the USB-Serial/JTAG port. The browser connects with Web Serial
-// and exchanges one JSON object per line. The same frame format will later 
+// and exchanges one JSON object per line. The same frame format will later
 // be carried over Web Bluetooth GATT.
 //
 // Browser -> node ("cmd"):
