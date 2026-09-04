@@ -39,6 +39,7 @@
 #define MAX_PENDING_MESSAGES  CONFIG_MESH_NOW_MAX_PENDING_MESSAGES
 #define MAX_SEEN_MESSAGE_IDS  CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS
 #define MAX_ENCRYPTION_KEY    AES_GCM_KEY_LEN
+#define WIFI_CHANNEL          CONFIG_MESH_NOW_WIFI_CHANNEL
 #define PEER_EXPIRY_US    ((int64_t)CONFIG_MESH_NOW_PEER_EXPIRY_SEC * 1000000LL)
 #define AES_GCM_TAG_LEN   16
 #define AES_GCM_NONCE_LEN 12
@@ -106,6 +107,7 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len, mesh_message_t *msg);
 
 void mesh_now_add_peer(const uint8_t *mac);
 void mesh_now_remove_peer(const uint8_t *mac);
+void mesh_now_expire_peers(int64_t now_us);
 
 void mesh_now_route_message(mesh_message_t *msg);
 void mesh_now_send_ack(const mesh_message_t *received_msg);

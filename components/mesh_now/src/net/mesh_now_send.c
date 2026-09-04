@@ -203,19 +203,7 @@ static void beacon_task(void *pvParameters)
 
         if (++sweep_counter >= 6) {
             sweep_counter = 0;
-            int64_t now = esp_timer_get_time();
-            xSemaphoreTake(state_mutex, portMAX_DELAY);
-            for (int i = 0; i < peer_count; i++) {
-                if (peers[i].active &&
-                    (now - peers[i].last_seen) > PEER_EXPIRY_US) {
-                    ESP_LOGI(TAG, "Peer expired: %02x:%02x:%02x:%02x:%02x:%02x",
-                             peers[i].peer_addr[0], peers[i].peer_addr[1],
-                             peers[i].peer_addr[2], peers[i].peer_addr[3],
-                             peers[i].peer_addr[4], peers[i].peer_addr[5]);
-                    peers[i].active = false;
-                }
-            }
-            xSemaphoreGive(state_mutex);
+            mesh_now_expire_peers(esp_timer_get_time());
         }
 
         vTaskDelay(pdMS_TO_TICKS(BEACON_INTERVAL_MS));

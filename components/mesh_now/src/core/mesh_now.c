@@ -271,7 +271,7 @@ esp_err_t mesh_now_init(void)
     esp_now_peer_info_t broadcast_peer;
     memset(&broadcast_peer, 0, sizeof(esp_now_peer_info_t));
     memcpy(broadcast_peer.peer_addr, broadcast_mac, ESP_NOW_ETH_ALEN);
-    broadcast_peer.channel = 1;
+    broadcast_peer.channel = WIFI_CHANNEL;
     broadcast_peer.encrypt = false;
 
     ret = esp_now_add_peer(&broadcast_peer);

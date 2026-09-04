@@ -86,15 +86,15 @@ sequenceDiagram
 
 ## Peer Expiration
 
-Each peer records `last_seen` (monotonic ms) whenever it is contacted. The `beacon_task` periodically marks peers inactive once they have not been seen within `PEER_EXPIRY_US` (default 30 seconds, configurable via the `MESH_NOW_PEER_EXPIRY_SEC` Kconfig option). Expired peers remain in the table but report `online == false`.
+Each peer records `last_seen` (monotonic ms) whenever it is contacted. The `beacon_task` periodically expels peers that have not been seen within `PEER_EXPIRY_US` (default 30 seconds, configurable via the `MESH_NOW_PEER_EXPIRY_SEC` Kconfig option). Expired peers are removed from the active table, and the table compacts so `peer_count` reflects only active peers.
 
 ```c
 // Expired when no beacon/message received within the window:
 (now - peers[i].last_seen) > PEER_EXPIRY_US
 ```
 
-::: callout info title:"Expiry vs. Removal"
-Expiry only flips a peer to inactive; it does not free the slot. A peer is fully removed from the ESP-NOW subsystem and the local table only via `mesh_now_remove_peer()` or on reboot.
+::: callout info title:"Reactivation vs. Removal"
+Expiry drops a peer from the active table but does not call `esp_now_del_peer`; if the same node contacts the mesh again, `mesh_now_add_peer()` reactivates it and refreshes `last_seen`. A peer is fully removed from the ESP-NOW subsystem only via `mesh_now_remove_peer()`. Because expired entries are compacted out, `get_peer_count()` and `snapshot_peers()` report only online-tracking entries and the table cannot be starved by dead peers.
 ::: /callout
 
 ## Peer Events

@@ -52,4 +52,13 @@ menu "Mesh-NOW"
             How long a peer can go without a beacon before being
             marked inactive.
 
+    config MESH_NOW_WIFI_CHANNEL
+        int "WiFi channel (1-14)"
+        default 1
+        range 1 14
+        help
+            The 802.11 channel all mesh nodes must share. ESP-NOW peers are
+            registered on this channel and the WiFi STA is set to it. Every
+            node in the mesh must use the same channel.
+
 endmenu

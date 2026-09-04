@@ -171,13 +171,13 @@ void mesh_now_remove_peer(const uint8_t *mac);
 
 ### `mesh_now_get_peer_count`
 
-Get the number of known peers.
+Get the number of active, non-expired peers.
 
 ```c
 int mesh_now_get_peer_count(void);
 ```
 
-**Returns:** Current peer count.
+**Returns:** Current active peer count. Expired peers are compacted out of the table, so this reflects only peers tracked as online.
 
 ### `mesh_now_get_peers`
 

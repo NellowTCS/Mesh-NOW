@@ -15,7 +15,8 @@ Mesh-NOW is configured via compile-time tokens and runtime API calls. Runtime-tu
 | `CONFIG_MESH_NOW_MAX_PENDING_MESSAGES` | 16 | Kconfig | Pending message table size |
 | `CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS` | 128 | Kconfig | Duplicate detection buffer size |
 | `CONFIG_MESH_NOW_DEFAULT_ROUTE_TTL` | 3 | Kconfig | Default hop count for messages |
-| `CONFIG_MESH_NOW_PEER_EXPIRY_SEC` | 30 | Kconfig | Seconds without contact before a peer goes inactive |
+| `CONFIG_MESH_NOW_PEER_EXPIRY_SEC` | 30 | Kconfig | Seconds without contact before a peer is expired and compacted out of the active table |
+| `CONFIG_MESH_NOW_WIFI_CHANNEL` | 1 | Kconfig | 802.11 channel all mesh nodes must share |
 | `MAX_MESH_MESSAGE_LEN` | 128 | `mesh_now.h` | Maximum payload length in bytes |
 | `MAX_PEERS` | 20 | `mesh_now.h` | Maximum number of tracked peers |
 | `MAX_ENCRYPTION_KEY` | 16 | `mesh_now.h` | Encryption key length (bytes) |
