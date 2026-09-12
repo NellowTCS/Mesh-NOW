@@ -78,4 +78,44 @@ menu "Mesh-NOW"
             How long an unused route stays valid before it expires and must be
             re-discovered. Pinned routes never expire.
 
+    config MESH_NOW_ROUTE_REQ_TTL
+        int "Route request hop limit"
+        default 8
+        range 3 15
+        help
+            Hop limit carried by route requests (RREQ). Limits how far a
+            discovery flood propagates through the mesh.
+
+    config MESH_NOW_ROUTE_REQ_TIMEOUT_MS
+        int "Route request timeout (milliseconds)"
+        default 3000
+        range 500 30000
+        help
+            How long a node waits for a route reply (RREP) before retrying the
+            route request or giving up.
+
+    config MESH_NOW_MAX_ROUTE_REQ_RETRIES
+        int "Route request retries"
+        default 3
+        range 0 10
+        help
+            Number of times a route request is re-broadcast before the route is
+            reported as failed.
+
+    config MESH_NOW_MAX_ROUTE_REQUESTS
+        int "In-flight route requests"
+        default 8
+        range 2 32
+        help
+            Maximum number of simultaneously outstanding route requests this
+            node tracks.
+
+    config MESH_NOW_RREQ_CACHE_SIZE
+        int "Route request dedup cache entries"
+        default 32
+        range 8 128
+        help
+            Number of (originator, sequence) pairs retained to suppress
+            re-processing of duplicate route requests.
+
 endmenu

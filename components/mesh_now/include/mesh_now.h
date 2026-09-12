@@ -116,6 +116,11 @@ int mesh_now_get_route_count(void);
 // (at most max_out).
 int mesh_now_snapshot_routes(mesh_route_t *out, size_t max_out);
 
+// Invoked when a route request exhausts its retries and a message buffered
+// for that destination is dropped.
+typedef void (*mesh_now_route_failure_callback_t)(const uint8_t *dest_mac);
+void mesh_now_set_route_failure_callback(mesh_now_route_failure_callback_t cb);
+
 size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out,
                        size_t out_size);
 bool mesh_now_decode(const uint8_t *data, size_t len, mesh_message_t *msg);

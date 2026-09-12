@@ -14,33 +14,90 @@ static esp_err_t mesh_now_send_wire(const uint8_t *dest_mac,
                                     uint32_t message_id, uint8_t flags)
 {
     if (queue_for_retransmit) {
-        if (mesh_now_add_pending(dest_mac, wire, wire_len, message_id, flags) <
-            0) {
+        if (mesh_now_add_pending(dest_mac, NULL, wire, wire_len, message_id,
+                                 flags, false) < 0) {
             ESP_LOGW(TAG, "No pending slots available");
             return ESP_ERR_NO_MEM;
         }
+        return esp_now_send(dest_mac, wire, wire_len);
     }
 
-    esp_err_t ret = esp_now_send(dest_mac, wire, wire_len);
-    if (ret != ESP_OK && queue_for_retransmit) {
-        int idx = mesh_now_find_pending(message_id);
-        if (idx >= 0) {
-            mesh_now_release_pending(idx);
-        }
-    }
-    return ret;
+    return esp_now_send(dest_mac, wire, wire_len);
 }
 
-static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
-                                              bool queue_for_retransmit)
+// Fill the origin fields shared by every outgoing frame, then mark it seen so
+// a looped-back copy of our own broadcast is ignored.
+static void finalize_packet(mesh_message_t *msg)
 {
     msg->message_id = mesh_now_generate_message_id();
     msg->hop_limit = DEFAULT_ROUTE_TTL;
     msg->hop_count = 0;
     esp_read_mac(msg->sender_mac, ESP_MAC_WIFI_STA);
     msg->timestamp = mesh_now_get_network_time_ms();
-
     mesh_now_mark_message_seen(msg->message_id);
+}
+
+// Send a targeted frame for dest, choosing the physical path: one-hop
+// neighbor unicast, a cached virtual-peer route, or buffered while a route
+// request runs.
+static esp_err_t mesh_now_send_directed(const uint8_t *target_mac,
+                                        const char *message, uint8_t type,
+                                        uint8_t flags)
+{
+    mesh_message_t msg;
+    memset(&msg, 0, sizeof(mesh_message_t));
+    msg.type = type;
+    msg.flags = flags;
+    memcpy(msg.target_mac, target_mac, ESP_NOW_ETH_ALEN);
+    strncpy(msg.message, message, sizeof(msg.message) - 1);
+    msg.message[sizeof(msg.message) - 1] = '\0';
+    finalize_packet(&msg);
+
+    uint8_t wire[WIRE_BUF_SIZE];
+    size_t wire_len = 0;
+    esp_err_t err = mesh_now_prepare_wire(&msg, wire, &wire_len, true);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    if (mesh_now_peer_is_direct(target_mac)) {
+        return mesh_now_send_wire(target_mac, wire, wire_len, true,
+                                  msg.message_id, msg.flags);
+    }
+
+    mesh_route_t rt;
+    memset(&rt, 0, sizeof(rt));
+    if (mesh_now_get_route(target_mac, &rt) && rt.active) {
+        // Two-hop DM: unicast a single copy to the next hop; it relays
+        // toward the target.
+        ESP_LOGD(TAG,
+                 "Routed DM %u to %02x:%02x:%02x:%02x:%02x:%02x via next hop",
+                 msg.message_id, target_mac[0], target_mac[1], target_mac[2],
+                 target_mac[3], target_mac[4], target_mac[5]);
+        if (mesh_now_add_pending(rt.next_hop, target_mac, wire, wire_len,
+                                 msg.message_id, msg.flags, false) < 0) {
+            return ESP_ERR_NO_MEM;
+        }
+        return esp_now_send(rt.next_hop, wire, wire_len);
+    }
+
+    // No path yet: buffer the DM and ask the mesh for a route.
+    if (mesh_now_add_pending(NULL, target_mac, wire, wire_len, msg.message_id,
+                             msg.flags, true) < 0) {
+        return ESP_ERR_NO_MEM;
+    }
+    ESP_LOGD(
+        TAG,
+        "Buffering DM %u, requesting route to %02x:%02x:%02x:%02x:%02x:%02x",
+        msg.message_id, target_mac[0], target_mac[1], target_mac[2],
+        target_mac[3], target_mac[4], target_mac[5]);
+    return mesh_now_request_route(target_mac);
+}
+
+static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
+                                              bool queue_for_retransmit)
+{
+    finalize_packet(msg);
 
     // Targeted traffic (DMs, typing) goes unicast: unicast runs at a much
     // higher WiFi rate than broadcast and gets MAC-layer retries, so it
@@ -124,45 +181,127 @@ void mesh_now_send_ack(const mesh_message_t *received_msg)
     }
 }
 
+// Progress the retransmit state machine for pending[i].
 static void retransmit_task(void *pvParameters)
 {
     while (1) {
         int64_t now_ms = esp_timer_get_time() / 1000;
-        xSemaphoreTake(state_mutex, portMAX_DELAY);
+
+        // route-wait pendings drive RREQ retries.
         for (int i = 0; i < MAX_PENDING_MESSAGES; ++i) {
+            bool active = false;
+            bool route_wait = false;
+            uint8_t remote_dest[ESP_NOW_ETH_ALEN] = {0};
+            int64_t last_send_ms = 0;
+            xSemaphoreTake(state_mutex, portMAX_DELAY);
+            active = pending_messages[i].active;
+            route_wait = pending_messages[i].route_wait;
+            if (active && route_wait) {
+                memcpy(remote_dest, pending_messages[i].remote_dest,
+                       ESP_NOW_ETH_ALEN);
+                last_send_ms = pending_messages[i].last_send_time_ms;
+            }
+            xSemaphoreGive(state_mutex);
+
+            if (!active || !route_wait) {
+                continue;
+            }
+            if (now_ms - last_send_ms <
+                (int64_t)(ROUTE_REQ_TIMEOUT_US / 1000)) {
+                continue;
+            }
+
+            int attempts = mesh_now_route_request_attempts(remote_dest);
+            if (attempts <= MAX_ROUTE_REQ_RETRIES) {
+                esp_err_t rc = mesh_now_request_route(remote_dest);
+                if (rc != ESP_OK) {
+                    ESP_LOGW(TAG, "Route request failed: %s",
+                             esp_err_to_name(rc));
+                }
+                xSemaphoreTake(state_mutex, portMAX_DELAY);
+                pending_messages[i].last_send_time_ms = now_ms;
+                xSemaphoreGive(state_mutex);
+            } else {
+                ESP_LOGW(TAG,
+                         "No route found for "
+                         "%02x:%02x:%02x:%02x:%02x:%02x after %d "
+                         "requests, dropping message",
+                         remote_dest[0], remote_dest[1], remote_dest[2],
+                         remote_dest[3], remote_dest[4], remote_dest[5],
+                         attempts);
+                xSemaphoreTake(state_mutex, portMAX_DELAY);
+                pending_messages[i].active = false;
+                xSemaphoreGive(state_mutex);
+                if (route_failure_callback) {
+                    route_failure_callback(remote_dest);
+                }
+            }
+        }
+
+        // normal ACK-based retransmission.
+        for (int i = 0; i < MAX_PENDING_MESSAGES; ++i) {
+            bool do_send = false;
+            bool do_drop = false;
+            uint8_t dest_mac[ESP_NOW_ETH_ALEN];
+            uint32_t message_id = 0;
+            xSemaphoreTake(state_mutex, portMAX_DELAY);
+
             pending_message_t *pending = &pending_messages[i];
-            if (!pending->active) {
+            if (pending->active && !pending->route_wait) {
+                if (pending->flags & MSG_FLAG_REQUIRES_ACK) {
+                    if (now_ms - pending->last_send_time_ms >=
+                        RETRANSMIT_TIMEOUT_MS) {
+                        if (pending->retries >= MAX_RETRIES) {
+                            do_drop = true;
+                            ESP_LOGW(TAG,
+                                     "Dropping pending message after %d "
+                                     "retries",
+                                     pending->retries);
+                        } else {
+                            pending->retries++;
+                            pending->last_send_time_ms = now_ms;
+                            do_send = true;
+                        }
+                    }
+                } else {
+                    do_drop = true;
+                }
+            }
+            if (do_send || do_drop) {
+                memcpy(dest_mac, pending->dest_mac, ESP_NOW_ETH_ALEN);
+                message_id = pending->message_id;
+            }
+            xSemaphoreGive(state_mutex);
+
+            if (do_drop) {
+                mesh_now_release_pending(i);
+                continue;
+            }
+            if (!do_send) {
                 continue;
             }
 
-            if (!(pending->flags & MSG_FLAG_REQUIRES_ACK)) {
-                pending->active = false;
+            int idx = mesh_now_find_pending(message_id);
+            if (idx < 0) {
                 continue;
             }
+            size_t wire_len = 0;
+            uint8_t wire[WIRE_BUF_SIZE];
+            int retries = 0;
+            xSemaphoreTake(state_mutex, portMAX_DELAY);
+            wire_len = pending_messages[idx].wire_len;
+            memcpy(wire, pending_messages[idx].wire_buf, wire_len);
+            retries = pending_messages[idx].retries;
+            xSemaphoreGive(state_mutex);
 
-            if (now_ms - pending->last_send_time_ms < RETRANSMIT_TIMEOUT_MS) {
-                continue;
-            }
-
-            if (pending->retries >= MAX_RETRIES) {
-                ESP_LOGW(TAG, "Dropping pending message after %d retries",
-                         pending->retries);
-                pending->active = false;
-                continue;
-            }
-
-            pending->retries++;
-            pending->last_send_time_ms = now_ms;
-            esp_err_t ret = esp_now_send(pending->dest_mac, pending->wire_buf,
-                                         pending->wire_len);
+            esp_err_t ret = esp_now_send(dest_mac, wire, wire_len);
             if (ret == ESP_OK) {
                 ESP_LOGD(TAG, "Retransmitted pending message (retry %d)",
-                         pending->retries);
+                         retries);
             } else {
                 ESP_LOGW(TAG, "Retransmit failed: %s", esp_err_to_name(ret));
             }
         }
-        xSemaphoreGive(state_mutex);
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
@@ -207,8 +346,10 @@ static void beacon_task(void *pvParameters)
 
         if (++sweep_counter >= 6) {
             sweep_counter = 0;
-            mesh_now_expire_peers(esp_timer_get_time());
-            mesh_now_expire_routes(esp_timer_get_time());
+            int64_t now_us = esp_timer_get_time();
+            mesh_now_expire_peers(now_us);
+            mesh_now_expire_routes(now_us);
+            mesh_now_expire_route_requests(now_us);
         }
 
         vTaskDelay(pdMS_TO_TICKS(BEACON_INTERVAL_MS));
@@ -272,15 +413,8 @@ esp_err_t mesh_now_send_direct(const uint8_t *target_mac, const char *message)
     if (target_mac == NULL || message == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-
-    mesh_message_t msg;
-    memset(&msg, 0, sizeof(mesh_message_t));
-    msg.type = MSG_TYPE_DIRECT;
-    msg.flags = MSG_FLAG_REQUIRES_ACK;
-    memcpy(msg.target_mac, target_mac, ESP_NOW_ETH_ALEN);
-    strncpy(msg.message, message, sizeof(msg.message) - 1);
-    msg.message[sizeof(msg.message) - 1] = '\0';
-    return mesh_now_send_message_packet(&msg, true);
+    return mesh_now_send_directed(target_mac, message, MSG_TYPE_DIRECT,
+                                  MSG_FLAG_REQUIRES_ACK);
 }
 
 esp_err_t mesh_now_send_group(uint8_t group_id, const char *message)
@@ -309,13 +443,6 @@ esp_err_t mesh_now_send_typing(const uint8_t *target_mac, bool typing)
     if (target_mac == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
-
-    mesh_message_t msg;
-    memset(&msg, 0, sizeof(mesh_message_t));
-    msg.type = MSG_TYPE_TYPING;
-    memcpy(msg.target_mac, target_mac, ESP_NOW_ETH_ALEN);
-    strncpy(msg.message, typing ? "typing" : "stopped",
-            sizeof(msg.message) - 1);
-    msg.message[sizeof(msg.message) - 1] = '\0';
-    return mesh_now_send_message_packet(&msg, false);
+    return mesh_now_send_directed(target_mac, typing ? "typing" : "stopped",
+                                  MSG_TYPE_TYPING, 0);
 }

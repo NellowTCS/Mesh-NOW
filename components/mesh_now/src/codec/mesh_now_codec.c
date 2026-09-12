@@ -5,10 +5,7 @@
 
 #define TAG "MESH_NOW"
 
-// Control frames stay plaintext: relays must forward them even when they do
-// not share the mesh encryption key. Routing metadata is therefore visible to
-// every node on the mesh.
-static bool is_control_type(uint8_t type)
+bool mesh_now_is_control_type(uint8_t type)
 {
     return type == MSG_TYPE_BEACON || type == MSG_TYPE_ACK ||
            type == MSG_TYPE_ROUTE_REQUEST || type == MSG_TYPE_ROUTE_REPLY ||
@@ -17,7 +14,7 @@ static bool is_control_type(uint8_t type)
 
 // Control frames that carry an endpoint name so both ends of a conversation
 // learn names on first contact (beacons announce their own name periodically).
-static bool carries_node_name(uint8_t type)
+bool mesh_now_carries_node_name(uint8_t type)
 {
     return type == MSG_TYPE_BEACON || type == MSG_TYPE_ROUTE_REQUEST ||
            type == MSG_TYPE_ROUTE_REPLY;
@@ -40,7 +37,7 @@ size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out, size_t out_size)
     char name[MESH_NOW_NODE_NAME_MAX + 1];
     copy_local_name(name, sizeof(name));
 
-    bool has_name = (name[0] != '\0') && carries_node_name(msg->type);
+    bool has_name = (name[0] != '\0') && mesh_now_carries_node_name(msg->type);
     mpack_build_map(&writer);
 
     size_t content_len = strnlen(msg->message, MAX_MESH_MESSAGE_LEN);
@@ -110,12 +107,12 @@ esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg, uint8_t *wire,
     wire[pos++] = MESH_NOW_WIRE_VERSION;
     uint8_t flags = msg->flags & ~(MSG_FLAG_ENCRYPTED | MSG_FLAG_HAS_NODE_NAME);
     if (do_encrypt && encryption_enabled && encryption_key_len > 0 &&
-        !is_control_type(msg->type)) {
+        !mesh_now_is_control_type(msg->type)) {
         flags |= MSG_FLAG_ENCRYPTED;
     }
     char name[MESH_NOW_NODE_NAME_MAX + 1];
     copy_local_name(name, sizeof(name));
-    bool add_name = (name[0] != '\0') && carries_node_name(msg->type);
+    bool add_name = (name[0] != '\0') && mesh_now_carries_node_name(msg->type);
     if (add_name) {
         flags |= MSG_FLAG_HAS_NODE_NAME;
     }

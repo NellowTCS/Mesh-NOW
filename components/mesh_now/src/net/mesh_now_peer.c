@@ -107,6 +107,21 @@ void mesh_now_remove_peer(const uint8_t *mac)
     xSemaphoreGive(state_mutex);
 }
 
+// True if mac is currently a one-hop ESP-NOW neighbor on the mesh channel.
+bool mesh_now_peer_is_direct(const uint8_t *mac)
+{
+    bool found = false;
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
+    for (int i = 0; i < peer_count; i++) {
+        if (memcmp(peers[i].peer_addr, mac, ESP_NOW_ETH_ALEN) == 0) {
+            found = true;
+            break;
+        }
+    }
+    xSemaphoreGive(state_mutex);
+    return found;
+}
+
 // Mark peers inactive after PEER_EXPIRY_US without contact, then compact the
 // table so peer_count reflects the number of active peers.
 void mesh_now_expire_peers(int64_t now_us)

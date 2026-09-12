@@ -85,7 +85,8 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
         return;
     }
 
-    if (mesh_msg.type != MSG_TYPE_BEACON) {
+    // Control frames (beacon/ack/rreq/rrep/rerr) are plaintext by design
+    if (!mesh_now_is_control_type(mesh_msg.type)) {
         if (mesh_now_is_message_seen(mesh_msg.message_id)) {
             // A duplicate DIRECT addressed to us means the original was
             // delivered but our ACK was lost. Re-ACK so the sender stops
@@ -139,6 +140,10 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
             mesh_now_release_pending(pending_index);
             ESP_LOGD(TAG, "Received ACK for message %u", mesh_msg.reply_to);
         }
+    } else if (mesh_msg.type == MSG_TYPE_ROUTE_REQUEST) {
+        mesh_now_handle_rreq(&mesh_msg, src_addr);
+    } else if (mesh_msg.type == MSG_TYPE_ROUTE_REPLY) {
+        mesh_now_handle_rrep(&mesh_msg, src_addr);
     } else if (mesh_msg.type == MSG_TYPE_CHAT) {
         mesh_now_handle_message(&mesh_msg);
 
