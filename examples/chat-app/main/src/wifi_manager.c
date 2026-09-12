@@ -36,6 +36,12 @@ esp_err_t wifi_manager_init(void)
 
     ESP_ERROR_CHECK(esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE));
 
+    // Promiscuous mode lets ESP-NOW see frames addressed to
+    // other nodes so this device can relay DIRECT/ACK.
+    // Without it only frames addressed to this MAC or the broadcast address
+    // are received, limiting the mesh to single-hop unicast.
+    ESP_ERROR_CHECK(esp_wifi_set_promiscuous(true));
+
     ESP_LOGI(TAG, "WiFi started: STA on channel %d", WIFI_CHANNEL);
     return ESP_OK;
 }

@@ -11,6 +11,8 @@
 
 mesh_peer_t peers[MAX_PEERS];
 int peer_count = 0;
+mesh_route_t routes[MAX_ROUTES];
+int route_count = 0;
 uint8_t broadcast_mac[ESP_NOW_ETH_ALEN] = BROADCAST_MAC;
 TaskHandle_t beacon_task_handle = NULL;
 TaskHandle_t retransmit_task_handle = NULL;

@@ -27,12 +27,13 @@ extern "C" {
 
 // Wire format version. Decoders reject any other version.
 #define MESH_NOW_WIRE_VERSION 1
-#define MESH_NOW_HEADER_LEN   31
+#define MESH_NOW_HEADER_LEN   32
 
 typedef struct {
     uint8_t type;
     uint8_t flags;
     uint8_t group_id;
+    uint8_t hop_limit;
     uint8_t hop_count;
     uint32_t message_id;
     uint32_t reply_to;
@@ -43,13 +44,16 @@ typedef struct {
     char node_name[MESH_NOW_NODE_NAME_MAX + 1];
 } mesh_message_t;
 
-#define MSG_TYPE_BEACON   0
-#define MSG_TYPE_CHAT     1
-#define MSG_TYPE_DIRECT   2
-#define MSG_TYPE_ACK      3
-#define MSG_TYPE_GROUP    4
-#define MSG_TYPE_PRESENCE 5
-#define MSG_TYPE_TYPING   6
+#define MSG_TYPE_BEACON        0
+#define MSG_TYPE_CHAT          1
+#define MSG_TYPE_DIRECT        2
+#define MSG_TYPE_ACK           3
+#define MSG_TYPE_GROUP         4
+#define MSG_TYPE_PRESENCE      5
+#define MSG_TYPE_TYPING        6
+#define MSG_TYPE_ROUTE_REQUEST 7
+#define MSG_TYPE_ROUTE_REPLY   8
+#define MSG_TYPE_ROUTE_ERROR   9
 
 typedef struct {
     uint8_t peer_addr[ESP_NOW_ETH_ALEN];
@@ -60,6 +64,20 @@ typedef struct {
 
 #define MAX_PEERS     20
 #define BROADCAST_MAC {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
+
+// A virtual peer: a reachable node that is not necessarily a one-hop ESP-NOW
+// neighbor. next_hop is the proxy used to reach it and is always a physical
+// peer. hop_count is the number of hops to dest (1 == direct neighbor).
+typedef struct {
+    uint8_t dest_mac[ESP_NOW_ETH_ALEN];
+    uint8_t next_hop[ESP_NOW_ETH_ALEN];
+    uint8_t hop_count;
+    uint32_t dest_seq;
+    int64_t last_used_us;
+    bool active;
+    bool pinned;
+    char node_name[MESH_NOW_NODE_NAME_MAX + 1];
+} mesh_route_t;
 
 typedef void (*mesh_now_receive_callback_t)(const mesh_message_t *message);
 
@@ -88,6 +106,15 @@ int mesh_now_snapshot_peers(mesh_peer_t *out, size_t max_out);
 bool mesh_now_is_encrypted(void);
 uint8_t mesh_now_get_group_id(void);
 bool mesh_now_peer_is_online(const mesh_peer_t *peer);
+
+// Pin a deterministic proxy for dest
+esp_err_t mesh_now_pin_route(const uint8_t *dest_mac, const uint8_t *proxy_mac);
+esp_err_t mesh_now_unpin_route(const uint8_t *dest_mac);
+bool mesh_now_get_route(const uint8_t *dest_mac, mesh_route_t *out);
+int mesh_now_get_route_count(void);
+// Thread-safe copy of the route table. Returns the number of entries written
+// (at most max_out).
+int mesh_now_snapshot_routes(mesh_route_t *out, size_t max_out);
 
 size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out,
                        size_t out_size);

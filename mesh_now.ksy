@@ -6,15 +6,21 @@ meta:
 
 doc: |
   Binary mesh networking protocol using ESP-NOW.
-  The header is always 31 bytes. The payload follows immediately.
+  The header is always 32 bytes. The payload follows immediately.
 
   Multi-byte integer fields (message_id, reply_to, timestamp) are
   little-endian, matching native ESP32 byte order.
 
+  hop_count is cumulative: the origin sends 0 and relays increment it,
+  dropping the frame once it reaches hop_limit.
+
   The payload is either a raw MessagePack-encoded map (unencrypted) or
   an AES-128-GCM encrypted envelope. The inner MessagePack map carries
-  only the message data (content and, for beacons, node_name); all
-  routing and identity metadata lives in the fixed header.
+  only the message data (content and, for beacons, route requests, and
+  route replies, node_name); all routing and identity metadata lives in
+  the fixed header.
+
+  Control frames (beacon, ack, rreq, rrep, rerr) are always unencrypted.
 
 seq:
   - id: header
@@ -39,6 +45,8 @@ types:
         type: u1
         enum: message_type
       - id: group_id
+        type: u1
+      - id: hop_limit
         type: u1
       - id: hop_count
         type: u1
@@ -92,3 +100,6 @@ enums:
     4: group
     5: presence
     6: typing
+    7: rreq
+    8: rrep
+    9: rerr

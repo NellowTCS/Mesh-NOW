@@ -32,15 +32,24 @@
 #ifndef CONFIG_MESH_NOW_PEER_EXPIRY_SEC
 #define CONFIG_MESH_NOW_PEER_EXPIRY_SEC 30
 #endif
+#ifndef CONFIG_MESH_NOW_MAX_ROUTES
+#define CONFIG_MESH_NOW_MAX_ROUTES 32
+#endif
+#ifndef CONFIG_MESH_NOW_ROUTE_LIFETIME_SEC
+#define CONFIG_MESH_NOW_ROUTE_LIFETIME_SEC 30
+#endif
 
 #define BEACON_INTERVAL_MS    CONFIG_MESH_NOW_BEACON_INTERVAL_MS
 #define RETRANSMIT_TIMEOUT_MS CONFIG_MESH_NOW_RETRANSMIT_TIMEOUT_MS
 #define MAX_RETRIES           CONFIG_MESH_NOW_MAX_RETRIES
 #define MAX_PENDING_MESSAGES  CONFIG_MESH_NOW_MAX_PENDING_MESSAGES
 #define MAX_SEEN_MESSAGE_IDS  CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS
+#define MAX_ROUTES            CONFIG_MESH_NOW_MAX_ROUTES
 #define MAX_ENCRYPTION_KEY    AES_GCM_KEY_LEN
 #define WIFI_CHANNEL          CONFIG_MESH_NOW_WIFI_CHANNEL
-#define PEER_EXPIRY_US    ((int64_t)CONFIG_MESH_NOW_PEER_EXPIRY_SEC * 1000000LL)
+#define PEER_EXPIRY_US ((int64_t)CONFIG_MESH_NOW_PEER_EXPIRY_SEC * 1000000LL)
+#define ROUTE_LIFETIME_US                                                      \
+    ((int64_t)CONFIG_MESH_NOW_ROUTE_LIFETIME_SEC * 1000000LL)
 #define AES_GCM_TAG_LEN   16
 #define AES_GCM_NONCE_LEN 12
 #define AES_GCM_KEY_LEN   16
@@ -59,6 +68,8 @@ typedef struct {
 
 extern mesh_peer_t peers[MAX_PEERS];
 extern int peer_count;
+extern mesh_route_t routes[MAX_ROUTES];
+extern int route_count;
 extern uint8_t broadcast_mac[ESP_NOW_ETH_ALEN];
 extern TaskHandle_t beacon_task_handle;
 extern TaskHandle_t retransmit_task_handle;
@@ -108,6 +119,11 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len, mesh_message_t *msg);
 void mesh_now_add_peer(const uint8_t *mac);
 void mesh_now_remove_peer(const uint8_t *mac);
 void mesh_now_expire_peers(int64_t now_us);
+
+void mesh_now_add_route(const uint8_t *dest_mac, const uint8_t *next_hop,
+                        uint8_t hop_count, uint32_t dest_seq);
+void mesh_now_invalidate_routes_through(const uint8_t *next_hop);
+void mesh_now_expire_routes(int64_t now_us);
 
 void mesh_now_route_message(mesh_message_t *msg);
 void mesh_now_send_ack(const mesh_message_t *received_msg);

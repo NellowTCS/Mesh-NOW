@@ -120,6 +120,13 @@ void mesh_now_expire_peers(int64_t now_us)
                      peers[i].peer_addr[2], peers[i].peer_addr[3],
                      peers[i].peer_addr[4], peers[i].peer_addr[5]);
             peers[i].active = false;
+            // Free the ESP-NOW registration slot; the next beacon from this
+            // node re-registers it.
+            esp_err_t rc = esp_now_del_peer(peers[i].peer_addr);
+            if (rc != ESP_OK && rc != ESP_ERR_ESPNOW_NOT_FOUND) {
+                ESP_LOGW(TAG, "esp_now_del_peer failed: %s",
+                         esp_err_to_name(rc));
+            }
         }
     }
 

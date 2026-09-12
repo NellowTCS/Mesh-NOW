@@ -5,6 +5,24 @@
 
 #define TAG "MESH_NOW"
 
+// Control frames stay plaintext: relays must forward them even when they do
+// not share the mesh encryption key. Routing metadata is therefore visible to
+// every node on the mesh.
+static bool is_control_type(uint8_t type)
+{
+    return type == MSG_TYPE_BEACON || type == MSG_TYPE_ACK ||
+           type == MSG_TYPE_ROUTE_REQUEST || type == MSG_TYPE_ROUTE_REPLY ||
+           type == MSG_TYPE_ROUTE_ERROR;
+}
+
+// Control frames that carry an endpoint name so both ends of a conversation
+// learn names on first contact (beacons announce their own name periodically).
+static bool carries_node_name(uint8_t type)
+{
+    return type == MSG_TYPE_BEACON || type == MSG_TYPE_ROUTE_REQUEST ||
+           type == MSG_TYPE_ROUTE_REPLY;
+}
+
 // Snapshot the local name under the state mutex.
 static void copy_local_name(char *dst, size_t dst_size)
 {
@@ -22,7 +40,7 @@ size_t mesh_now_encode(const mesh_message_t *msg, uint8_t *out, size_t out_size)
     char name[MESH_NOW_NODE_NAME_MAX + 1];
     copy_local_name(name, sizeof(name));
 
-    bool has_name = (name[0] != '\0') && (msg->type == MSG_TYPE_BEACON);
+    bool has_name = (name[0] != '\0') && carries_node_name(msg->type);
     mpack_build_map(&writer);
 
     size_t content_len = strnlen(msg->message, MAX_MESH_MESSAGE_LEN);
@@ -92,18 +110,19 @@ esp_err_t mesh_now_prepare_wire(const mesh_message_t *msg, uint8_t *wire,
     wire[pos++] = MESH_NOW_WIRE_VERSION;
     uint8_t flags = msg->flags & ~(MSG_FLAG_ENCRYPTED | MSG_FLAG_HAS_NODE_NAME);
     if (do_encrypt && encryption_enabled && encryption_key_len > 0 &&
-        msg->type != MSG_TYPE_ACK && msg->type != MSG_TYPE_BEACON) {
+        !is_control_type(msg->type)) {
         flags |= MSG_FLAG_ENCRYPTED;
     }
     char name[MESH_NOW_NODE_NAME_MAX + 1];
     copy_local_name(name, sizeof(name));
-    bool add_name = (name[0] != '\0') && (msg->type == MSG_TYPE_BEACON);
+    bool add_name = (name[0] != '\0') && carries_node_name(msg->type);
     if (add_name) {
         flags |= MSG_FLAG_HAS_NODE_NAME;
     }
     wire[pos++] = flags;
     wire[pos++] = msg->type;
     wire[pos++] = msg->group_id;
+    wire[pos++] = msg->hop_limit;
     wire[pos++] = msg->hop_count;
     wire[pos++] = (msg->message_id >> 0) & 0xff;
     wire[pos++] = (msg->message_id >> 8) & 0xff;
@@ -170,6 +189,7 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len, mesh_message_t *msg)
     uint8_t flags = data[pos++];
     uint8_t msg_type = data[pos++];
     uint8_t group_id = data[pos++];
+    uint8_t hop_limit = data[pos++];
     uint8_t hop_count = data[pos++];
 
     uint32_t message_id = (uint32_t)data[pos] | ((uint32_t)data[pos + 1] << 8) |
@@ -199,6 +219,7 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len, mesh_message_t *msg)
     msg->type = msg_type;
     msg->flags = flags;
     msg->group_id = group_id;
+    msg->hop_limit = hop_limit;
     msg->hop_count = hop_count;
     msg->message_id = message_id;
     msg->reply_to = reply_to;
@@ -251,6 +272,7 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len, mesh_message_t *msg)
         msg->type = msg_type;
         msg->flags = flags & ~MSG_FLAG_ENCRYPTED;
         msg->group_id = group_id;
+        msg->hop_limit = hop_limit;
         msg->hop_count = hop_count;
         msg->message_id = message_id;
         memcpy(msg->sender_mac, sender_mac, ESP_NOW_ETH_ALEN);
@@ -266,6 +288,7 @@ bool mesh_now_decode_wire(const uint8_t *data, size_t len, mesh_message_t *msg)
             msg->type = msg_type;
             msg->flags = flags;
             msg->group_id = group_id;
+            msg->hop_limit = hop_limit;
             msg->hop_count = hop_count;
             msg->message_id = message_id;
             memcpy(msg->sender_mac, sender_mac, ESP_NOW_ETH_ALEN);

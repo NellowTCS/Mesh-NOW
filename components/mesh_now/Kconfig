@@ -61,4 +61,21 @@ menu "Mesh-NOW"
             registered on this channel and the WiFi STA is set to it. Every
             node in the mesh must use the same channel.
 
+    config MESH_NOW_MAX_ROUTES
+        int "Maximum route table entries"
+        default 32
+        range 8 128
+        help
+            Number of virtual-peer (route) entries. Routes reach nodes that
+            are not one-hop ESP-NOW neighbors; this capacity is independent of
+            MAX_PEERS.
+
+    config MESH_NOW_ROUTE_LIFETIME_SEC
+        int "Route lifetime (seconds)"
+        default 30
+        range 5 300
+        help
+            How long an unused route stays valid before it expires and must be
+            re-discovered. Pinned routes never expire.
+
 endmenu

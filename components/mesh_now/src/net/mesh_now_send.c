@@ -35,7 +35,8 @@ static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
                                               bool queue_for_retransmit)
 {
     msg->message_id = mesh_now_generate_message_id();
-    msg->hop_count = DEFAULT_ROUTE_TTL;
+    msg->hop_limit = DEFAULT_ROUTE_TTL;
+    msg->hop_count = 0;
     esp_read_mac(msg->sender_mac, ESP_MAC_WIFI_STA);
     msg->timestamp = mesh_now_get_network_time_ms();
 
@@ -69,12 +70,13 @@ static esp_err_t mesh_now_send_message_packet(mesh_message_t *msg,
 
 void mesh_now_route_message(mesh_message_t *msg)
 {
-    if (msg->hop_count == 0) {
+    // hop_count is cumulative: drop once forwarding would reach hop_limit.
+    if (msg->hop_count + 1 >= msg->hop_limit) {
         return;
     }
 
     mesh_message_t forward = *msg;
-    forward.hop_count--;
+    forward.hop_count++;
 
     uint8_t wire[WIRE_BUF_SIZE];
     size_t wire_len = 0;
@@ -101,7 +103,8 @@ void mesh_now_send_ack(const mesh_message_t *received_msg)
     // seen-message dedup
     ack_msg.message_id = mesh_now_generate_message_id();
     ack_msg.reply_to = received_msg->message_id;
-    ack_msg.hop_count = DEFAULT_ROUTE_TTL;
+    ack_msg.hop_limit = DEFAULT_ROUTE_TTL;
+    ack_msg.hop_count = 0;
     esp_read_mac(ack_msg.sender_mac, ESP_MAC_WIFI_STA);
     memcpy(ack_msg.target_mac, received_msg->sender_mac, ESP_NOW_ETH_ALEN);
 
@@ -169,7 +172,8 @@ static void build_beacon(mesh_message_t *beacon)
     memset(beacon, 0, sizeof(mesh_message_t));
     beacon->type = MSG_TYPE_BEACON;
     beacon->message_id = mesh_now_generate_message_id();
-    beacon->hop_count = 1;
+    beacon->hop_limit = 1;
+    beacon->hop_count = 0;
     esp_read_mac(beacon->sender_mac, ESP_MAC_WIFI_STA);
     beacon->timestamp = mesh_now_get_network_time_ms();
     strncpy(beacon->message, "MESH-NOW-BEACON", MAX_MESH_MESSAGE_LEN - 1);
@@ -204,6 +208,7 @@ static void beacon_task(void *pvParameters)
         if (++sweep_counter >= 6) {
             sweep_counter = 0;
             mesh_now_expire_peers(esp_timer_get_time());
+            mesh_now_expire_routes(esp_timer_get_time());
         }
 
         vTaskDelay(pdMS_TO_TICKS(BEACON_INTERVAL_MS));

@@ -5,6 +5,12 @@
 
 #define TAG "MESH_NOW"
 
+// A frame may be relayed only while forwarding keeps it within hop_limit.
+static bool can_relay(const mesh_message_t *msg)
+{
+    return msg->hop_count + 1 < msg->hop_limit;
+}
+
 void mesh_now_handle_message(const mesh_message_t *mesh_msg)
 {
     if (receive_callback) {
@@ -86,7 +92,6 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
             // retrying and does not falsely drop the message.
             if (mesh_msg.type == MSG_TYPE_DIRECT &&
                 memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) == 0) {
-                mesh_now_add_peer(mesh_msg.sender_mac);
                 mesh_now_send_ack(&mesh_msg);
             }
             ESP_LOGD(TAG, "Duplicate message %u ignored", mesh_msg.message_id);
@@ -123,7 +128,7 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
         }
     } else if (mesh_msg.type == MSG_TYPE_ACK) {
         if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) != 0) {
-            if (mesh_msg.hop_count > 0) {
+            if (can_relay(&mesh_msg)) {
                 mesh_now_route_message(&mesh_msg);
             }
             return;
@@ -135,43 +140,39 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
             ESP_LOGD(TAG, "Received ACK for message %u", mesh_msg.reply_to);
         }
     } else if (mesh_msg.type == MSG_TYPE_CHAT) {
-        mesh_now_add_peer(mesh_msg.sender_mac);
         mesh_now_handle_message(&mesh_msg);
 
-        if (mesh_msg.hop_count > 0) {
+        if (can_relay(&mesh_msg)) {
             mesh_now_route_message(&mesh_msg);
         }
     } else if (mesh_msg.type == MSG_TYPE_DIRECT) {
         if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) != 0) {
-            if (mesh_msg.hop_count > 0) {
+            if (can_relay(&mesh_msg)) {
                 mesh_now_route_message(&mesh_msg);
             }
             return;
         }
 
-        mesh_now_add_peer(mesh_msg.sender_mac);
         mesh_now_send_ack(&mesh_msg);
         mesh_now_handle_message(&mesh_msg);
     } else if (mesh_msg.type == MSG_TYPE_GROUP) {
-        mesh_now_add_peer(mesh_msg.sender_mac);
         if (local_group_id != 0 && mesh_msg.group_id == local_group_id) {
             mesh_now_handle_message(&mesh_msg);
         }
 
-        if (mesh_msg.hop_count > 0) {
+        if (can_relay(&mesh_msg)) {
             mesh_now_route_message(&mesh_msg);
         }
     } else if (mesh_msg.type == MSG_TYPE_PRESENCE) {
-        mesh_now_add_peer(mesh_msg.sender_mac);
         mesh_now_handle_message(&mesh_msg);
 
-        if (mesh_msg.hop_count > 0) {
+        if (can_relay(&mesh_msg)) {
             mesh_now_route_message(&mesh_msg);
         }
     } else if (mesh_msg.type == MSG_TYPE_TYPING) {
         if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) == 0) {
             mesh_now_handle_message(&mesh_msg);
-        } else if (mesh_msg.hop_count > 0) {
+        } else if (can_relay(&mesh_msg)) {
             mesh_now_route_message(&mesh_msg);
         }
     }
