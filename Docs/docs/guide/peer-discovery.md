@@ -7,7 +7,7 @@ Mesh-NOW uses periodic beacon broadcasts for automatic peer discovery. No manual
 
 ## Beacon Mechanism
 
-Every node runs a `beacon_task` that broadcasts a `MSG_TYPE_BEACON` message every 5 seconds. Each beacon carries the sender's node name plus a zone announce: up to `CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS` of the sender's one-hop peers, so two-hop nodes learn virtual-peer routes proactively.
+Every node runs a `beacon_task` that broadcasts a `MSG_TYPE_BEACON` message every 5 seconds. Each beacon carries the sender's node name plus a zone announce: up to `CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS` of the sender's one-hop peers, so two-hop nodes learn virtual-peer routes proactively. The announce is trimmed to the densest set that fits the 250-byte ESP-NOW frame cap (shortest names first), so a full neighbor set never overflows a frame.
 
 ```c
 // Simplified beacon construction

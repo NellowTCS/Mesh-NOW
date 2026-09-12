@@ -10,6 +10,10 @@ static esp_err_t mesh_now_send_wire(const uint8_t *dest_mac,
                                     bool queue_for_retransmit,
                                     uint32_t message_id, uint8_t flags)
 {
+    // ESP-NOW caps frames at 250 bytes; check before queuing a retransmit.
+    if (wire_len > ESP_NOW_MAX_DATA_LEN) {
+        return ESP_ERR_INVALID_SIZE;
+    }
     if (queue_for_retransmit) {
         if (mesh_now_add_pending(dest_mac, NULL, wire, wire_len, message_id,
                                  flags, false) < 0) {

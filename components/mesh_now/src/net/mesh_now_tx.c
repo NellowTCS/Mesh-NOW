@@ -39,6 +39,12 @@ esp_err_t mesh_now_send_frame(const mesh_message_t *msg, const uint8_t *dest,
         return err;
     }
 
+    if (wire_len > ESP_NOW_MAX_DATA_LEN) {
+        ESP_LOGW(TAG, "Frame type %d too large (%u > %u bytes), dropping",
+                 msg->type, (unsigned)wire_len, (unsigned)ESP_NOW_MAX_DATA_LEN);
+        return ESP_ERR_INVALID_SIZE;
+    }
+
     esp_err_t ret = esp_now_send(dest, wire, wire_len);
     if (ret != ESP_OK) {
         ESP_LOGW(TAG, "Failed to send frame type %d: %s", msg->type,

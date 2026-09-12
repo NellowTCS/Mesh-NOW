@@ -8,6 +8,71 @@
 
 #define TAG "MESH_NOW"
 
+// Peer snapshot for the beacon zone announce: a named MAC pair, sorted below
+// so the densest subset survives frame-size trimming.
+typedef struct {
+    uint8_t mac[ESP_NOW_ETH_ALEN];
+    char name[MESH_NOW_NODE_NAME_MAX + 1];
+} zone_candidate_t;
+
+// Advertise as many one-hop peers as fit in an ESP-NOW frame.
+static uint8_t fill_zone_announce(mesh_message_t *beacon)
+{
+    zone_candidate_t candidates[MAX_BEACON_NEIGHBORS];
+    uint8_t candidate_count = 0;
+
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
+    for (int i = 0; i < peer_count && candidate_count < MAX_BEACON_NEIGHBORS;
+         i++) {
+        if (!peers[i].active) {
+            continue;
+        }
+        memcpy(candidates[candidate_count].mac, peers[i].peer_addr,
+               ESP_NOW_ETH_ALEN);
+        strncpy(candidates[candidate_count].name, peers[i].node_name,
+                MESH_NOW_NODE_NAME_MAX);
+        candidates[candidate_count].name[MESH_NOW_NODE_NAME_MAX] = '\0';
+        candidate_count++;
+    }
+    xSemaphoreGive(state_mutex);
+
+    if (candidate_count == 0) {
+        return 0;
+    }
+
+    // Insertion sort by name length, shortest first.
+    for (uint8_t i = 1; i < candidate_count; i++) {
+        zone_candidate_t key = candidates[i];
+        size_t key_len = strlen(key.name);
+        int j = (int)i - 1;
+        while (j >= 0 && strlen(candidates[j].name) > key_len) {
+            candidates[j + 1] = candidates[j];
+            j--;
+        }
+        candidates[j + 1] = key;
+    }
+
+    // Trim until the frame fits. The encoder also folds in the local name and
+    // beacon content, so the measured length is exact.
+    uint8_t wire[WIRE_BUF_SIZE];
+    for (uint8_t n = candidate_count; n > 0; n--) {
+        beacon->neighbor_count = n;
+        for (uint8_t i = 0; i < n; i++) {
+            memcpy(beacon->neighbor_macs[i], candidates[i].mac,
+                   ESP_NOW_ETH_ALEN);
+            memcpy(beacon->neighbor_names[i], candidates[i].name,
+                   MESH_NOW_NODE_NAME_MAX + 1);
+        }
+        size_t len = mesh_now_encode(beacon, wire, sizeof(wire));
+        if (len != 0 && len <= ESP_NOW_MAX_DATA_LEN - MESH_NOW_HEADER_LEN) {
+            return n;
+        }
+    }
+
+    beacon->neighbor_count = 0;
+    return 0;
+}
+
 static void build_beacon(mesh_message_t *beacon)
 {
     memset(beacon, 0, sizeof(mesh_message_t));
@@ -19,23 +84,9 @@ static void build_beacon(mesh_message_t *beacon)
     beacon->timestamp = mesh_now_get_network_time_ms();
     strncpy(beacon->message, "MESH-NOW-BEACON", MAX_MESH_MESSAGE_LEN - 1);
 
-    // Zone announce: advertise up to MAX_BEACON_NEIGHBORS one-hop peers so
-    // two-hop nodes learn routes and names without RREQ latency.
-    xSemaphoreTake(state_mutex, portMAX_DELAY);
-    for (int i = 0;
-         i < peer_count && beacon->neighbor_count < MAX_BEACON_NEIGHBORS; i++) {
-        if (!peers[i].active) {
-            continue;
-        }
-        memcpy(beacon->neighbor_macs[beacon->neighbor_count],
-               peers[i].peer_addr, ESP_NOW_ETH_ALEN);
-        strncpy(beacon->neighbor_names[beacon->neighbor_count],
-                peers[i].node_name, MESH_NOW_NODE_NAME_MAX);
-        beacon->neighbor_names[beacon->neighbor_count][MESH_NOW_NODE_NAME_MAX] =
-            '\0';
-        beacon->neighbor_count++;
-    }
-    xSemaphoreGive(state_mutex);
+    // Zone announce: advertise as many one-hop peers as fit so two-hop nodes
+    // learn routes and names without RREQ latency.
+    fill_zone_announce(beacon);
 }
 
 static void beacon_task(void *pvParameters)
