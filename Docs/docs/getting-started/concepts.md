@@ -1,6 +1,6 @@
 ---
 title: "Core Concepts"
-description: "Architecture, node roles, and how Mesh-NOW works under the hood."
+description: "Architecture, node roles, and how Mesh-NOW works."
 ---
 
 Mesh-NOW is a protocol library that turns any ESP32 into a mesh networking node using ESP-NOW as the transport layer.
@@ -58,8 +58,8 @@ Mesh-NOW creates two pinned tasks on core 0:
 
 | Task | Stack | Priority | Purpose |
 | :--- | :---- | :------- | :------ |
-| `beacon_task` | 4096 bytes | 5 | Broadcasts discovery beacons every 5 seconds |
-| `retransmit_task` | 4096 bytes | 5 | Retransmits pending messages every 500ms |
+| `beacon_task` | 8192 bytes | 5 | Broadcasts discovery beacons every 5 seconds |
+| `retransmit_task` | 8192 bytes | 5 | Retransmits pending messages every 500ms |
 
 ::: callout warning title:"Core Affinity"
 Both tasks are pinned to core 0. If your application uses core 0 heavily, adjust the task priorities or core affinity in `mesh_now.c`.
@@ -72,8 +72,8 @@ Both tasks are pinned to core 0. If your application uses core 0 heavily, adjust
 | Peer table (20 peers) | ~640 bytes |
 | Pending messages (16 slots) | ~4.6 KB |
 | Seen message IDs (128 entries) | ~512 bytes |
-| Beacon task stack | 4096 bytes |
-| Retransmit task stack | 4096 bytes |
+| Beacon task stack | 8192 bytes |
+| Retransmit task stack | 8192 bytes |
 | **Total library overhead** | **~14 KB** |
 
 ## Next Steps

@@ -36,23 +36,20 @@ def file_to_header(input_file, output_file, var_name, console=None, ci_mode=Fals
         )
 
     try:
-        # Read the file as binary
         with open(input_file, 'rb') as f:
             data = f.read()
 
         file_size = len(data)
 
-        # Convert to C array
         with open(output_file, 'w') as f:
             f.write(f"#ifndef {var_name}_H\n")
             f.write(f"#define {var_name}_H\n")
             f.write("\n")
             f.write(f"const char {var_name}[] = {{\n")
 
-            # Convert bytes to hex
             hex_bytes = [f"0x{b:02x}" for b in data]
 
-            # Group into lines of 12 bytes for readability
+            # 12 bytes per line for readability
             for i in range(0, len(hex_bytes), 12):
                 line_bytes = hex_bytes[i : i + 12]
                 f.write("    " + ", ".join(line_bytes) + ",\n")
@@ -79,20 +76,17 @@ def main():
     console = setup_console() if not args.ci else None
 
     if console and not args.ci:
-        # Show header
         title = Text("Mesh-NOW Frontend Embedder", style="bold blue")
         panel = Panel(title, border_style="blue")
         console.print(panel)
         console.print()
 
-    # Get directories
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent
     frontend_dir = project_dir / "frontend"
     dist_dir = frontend_dir / "dist"
     output_dir = project_dir / "main"
 
-    # Check if dist directory exists
     if not dist_dir.exists():
         if console and not args.ci:
             console.print("[red]Error: Frontend dist directory not found[/red]")
@@ -105,10 +99,8 @@ def main():
         console.print(f"[green]✓ Found frontend dist: {dist_dir}[/green]")
         console.print()
 
-    # Ensure output directory exists
     output_dir.mkdir(exist_ok=True)
 
-    # Files to convert
     conversions = [
         ("index.html", "index_html.h", "INDEX_HTML"),
         ("bundle.js", "bundle_js.h", "BUNDLE_JS"),
@@ -125,7 +117,6 @@ def main():
             if file_to_header(input_file, output_file, var_name, console, args.ci):
                 converted_files.append(output_name)
                 if console and not args.ci:
-                    # Show file size
                     size = output_file.stat().st_size
                     size_str = f"{size}B" if size < 1024 else f"{size//1024}KB"
                     console.print(f"[green]✓ {output_name}: {size_str}[/green]")

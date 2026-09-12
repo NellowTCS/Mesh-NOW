@@ -47,27 +47,22 @@ def run_command(cmd, cwd=None, console=None, silent=True):
 
 def test_target(target, console, script_dir):
     """Test configuration for a target"""
-    # Check if config file exists
-    config_file = script_dir.parent / "configs" / f"sdkconfig.{target}"
+    config_file = script_dir.parent / f"sdkconfig.defaults.{target}"
     if not config_file.exists():
         return "Config file missing"
 
-    # Check if config file is readable and contains target-specific settings
+    # Validate: readable and non-empty (per-target wifi buffer settings)
     try:
-        with open(config_file, 'r') as f:
-            content = f.read()
-            if f'CONFIG_IDF_TARGET="{target}"' not in content:
-                return "Config file invalid"
-    except Exception as e:
+        content = config_file.read_text()
+        if not content.strip():
+            return "Config file empty"
+    except OSError as e:
         return f"Config file error: {e}"
 
-    # For CI environments, skip actual ESP-IDF testing since it may not support all targets
-    # The config file validation is sufficient to ensure the target is configured
     return "Configuration OK"
 
 
 def main():
-    # Setup console
     if RICH_AVAILABLE:
         console = Console()
     else:
@@ -84,7 +79,6 @@ def main():
 
         console = PlainConsole()
 
-    # Check IDF setup
     check_idf_setup(console)
 
     script_dir = Path(__file__).parent

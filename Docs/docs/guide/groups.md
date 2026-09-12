@@ -33,19 +33,13 @@ When a `MSG_TYPE_GROUP` message arrives, the library checks the group ID:
 ```c
 else if (mesh_msg.type == MSG_TYPE_GROUP)
 {
-    mesh_now_add_peer(mesh_msg.sender_mac);
-
-    if (mesh_msg.group_id == local_group_id) {
-        if (receive_callback) {
-            receive_callback(&mesh_msg);
-        } else {
-            message_queue_send(&msg);
-        }
+    if (local_group_id != 0 && mesh_msg.group_id == local_group_id) {
+        deliver(&mesh_msg);  // callback or message queue
     }
 
-    // Relay regardless of group membership
-    if (mesh_msg.hop_count > 0) {
-        mesh_now_route_message(&mesh_msg);
+    // Relay regardless of group membership.
+    if (mesh_now_can_relay(&mesh_msg)) {
+        mesh_now_relay_broadcast(&mesh_msg, true);
     }
 }
 ```

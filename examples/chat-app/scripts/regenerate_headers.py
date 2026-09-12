@@ -12,7 +12,6 @@ def write_header(input_path: Path, output_path: Path, var_name: str):
         f.write(f"#define {var_name}_H\n\n")
         f.write("#include <stddef.h>\n\n")
         f.write("const unsigned char %s[] = {\n" % var_name)
-        # write bytes grouped
         for i in range(0, size, 12):
             chunk = data[i : i + 12]
             line = ', '.join(f"0x{b:02x}" for b in chunk)

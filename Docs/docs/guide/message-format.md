@@ -7,7 +7,7 @@ Every Mesh-NOW message is serialized to MessagePack and sent as a binary ESP-NOW
 
 ## Wire Format
 
-Messages use a binary envelope with a 31-byte header followed by a MessagePack-encoded payload. See [Wire Format](../protocol/wire-format.md) for the full binary layout.
+Messages use a binary envelope with a 32-byte header followed by a MessagePack-encoded payload. See [Wire Format](../protocol/wire-format.md) for the full binary layout.
 
 The canonical protocol specification is [`mesh_now.ksy`](/mesh_now.ksy) at the repository root.
 
@@ -17,17 +17,21 @@ The library uses this structure internally:
 
 ```c
 typedef struct {
-    uint8_t type;              // Message type (0-6)
+    uint8_t type;              // Message type (0-9)
     uint8_t flags;             // Bitfield: REQUIRES_ACK, ENCRYPTED, HAS_NODE_NAME
     uint8_t group_id;          // Group identifier (0-255)
-    uint8_t hop_count;         // Remaining hops before drop
+    uint8_t hop_limit;         // Max hops for this frame
+    uint8_t hop_count;         // Hops taken so far
     uint32_t message_id;       // Unique message identifier
     uint32_t reply_to;         // Message id being acked (ACK frames only)
     uint8_t sender_mac[6];     // Sender MAC address
     uint8_t target_mac[6];     // Target MAC (direct messages)
-    uint32_t timestamp;        // Milliseconds since init
+    uint32_t timestamp;        // Network time in ms
     char message[128];         // Payload (null-terminated)
-    char node_name[17];        // Node name (beacons only)
+    char node_name[17];        // Node name (beacons/RREQ/RREP)
+    uint8_t neighbor_count;    // Zone announce: advertised one-hop peers
+    uint8_t neighbor_macs[8][6];     // Advertised peer MACs (beacons only)
+    char neighbor_names[8][17];      // Advertised peer names (beacons only)
 } mesh_message_t;
 ```
 
@@ -42,14 +46,18 @@ typedef struct {
 | `type` | 1 byte | Message type identifier (see below) |
 | `flags` | 1 byte | Bitfield: ACK required, encrypted, has node name |
 | `group_id` | 1 byte | Group membership filter (0 = no group) |
-| `hop_count` | 1 byte | Remaining relay count; decremented at each hop |
+| `hop_limit` | 1 byte | Max hops, set at origin |
+| `hop_count` | 1 byte | Hops taken; dropped at `hop_limit` |
 | `message_id` | 4 bytes | Monotonically increasing unique ID (random seed) |
 | `reply_to` | 4 bytes | For ACK frames, the `message_id` being acknowledged; 0 otherwise |
 | `sender_mac` | 6 bytes | MAC address of the originating node |
 | `target_mac` | 6 bytes | MAC address of the intended recipient |
-| `timestamp` | 4 bytes | Milliseconds since `mesh_now_init()` was called |
+| `timestamp` | 4 bytes | Network time in ms, synced from beacons |
 | `message` | variable | Payload string (null-terminated) |
 | `node_name` | variable | Node name (beacons with HAS_NODE_NAME flag) |
+| `neighbor_count` | 1 byte | Number of one-hop peers advertised (beacons only) |
+| `neighbor_macs` | variable | Advertised one-hop peer MACs (beacons only) |
+| `neighbor_names` | variable | Advertised peer names (beacons only) |
 
 ## Message Types
 
@@ -62,6 +70,9 @@ typedef struct {
 | 4 | `MSG_TYPE_GROUP` | Group-scoped broadcast | No | Yes |
 | 5 | `MSG_TYPE_PRESENCE` | Status announcement | No | Yes |
 | 6 | `MSG_TYPE_TYPING` | Typing indicator | No | Conditional |
+| 7 | `MSG_TYPE_ROUTE_REQUEST` | Route discovery flood | No | No |
+| 8 | `MSG_TYPE_ROUTE_REPLY` | Route discovery reply | No | No |
+| 9 | `MSG_TYPE_ROUTE_ERROR` | Broken next-hop announcement | No | No |
 
 ## Flags
 

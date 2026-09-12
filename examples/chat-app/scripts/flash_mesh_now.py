@@ -145,12 +145,10 @@ def flash_target(target_name, target_path, port, console, ci_mode=False):
         console.print(f"[bold blue]Flashing {target_name} firmware...[/bold blue]")
         console.print()
 
-    # Change to target directory
     original_cwd = Path.cwd()
     try:
         os.chdir(target_path)
 
-        # Check if flash.py exists in target directory
         flash_script = target_path / "flash.py"
         if flash_script.exists():
             if console and not ci_mode:
@@ -196,14 +194,12 @@ def main():
     console = setup_console() if not args.ci else None
 
     if console and not args.ci:
-        # Show header
         title = Text("Mesh-NOW Universal Flash Tool", style="bold blue")
         subtitle = Text("Cross-platform ESP32 firmware flasher", style="dim")
         panel = Panel(f"{title}\n{subtitle}", border_style="blue")
         console.print(panel)
         console.print()
 
-    # Find firmware directories
     firmware_dirs = find_firmware_dirs(args.firmware_dir)
 
     if not firmware_dirs:
@@ -221,16 +217,13 @@ def main():
         console.print(f"[green]Found {len(firmware_dirs)} firmware target(s)[/green]")
         show_target_table(firmware_dirs, console)
 
-    # Select target
     if len(firmware_dirs) == 1:
-        # Only one target, use it
         target_name, target_path = list(firmware_dirs.items())[0]
         if console and not args.ci:
             console.print(f"[dim]Using only available target: {target_name}[/dim]")
     else:
-        # Multiple targets, let user choose
         if args.ci:
-            # In CI mode, can't prompt, so fail
+            # CI can't prompt, so fail
             if console:
                 console.print(
                     "[red]Multiple targets found in CI mode. Please specify target directory.[/red]"
@@ -242,14 +235,12 @@ def main():
                 return
             target_name, target_path = result
 
-    # Select port
     port = select_port(console, args.ci)
 
     if console and not args.ci:
         console.print(f"[dim]Selected port: {port}[/dim]")
         console.print()
 
-    # Flash the target
     success = flash_target(target_name, target_path, port, console, args.ci)
 
     if not success:

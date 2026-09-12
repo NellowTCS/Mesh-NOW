@@ -99,25 +99,26 @@ flowchart TB
     B -->|No| C[Drop]
     B -->|Yes| D[Decrypt if encrypted]
     D --> E{Message type?}
-    E -->|Beacon| F[Add peer]
+    E -->|Beacon| F[Add peer, sync time, learn zone routes]
     E -->|ACK| G{For us?}
     G -->|Yes| H[Clear pending message]
-    G -->|No| I[Relay if hop > 0]
-    E -->|Chat| J[Add peer, invoke callback/queue]
-    J --> K[Relay if hop > 0]
-    E -->|Direct| L{For us?}
-    L -->|Yes| M[Add peer, send ACK, invoke callback]
-    L -->|No| N[Relay if hop > 0]
-    E -->|Group| O{Group match?}
-    O -->|Yes| P[Invoke callback/queue]
-    O -->|No| Q[Skip delivery]
-    P --> R[Relay if hop > 0]
-    Q --> R
-    E -->|Presence| S[Add peer, invoke callback]
-    S --> T[Relay if hop > 0]
-    E -->|Typing| U{For us?}
-    U -->|Yes| V[Invoke callback]
-    U -->|No| W[Relay if hop > 0]
+    G -->|No| I[Forward toward ACK target]
+    E -->|RREQ| J[Cache, add reverse route, reply or flood]
+    E -->|RREP| K[Adopt route, relay reply, flush DMs]
+    E -->|RERR| L[Invalidate routes through announcer, relay]
+    E -->|Chat| M[Deliver, relay while hop budget remains]
+    E -->|Direct| N{For us?}
+    N -->|Yes| O[Send ACK, deliver]
+    N -->|No| P[Forward along route or flood]
+    E -->|Group| Q{Group match?}
+    Q -->|Yes| R[Deliver]
+    Q -->|No| S[Skip delivery]
+    R --> T[Relay while hop budget remains]
+    S --> T
+    E -->|Presence| U[Deliver, relay while hop budget remains]
+    E -->|Typing| V{For us?}
+    V -->|Yes| W[Deliver]
+    V -->|No| X[Forward toward target]
 ```
 
 ## Timing Constants

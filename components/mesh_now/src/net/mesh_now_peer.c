@@ -43,8 +43,7 @@ void mesh_now_add_peer(const uint8_t *mac)
 
     int idx = find_peer(mac);
     if (idx >= 0) {
-        // A peer can be marked inactive when it expires in the beacon task,
-        // then contact the mesh again. Reactivate it and refresh last_seen.
+        // Peer expired earlier but is back on air: reactivate and refresh.
         peers[idx].active = true;
         peers[idx].last_seen = esp_timer_get_time();
         if (!esp_now_is_peer_exist(mac)) {
@@ -122,10 +121,13 @@ bool mesh_now_peer_is_direct(const uint8_t *mac)
     return found;
 }
 
-// Mark peers inactive after PEER_EXPIRY_US without contact, then compact the
-// table so peer_count reflects the number of active peers.
+// Mark peers idle past PEER_EXPIRY_US, then compact so peer_count tracks
+// active peers.
 void mesh_now_expire_peers(int64_t now_us)
 {
+    uint8_t expired_macs[MAX_PEERS][ESP_NOW_ETH_ALEN];
+    int expired_count = 0;
+
     xSemaphoreTake(state_mutex, portMAX_DELAY);
 
     for (int i = 0; i < peer_count; i++) {
@@ -141,6 +143,11 @@ void mesh_now_expire_peers(int64_t now_us)
             if (rc != ESP_OK && rc != ESP_ERR_ESPNOW_NOT_FOUND) {
                 ESP_LOGW(TAG, "esp_now_del_peer failed: %s",
                          esp_err_to_name(rc));
+            }
+            if (expired_count < MAX_PEERS) {
+                memcpy(expired_macs[expired_count], peers[i].peer_addr,
+                       ESP_NOW_ETH_ALEN);
+                expired_count++;
             }
         }
     }
@@ -158,4 +165,10 @@ void mesh_now_expire_peers(int64_t now_us)
     peer_count = write;
 
     xSemaphoreGive(state_mutex);
+
+    for (int i = 0; i < expired_count; i++) {
+        if (mesh_now_invalidate_routes_through(expired_macs[i]) > 0) {
+            mesh_now_send_rerr();
+        }
+    }
 }

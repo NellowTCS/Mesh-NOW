@@ -116,14 +116,12 @@ def build_frontend(console, script_dir, ci_mode=False):
             console.print("[red]Frontend build failed[/red]")
         return False
 
-    # Check if dist directory was created
     dist_dir = script_dir / "dist"
     if not dist_dir.exists():
         if console and not ci_mode:
             console.print("[red]Build completed but dist directory not found[/red]")
         return False
 
-    # List built files
     if console and not ci_mode:
         console.print("[green]✓ Frontend built successfully![/green]")
         console.print("[dim]Built files:[/dim]")
@@ -145,16 +143,13 @@ def main():
     console = setup_console() if not args.ci else None
 
     if console and not args.ci:
-        # Show header
         title = Text("Mesh-NOW Frontend Builder", style="bold blue")
         panel = Panel(title, border_style="blue")
         console.print(panel)
         console.print()
 
-    # Get script directory (frontend directory)
     script_dir = Path(__file__).parent
 
-    # Check Node.js and npm
     if not check_nodejs(console, args.ci)[0]:
         sys.exit(1)
 
@@ -164,14 +159,12 @@ def main():
     if console and not args.ci:
         console.print()
 
-    # Install dependencies
     if not install_dependencies(console, script_dir, args.ci):
         sys.exit(1)
 
     if console and not args.ci:
         console.print()
 
-    # Build frontend
     if not build_frontend(console, script_dir, args.ci):
         sys.exit(1)
 

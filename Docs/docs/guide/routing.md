@@ -7,42 +7,35 @@ Mesh-NOW routes messages through intermediate nodes using a hop-count TTL mechan
 
 ## How Routing Works
 
-When a node receives a message not addressed to it, it decrements the hop count and re-broadcasts:
+When a node receives a broadcast data frame, it relays it while the hop budget remains:
 
 ```c
-static void mesh_now_route_message(mesh_message_t *msg)
+static void maybe_relay(const mesh_message_t *mesh_msg)
 {
-    if (msg->hop_count == 0) {
-        return;  // TTL expired
+    if (mesh_now_can_relay(mesh_msg)) {
+        mesh_now_relay_broadcast(mesh_msg, true);
     }
-
-    mesh_message_t forward = *msg;
-    forward.hop_count--;
-
-    if (forward.hop_count == 0) {
-        return;  // Would be 0 after decrement, drop
-    }
-
-    esp_now_send(broadcast_mac, &forward, sizeof(mesh_message_t));
 }
 ```
 
+`mesh_now_can_relay()` checks that `hop_count` is still below `hop_limit`; `mesh_now_relay_broadcast()` increments `hop_count` and re-broadcasts. Direct frames (DM, ACK, typing) instead forward one hop toward their target: along a route when one is known, otherwise as a bounded flood.
+
 ## TTL (Time to Live)
 
-The default TTL is 3 hops:
+The default hop limit is 3:
 
 ```c
 #define DEFAULT_ROUTE_TTL 3
 ```
 
-This means a message can traverse up to 3 intermediate nodes before being dropped. The hop count is set when the message is sent and decremented at each relay.
+A frame originates with `hop_count = 0` and is relayed while `hop_count` stays below `hop_limit`. A limit of 3 therefore means up to 2 intermediate relays before the frame is dropped.
 
 ```mermaid
 flowchart LR
-    S[Sender] -->|hop=3| R1[Relay 1]
-    R1 -->|hop=2| R2[Relay 2]
-    R2 -->|hop=1| R3[Relay 3]
-    R3 -.->|hop=0, drop| X[Drop]
+    S[Sender] -->|hop_count=0| R1[Relay 1]
+    R1 -->|hop_count=1| R2[Relay 2]
+    R2 -->|hop_count=2| D[Destination]
+    R2 -.->|hop_count=3 reaches limit| X[Drop]
 ```
 
 ## Duplicate Detection
@@ -58,13 +51,13 @@ static int seen_message_count = 0;
 
 When a message arrives:
 
-1. If it is a **beacon** or **ACK**, skip duplicate check (beacons are discovery, ACKs are delivery confirmation)
+1. If it is a control frame (beacon, ACK, RREQ, RREP, RERR), skip the duplicate check (control frames are short-lived and self-deduplicating)
 2. Check if `message_id` is in the seen buffer
 3. If seen, drop the message
 4. If new, add to the buffer and process
 
 ```c
-if (mesh_msg.type != MSG_TYPE_BEACON && mesh_msg.type != MSG_TYPE_ACK) {
+if (!mesh_now_is_control_type(mesh_msg.type)) {
     if (mesh_now_is_message_seen(mesh_msg.message_id)) {
         return;  // Duplicate, drop
     }
@@ -80,20 +73,21 @@ When the seen buffer is full, the oldest entry is shifted out and the new ID is 
 
 | Message Type | Relayed? | Condition |
 | :----------- | :------- | :-------- |
-| `MSG_TYPE_BEACON` | No | Discovery only, not relayed |
-| `MSG_TYPE_CHAT` | Yes | Always relayed if hop_count > 0 |
-| `MSG_TYPE_DIRECT` | Yes | Relayed if target MAC != self |
-| `MSG_TYPE_ACK` | Yes | Relayed if target MAC != self |
-| `MSG_TYPE_GROUP` | Yes | Always relayed if hop_count > 0 |
-| `MSG_TYPE_PRESENCE` | Yes | Always relayed if hop_count > 0 |
-| `MSG_TYPE_TYPING` | Yes | Relayed if target MAC != self |
+| `MSG_TYPE_BEACON` | No | Discovery only, handled locally |
+| `MSG_TYPE_CHAT` | Yes | Broadcast while hop budget remains |
+| `MSG_TYPE_DIRECT` | Yes | Forwarded toward target via route, or flooded if no route |
+| `MSG_TYPE_ACK` | Yes | Forwarded toward target along the return path |
+| `MSG_TYPE_GROUP` | Yes | Relayed regardless of group membership |
+| `MSG_TYPE_PRESENCE` | Yes | Broadcast while hop budget remains |
+| `MSG_TYPE_TYPING` | Yes | Forwarded toward target like a direct frame |
+| RREQ / RREP / RERR | No | Consumed by the discovery layer |
 
 ## Retransmission vs. Relay
 
 Retransmission and relay are different mechanisms:
 
 - **Retransmission** is for the original sender to retry delivery of unacknowledged direct messages (up to 3 retries, 2-second timeout)
-- **Relay** is for intermediate nodes to forward messages through the mesh (decrement hop count, re-broadcast)
+- **Relay** is for intermediate nodes to forward messages through the mesh (increment hop count, forward toward target or flood)
 
 ::: grids
 ::: grid

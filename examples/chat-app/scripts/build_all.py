@@ -56,7 +56,6 @@ def build_target(target, console, script_dir, progress=None):
     """Build for a specific target"""
     build_dir = script_dir.parent / "build"
 
-    # Clean previous build
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
@@ -75,7 +74,6 @@ def build_target(target, console, script_dir, progress=None):
     if progress:
         progress.advance(task)
 
-    # Build
     if progress:
         progress.update(task, description=f"Building {target}...")
     else:
@@ -88,7 +86,6 @@ def build_target(target, console, script_dir, progress=None):
     if progress:
         progress.advance(task)
 
-    # Copy artifacts
     builds_dir = script_dir.parent / "builds" / target
     builds_dir.mkdir(parents=True, exist_ok=True)
 
@@ -103,7 +100,6 @@ def build_target(target, console, script_dir, progress=None):
         if src_path.exists():
             shutil.copy2(src_path, builds_dir / name)
 
-    # Get binary size
     bin_file = builds_dir / "mesh-now.bin"
     if bin_file.exists():
         size = bin_file.stat().st_size
@@ -190,7 +186,6 @@ def main():
     )
     args = parser.parse_args()
 
-    # Setup console
     if RICH_AVAILABLE and not args.ci:
         console = Console()
     else:
@@ -207,13 +202,11 @@ def main():
 
         console = PlainConsole()
 
-    # Check IDF setup
     check_idf_setup(console)
 
     script_dir = Path(__file__).parent
-    os.chdir(script_dir.parent)  # Change to project root
+    os.chdir(script_dir.parent)  # idf.py build must run from the project root
 
-    # Handle frontend building if requested
     if args.with_frontend:
         if console and not args.ci:
             console.print(
@@ -231,7 +224,6 @@ def main():
 
     targets = args.targets if args.targets else get_targets()
 
-    # Update panel title if frontend is enabled
     panel_title = "[bold blue]Mesh-NOW Multi-Target Build Script"
     if args.with_frontend:
         panel_title += " + Frontend"
@@ -266,7 +258,6 @@ def main():
                 console.print(f"[red]{target}: FAILED[/red]")
             console.print()
 
-    # Summary
     console.print("=" * 40)
     console.print("Build Summary:")
     console.print("=" * 40)

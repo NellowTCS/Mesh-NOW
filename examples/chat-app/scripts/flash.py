@@ -95,7 +95,6 @@ def flash_firmware(target, port, console, ci_mode=False):
         )
         console.print()
 
-        # Show file sizes
         console.print("[dim]Firmware files:[/dim]")
         for file in ["bootloader.bin", "partition-table.bin", "mesh-now.bin"]:
             if Path(file).exists():
@@ -103,12 +102,10 @@ def flash_firmware(target, port, console, ci_mode=False):
                 console.print(f"  {file}: {size}")
         console.print()
 
-    # Check esptool
     success, _ = run_command("esptool.py --version", console, ci_mode)
     if not success:
         if console and not ci_mode:
             console.print("[red]esptool.py not found. Installing...[/red]")
-            # Try to install
             install_success = run_command(
                 f"{sys.executable} -m pip install esptool", console, ci_mode
             )[0]
@@ -118,7 +115,6 @@ def flash_firmware(target, port, console, ci_mode=False):
         else:
             return False
 
-    # Flash command
     flash_cmd = f"""esptool.py --chip {target} --port {port} --baud 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_freq 40m --flash_size detect 0x0 bootloader.bin 0x8000 partition-table.bin 0x10000 mesh-now.bin"""
 
     if console and not ci_mode:
@@ -181,19 +177,16 @@ def main():
     console = setup_console() if not args.ci else None
 
     if console and not args.ci:
-        # Show header
         title = Text(f"ESP32 Firmware Flasher - {args.target}", style="bold blue")
         panel = Panel(title, border_style="blue")
         console.print(panel)
         console.print()
 
-    # Check firmware files
     if not check_firmware_files(console, args.ci):
         if console and not args.ci:
             console.print("[red]Cannot proceed without firmware files[/red]")
         sys.exit(1)
 
-    # Flash firmware
     success = flash_firmware(args.target, args.port, console, args.ci)
 
     if not success:

@@ -198,6 +198,17 @@ body {
     font-size: 0.8rem;
 }
 
+.peer-hops {
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--accent, #38bdf8);
+    background: rgba(56, 189, 248, 0.12);
+    border-radius: 8px;
+    padding: 1px 6px;
+    flex-shrink: 0;
+}
+
 .peer-typing {
     font-size: 0.7rem;
     color: var(--text-dim);

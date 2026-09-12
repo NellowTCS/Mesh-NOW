@@ -77,7 +77,6 @@ def install_esptool(console, ci_mode=False):
         console.print("[bold blue]Installing esptool.py...[/bold blue]")
         console.print()
 
-    # Check Python
     python_ok, python_version = check_python()
     if not python_ok:
         if console and not ci_mode:
@@ -87,7 +86,6 @@ def install_esptool(console, ci_mode=False):
     if console and not ci_mode:
         console.print(f"[green]✓ Python found: {python_version}[/green]")
 
-    # Check pip
     pip_ok, pip_version = check_pip()
     if not pip_ok:
         if console and not ci_mode:
@@ -98,7 +96,6 @@ def install_esptool(console, ci_mode=False):
     if console and not ci_mode:
         console.print(f"[green]✓ Pip found: {pip_version.split()[0]}[/green]")
 
-    # Install esptool
     if console and not ci_mode:
         with Progress(
             SpinnerColumn(),
@@ -120,7 +117,6 @@ def install_esptool(console, ci_mode=False):
             console.print("[red]Failed to install esptool[/red]")
         return False
 
-    # Verify installation
     success, version_output = run_command("esptool.py version", console, ci_mode)
     if not success:
         if console and not ci_mode:
@@ -146,7 +142,6 @@ def main():
     console = setup_console() if not args.ci else None
 
     if console and not args.ci:
-        # Show header
         title = Text("ESP32 Tool Installer", style="bold blue")
         panel = Panel(title, border_style="blue")
         console.print(panel)

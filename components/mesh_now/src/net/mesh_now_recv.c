@@ -5,10 +5,33 @@
 
 #define TAG "MESH_NOW"
 
-// A frame may be relayed only while forwarding keeps it within hop_limit.
-static bool can_relay(const mesh_message_t *msg)
+// Forward a directed frame one hop toward target, flooding if no route is
+// known so the frame still arrives.
+static void forward_directed(const mesh_message_t *msg,
+                             const uint8_t *target_mac)
 {
-    return msg->hop_count + 1 < msg->hop_limit;
+    if (!mesh_now_can_relay(msg)) {
+        return;
+    }
+
+    mesh_route_t rt;
+    memset(&rt, 0, sizeof(rt));
+    bool do_encrypt = !mesh_now_is_control_type(msg->type);
+
+    const uint8_t *dest = broadcast_mac;
+    if (mesh_now_peer_is_direct(target_mac)) {
+        dest = target_mac;
+    } else if (mesh_now_get_route(target_mac, &rt) && rt.active) {
+        dest = rt.next_hop;
+    } else if (mesh_now_route_request_attempts(target_mac) < 0) {
+        // No route: flood this copy and start local repair in the background.
+        mesh_now_request_route(target_mac);
+    }
+
+    esp_err_t ret = mesh_now_relay_unicast(msg, dest, do_encrypt);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "Directed forward failed: %s", esp_err_to_name(ret));
+    }
 }
 
 void mesh_now_handle_message(const mesh_message_t *mesh_msg)
@@ -85,20 +108,28 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
         return;
     }
 
-    // Control frames (beacon/ack/rreq/rrep/rerr) are plaintext by design
+    bool addressed_to_me =
+        memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) == 0;
+    bool is_directed =
+        mesh_msg.type == MSG_TYPE_DIRECT || mesh_msg.type == MSG_TYPE_TYPING;
+
+    // Flood data (chat/group/presence) dedups at every node so a broadcast
+    // lands once; directed frames dedup only at the final destination.
     if (!mesh_now_is_control_type(mesh_msg.type)) {
-        if (mesh_now_is_message_seen(mesh_msg.message_id)) {
-            // A duplicate DIRECT addressed to us means the original was
-            // delivered but our ACK was lost. Re-ACK so the sender stops
-            // retrying and does not falsely drop the message.
-            if (mesh_msg.type == MSG_TYPE_DIRECT &&
-                memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) == 0) {
-                mesh_now_send_ack(&mesh_msg);
+        bool dedup = is_directed ? addressed_to_me : true;
+        if (dedup && mesh_now_is_message_seen(mesh_msg.message_id)) {
+            // Duplicate DIRECT addressed to us: the original arrived but our
+            // ACK was lost. Re-ACK so the sender stops retrying and does not
+            // drop it.
+            if (mesh_msg.type == MSG_TYPE_DIRECT && addressed_to_me) {
+                mesh_now_send_ack(&mesh_msg, src_addr);
             }
             ESP_LOGD(TAG, "Duplicate message %u ignored", mesh_msg.message_id);
             return;
         }
-        mesh_now_mark_message_seen(mesh_msg.message_id);
+        if (dedup) {
+            mesh_now_mark_message_seen(mesh_msg.message_id);
+        }
     }
 
     if (mesh_msg.type == MSG_TYPE_BEACON) {
@@ -127,11 +158,17 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
             }
             xSemaphoreGive(state_mutex);
         }
+
+        // Zone routes: each advertised neighbor is a 2-hop virtual peer via the
+        // beacon's sender.
+        for (uint8_t i = 0; i < mesh_msg.neighbor_count; i++) {
+            mesh_now_add_virtual_peer(mesh_msg.neighbor_macs[i],
+                                      mesh_msg.sender_mac,
+                                      mesh_msg.neighbor_names[i], 2);
+        }
     } else if (mesh_msg.type == MSG_TYPE_ACK) {
-        if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) != 0) {
-            if (can_relay(&mesh_msg)) {
-                mesh_now_route_message(&mesh_msg);
-            }
+        if (!addressed_to_me) {
+            forward_directed(&mesh_msg, mesh_msg.target_mac);
             return;
         }
 
@@ -144,41 +181,41 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
         mesh_now_handle_rreq(&mesh_msg, src_addr);
     } else if (mesh_msg.type == MSG_TYPE_ROUTE_REPLY) {
         mesh_now_handle_rrep(&mesh_msg, src_addr);
+    } else if (mesh_msg.type == MSG_TYPE_ROUTE_ERROR) {
+        mesh_now_handle_rerr(&mesh_msg);
     } else if (mesh_msg.type == MSG_TYPE_CHAT) {
         mesh_now_handle_message(&mesh_msg);
 
-        if (can_relay(&mesh_msg)) {
-            mesh_now_route_message(&mesh_msg);
+        if (mesh_now_can_relay(&mesh_msg)) {
+            mesh_now_relay_broadcast(&mesh_msg, true);
         }
     } else if (mesh_msg.type == MSG_TYPE_DIRECT) {
-        if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) != 0) {
-            if (can_relay(&mesh_msg)) {
-                mesh_now_route_message(&mesh_msg);
-            }
+        if (!addressed_to_me) {
+            forward_directed(&mesh_msg, mesh_msg.target_mac);
             return;
         }
 
-        mesh_now_send_ack(&mesh_msg);
+        mesh_now_send_ack(&mesh_msg, src_addr);
         mesh_now_handle_message(&mesh_msg);
     } else if (mesh_msg.type == MSG_TYPE_GROUP) {
         if (local_group_id != 0 && mesh_msg.group_id == local_group_id) {
             mesh_now_handle_message(&mesh_msg);
         }
 
-        if (can_relay(&mesh_msg)) {
-            mesh_now_route_message(&mesh_msg);
+        if (mesh_now_can_relay(&mesh_msg)) {
+            mesh_now_relay_broadcast(&mesh_msg, true);
         }
     } else if (mesh_msg.type == MSG_TYPE_PRESENCE) {
         mesh_now_handle_message(&mesh_msg);
 
-        if (can_relay(&mesh_msg)) {
-            mesh_now_route_message(&mesh_msg);
+        if (mesh_now_can_relay(&mesh_msg)) {
+            mesh_now_relay_broadcast(&mesh_msg, true);
         }
     } else if (mesh_msg.type == MSG_TYPE_TYPING) {
-        if (memcmp(mesh_msg.target_mac, my_mac, ESP_NOW_ETH_ALEN) == 0) {
+        if (addressed_to_me) {
             mesh_now_handle_message(&mesh_msg);
-        } else if (can_relay(&mesh_msg)) {
-            mesh_now_route_message(&mesh_msg);
+        } else {
+            forward_directed(&mesh_msg, mesh_msg.target_mac);
         }
     }
 }

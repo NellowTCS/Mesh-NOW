@@ -30,16 +30,13 @@ esp_err_t wifi_manager_init(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    // ESP-NOW mesh nodes sit in STA mode without an AP.
-    // Disable power save so the radio listens continuously.
+    // STA-only, no AP; power save off so the radio listens continuously.
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 
     ESP_ERROR_CHECK(esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE));
 
-    // Promiscuous mode lets ESP-NOW see frames addressed to
-    // other nodes so this device can relay DIRECT/ACK.
-    // Without it only frames addressed to this MAC or the broadcast address
-    // are received, limiting the mesh to single-hop unicast.
+    // Promiscuous so we can relay frames meant for other nodes (DIRECT/ACK).
+    // Without it only our MAC or broadcast frames arrive (single-hop unicast).
     ESP_ERROR_CHECK(esp_wifi_set_promiscuous(true));
 
     ESP_LOGI(TAG, "WiFi started: STA on channel %d", WIFI_CHANNEL);

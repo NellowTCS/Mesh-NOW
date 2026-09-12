@@ -118,4 +118,13 @@ menu "Mesh-NOW"
             Number of (originator, sequence) pairs retained to suppress
             re-processing of duplicate route requests.
 
+    config MESH_NOW_MAX_BEACON_NEIGHBORS
+        int "Beacon neighbor announcements"
+        default 8
+        range 1 20
+        help
+            Number of one-hop neighbors a beacon may advertise so that
+            two-hop nodes learn virtual-peer routes and names. A larger value
+            costs beacon airtime.
+
 endmenu

@@ -84,9 +84,12 @@ types:
   message:
     doc: |
       MessagePack-encoded payload carrying only the message data.
-      The inner map contains 'content' (str) and optionally 'node_name'
+      The inner map contains 'content' (str), optionally 'node_name'
       (str, present in beacons when the HAS_NODE_NAME flag is set in the
-      header).
+      header), and, for beacons only, the zone announce: 'neighbor_macs'
+      (array of 6-byte bins) and 'neighbor_names' (parallel array of str),
+      advertising the sending node's one-hop neighbors so two-hop nodes
+      learn virtual-peer routes.
     seq:
       - id: data
         size-eos: true

@@ -14,10 +14,27 @@ interface PeerInfo {
     mac: string;
     name?: string;
     online: boolean;
+    hops?: number;
 }
 
 interface EventPeers {
     peers: PeerInfo[];
+}
+
+interface RouteInfo {
+    mac: string;
+    name?: string;
+    hops: number;
+    pinned: boolean;
+    via: string;
+}
+
+interface EventRoutes {
+    routes: RouteInfo[];
+}
+
+interface RouteFailure {
+    mac: string;
 }
 
 interface EventMessage {
@@ -33,9 +50,8 @@ interface SystemEvent {
     text: string;
 }
 
-// Native Web Serial on desktop; the polyfill implements the same interface on
-// top of WebUSB for platforms (Android Chrome) where navigator.serial is
-// missing.
+// Native Web Serial on desktop; the polyfill wraps WebUSB on Android Chrome
+// where navigator.serial does not exist.
 const serial: Serial =
     'serial' in navigator
         ? navigator.serial
@@ -104,6 +120,8 @@ class MeshNowApp {
     private lastPeerSig = '';
     private targetMac: string | null = null; // null = broadcast
     private peerNames = new Map<string, string>();
+    private lastPeers: PeerInfo[] = [];
+    private routeMap = new Map<string, RouteInfo>();
     private port: SerialPort | null = null;
     private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
     private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
@@ -402,6 +420,12 @@ class MeshNowApp {
             case 'peers':
                 this.onPeers(frame as EventPeers);
                 break;
+            case 'routes':
+                this.onRoutes(frame as EventRoutes);
+                break;
+            case 'route_failure':
+                this.onRouteFailure(frame as RouteFailure);
+                break;
             case 'system':
                 this.addSystem((frame as SystemEvent).text);
                 break;
@@ -439,6 +463,8 @@ class MeshNowApp {
         this.nameEl.textContent = 'unknown';
         this.nameEl.title = '';
         this.peerNames.clear();
+        this.routeMap.clear();
+        this.lastPeers = [];
         this.typingPeers.clear();
         this.renderPeerList([]);
         this.updateTargetSelect([]);
@@ -550,8 +576,52 @@ class MeshNowApp {
             this.lastPeerSig = sig;
             console.log('peers: ' + (peers.length ? sig : '(none)'));
         }
-        this.renderPeerList(peers);
-        this.updateTargetSelect(peers);
+        this.lastPeers = peers;
+        const combined = this.combinedPeers();
+        this.renderPeerList(combined);
+        this.updateTargetSelect(combined);
+    }
+
+    private onRoutes(p: EventRoutes): void {
+        this.routeMap.clear();
+        for (const r of p.routes || []) {
+            this.routeMap.set(r.mac, r);
+        }
+        const combined = this.combinedPeers();
+        this.renderPeerList(combined);
+        this.updateTargetSelect(combined);
+    }
+
+    private onRouteFailure(f: RouteFailure): void {
+        if (this.routeMap.has(f.mac)) {
+            this.routeMap.delete(f.mac);
+            this.renderPeerList(this.combinedPeers());
+            this.updateTargetSelect(this.combinedPeers());
+        }
+        const name = this.peerNames.get(f.mac) || shortMac(f.mac);
+        this.addSystem(`${name} unreachable (route not found)`, 'error');
+    }
+
+    // Physical peers first, then virtual peers that were learned through the
+    // routing layer.
+    private combinedPeers(): PeerInfo[] {
+        const out: PeerInfo[] = [];
+        const seen = new Set<string>();
+        for (const peer of this.lastPeers) {
+            out.push(peer);
+            seen.add(peer.mac);
+        }
+        for (const route of this.routeMap.values()) {
+            if (seen.has(route.mac)) continue;
+            out.push({
+                mac: route.mac,
+                name: route.name,
+                online: false,
+                hops: route.hops,
+            });
+            seen.add(route.mac);
+        }
+        return out;
     }
 
     // Sending
@@ -680,10 +750,15 @@ class MeshNowApp {
             const color = macColor(peer.mac);
             const isTyping = this.typingPeers.has(peer.mac);
             const statusClass = peer.online ? 'online' : 'offline';
+            const hopsBadge =
+                peer.hops && peer.hops > 1
+                    ? `<span class="peer-hops">${peer.hops} hop${peer.hops > 1 ? 's' : ''}</span>`
+                    : '';
             el.innerHTML = `
                 <span class="peer-status-dot ${statusClass}"></span>
                 <span class="peer-dot" style="background:${color}"></span>
                 <span class="peer-name">${escapeHtml(displayName)}</span>
+                ${hopsBadge}
                 ${isTyping ? '<span class="peer-typing">typing...</span>' : ''}
             `;
             el.addEventListener('click', () => {

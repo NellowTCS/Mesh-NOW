@@ -24,10 +24,8 @@
 #define ENCRYPTION_KEY_MAX     32
 
 #if !SOC_USB_SERIAL_JTAG_SUPPORTED
-// Chips without native USB-Serial/JTAG (classic ESP32, ESP32-S2) expose the
-// Web Serial bridge over the default UART0 console bridge. When the ESP
-// console driver owns UART0 (the common case) these pins are never applied;
-// they only matter if this component installs its own UART0 driver.
+// No USB-Serial/JTAG on classic ESP32/ESP32-S2: Web Serial rides UART0.
+// Pins used only when we install our own UART0 driver instead of the console.
 #define SERIAL_UART      UART_NUM_0
 #define SERIAL_UART_BAUD 115200
 #if CONFIG_IDF_TARGET_ESP32S2
@@ -50,9 +48,8 @@ static esp_err_t serial_io_init(void)
         .rx_buffer_size = 1024,
     };
     esp_err_t err = usb_serial_jtag_driver_install(&cfg);
-    // ESP_ERR_INVALID_STATE means the console driver (ESP_CONSOLE_USB_SERIAL_
-    // JTAG) already owns the port; reads and writes below route through that
-    // same installed driver.
+    // ESP_ERR_INVALID_STATE: console driver (ESP_CONSOLE_USB_SERIAL_JTAG)
+    // owns the port; we read and write through that driver.
     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
         ESP_LOGE(TAG, "usb_serial_jtag_driver_install failed: %s",
                  esp_err_to_name(err));
@@ -71,8 +68,7 @@ static esp_err_t serial_io_init(void)
     esp_err_t err =
         uart_driver_install(SERIAL_UART, RX_BUF_SIZE, RX_BUF_SIZE, 0, NULL, 0);
     if (err == ESP_ERR_INVALID_STATE) {
-        // The console driver already owns the port, so configuring
-        // baud and pins is unnecessary and would return the same error.
+        // Console driver owns the port; reconfiguring baud/pins would error.
         return ESP_OK;
     }
     if (err != ESP_OK) {
@@ -179,8 +175,7 @@ static void push_hello(void)
 
 static void push_peers(void)
 {
-    // Snapshot the peer table under the mutex; building JSON from shared
-    // state directly would race with the beacon expiry task.
+    // Snapshot under the mutex; direct reads race the beacon expiry task.
     mesh_peer_t peers[MAX_PEERS];
     int count = mesh_now_snapshot_peers(peers, MAX_PEERS);
 
@@ -205,6 +200,55 @@ static void push_peers(void)
         cJSON_AddItemToArray(arr, item);
     }
 
+    send_json(root);
+}
+
+static void push_routes(void)
+{
+    // Virtual peers (beyond one hop) rendered so DMs can target the whole mesh.
+    int count = mesh_now_get_route_count();
+    if (count <= 0) {
+        return;
+    }
+    mesh_route_t *routes = malloc((size_t)count * sizeof(mesh_route_t));
+    if (!routes) {
+        return;
+    }
+    count = mesh_now_snapshot_routes(routes, (size_t)count);
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "event", "routes");
+    cJSON *arr = cJSON_AddArrayToObject(root, "routes");
+
+    for (int i = 0; i < count; i++) {
+        if (!routes[i].active) {
+            continue;
+        }
+        char mac[18];
+        char via[18];
+        cJSON *item = cJSON_CreateObject();
+        cJSON_AddStringToObject(item, "mac",
+                                mac_to_str(routes[i].dest_mac, mac));
+        if (routes[i].node_name[0] != '\0') {
+            cJSON_AddStringToObject(item, "name", routes[i].node_name);
+        }
+        cJSON_AddNumberToObject(item, "hops", routes[i].hop_count);
+        cJSON_AddBoolToObject(item, "pinned", routes[i].pinned);
+        cJSON_AddStringToObject(item, "via",
+                                mac_to_str(routes[i].next_hop, via));
+        cJSON_AddItemToArray(arr, item);
+    }
+    free(routes);
+
+    send_json(root);
+}
+
+static void handle_route_failure(const uint8_t dest_mac[ESP_NOW_ETH_ALEN])
+{
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "event", "route_failure");
+    char mac[18];
+    cJSON_AddStringToObject(root, "mac", mac_to_str(dest_mac, mac));
     send_json(root);
 }
 
@@ -380,6 +424,7 @@ static void serial_task(void *arg)
         if (now_us - last_peers_us >= PEERS_PUSH_INTERVAL_MS * 1000) {
             last_peers_us = now_us;
             push_peers();
+            push_routes();
         }
     }
 }
@@ -391,6 +436,8 @@ esp_err_t serial_api_init(QueueHandle_t queue,
     if (callbacks_in) {
         callbacks = *callbacks_in;
     }
+
+    mesh_now_set_route_failure_callback(handle_route_failure);
 
     tx_lock = xSemaphoreCreateMutex();
     if (!tx_lock) {

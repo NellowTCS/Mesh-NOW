@@ -7,20 +7,16 @@ Mesh-NOW uses periodic beacon broadcasts for automatic peer discovery. No manual
 
 ## Beacon Mechanism
 
-Every node runs a `beacon_task` that broadcasts a `MSG_TYPE_BEACON` message every 5 seconds:
+Every node runs a `beacon_task` that broadcasts a `MSG_TYPE_BEACON` message every 5 seconds. Each beacon carries the sender's node name plus a zone announce: up to `CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS` of the sender's one-hop peers, so two-hop nodes learn virtual-peer routes proactively.
 
 ```c
-// Simplified beacon task
-while (1) {
-    mesh_message_t beacon = {0};
-    beacon.type = MSG_TYPE_BEACON;
-    esp_read_mac(beacon.sender_mac, ESP_MAC_WIFI_STA);
-    beacon.timestamp = esp_timer_get_time() / 1000;
-    strcpy(beacon.message, "MESH-NOW-BEACON");
-
-    esp_now_send(broadcast_mac, &beacon, sizeof(mesh_message_t));
-    vTaskDelay(pdMS_TO_TICKS(5000));
-}
+// Simplified beacon construction
+mesh_message_t beacon = {0};
+beacon.type = MSG_TYPE_BEACON;
+beacon.flags |= MSG_FLAG_HAS_NODE_NAME;
+strncpy(beacon.node_name, "Sensor-01", MESH_NOW_NODE_NAME_MAX);
+// The beacon task fills in neighbor_macs[]/neighbor_names[] from the
+// active peer table, then encodes and broadcasts the frame.
 ```
 
 When a node receives a beacon, it adds the sender to its peer table:
@@ -39,7 +35,7 @@ The peer table is a fixed-size array of `mesh_peer_t` entries:
 typedef struct {
     uint8_t peer_addr[6];  // MAC address
     bool active;           // Whether this peer is valid
-    int64_t last_seen;     // Monotonic ms of last contact
+    int64_t last_seen;     // Monotonic us of last contact
     char node_name[17];    // Human-readable name (from beacons)
 } mesh_peer_t;
 
@@ -86,15 +82,15 @@ sequenceDiagram
 
 ## Peer Expiration
 
-Each peer records `last_seen` (monotonic ms) whenever it is contacted. The `beacon_task` periodically expels peers that have not been seen within `PEER_EXPIRY_US` (default 30 seconds, configurable via the `MESH_NOW_PEER_EXPIRY_SEC` Kconfig option). Expired peers are removed from the active table, and the table compacts so `peer_count` reflects only active peers.
+Each peer records `last_seen` (monotonic us) whenever it is contacted. The `beacon_task` periodically expels peers that have not been seen within `PEER_EXPIRY_US` (default 30 seconds, configurable via the `MESH_NOW_PEER_EXPIRY_SEC` Kconfig option). Expired peers are removed from the active table, and the table compacts so `peer_count` reflects only active peers.
 
 ```c
 // Expired when no beacon/message received within the window:
 (now - peers[i].last_seen) > PEER_EXPIRY_US
 ```
 
-::: callout info title:"Reactivation vs. Removal"
-Expiry drops a peer from the active table but does not call `esp_now_del_peer`; if the same node contacts the mesh again, `mesh_now_add_peer()` reactivates it and refreshes `last_seen`. A peer is fully removed from the ESP-NOW subsystem only via `mesh_now_remove_peer()`. Because expired entries are compacted out, `get_peer_count()` and `snapshot_peers()` report only online-tracking entries and the table cannot be starved by dead peers.
+::: callout info title:"Expiry vs. Removal"
+Expiry drops a peer from the active table, compacts it out, and calls `esp_now_del_peer()` to free the ESP-NOW registration slot. If the same node contacts the mesh again, `mesh_now_add_peer()` reactivates the entry (re-registering it) and refreshes `last_seen`. Because expired entries are compacted out, `mesh_now_get_peer_count()` and `mesh_now_snapshot_peers()` report only online-tracking entries and the table cannot be starved by dead peers.
 ::: /callout
 
 ## Peer Events

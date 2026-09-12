@@ -17,17 +17,18 @@ Offset  Size    Field
 3       1       flags
 4       1       msg_type
 5       1       group_id
-6       1       hop_count
-7       4       message_id (LE)
-11      4       reply_to (LE)
-15      6       sender_mac
-21      6       target_mac
-27      4       timestamp (LE)
-31      ...     payload (MessagePack or encrypted)
+6       1       hop_limit
+7       1       hop_count
+8       4       message_id (LE)
+12      4       reply_to (LE)
+16      6       sender_mac
+22      6       target_mac
+28      4       timestamp (LE)
+32      ...     payload (MessagePack or encrypted)
 ------  ------  -----
 ```
 
-The header is always 31 bytes. The payload follows immediately after.
+The header is always 32 bytes. The payload follows immediately after.
 
 ## Field Encoding
 
@@ -39,7 +40,7 @@ Fixed bytes `0x4d 0x4e` ("MN"). Identifies a Mesh-NOW frame.
 
 ### `version` (1 byte)
 
-Protocol version. Currently `2`.
+Protocol version. Currently `1`.
 
 ### `flags` (1 byte)
 
@@ -54,7 +55,7 @@ Bits 3-7:     Reserved (must be 0)
 
 ### `msg_type` (1 byte)
 
-Message type identifier. Values 0-6 are defined.
+Message type identifier. Values 0-9 are defined.
 
 | Value | Name     | Description              |
 |:------|:---------|:-------------------------|
@@ -65,14 +66,21 @@ Message type identifier. Values 0-6 are defined.
 | 4     | GROUP    | Group-scoped broadcast   |
 | 5     | PRESENCE | Status announcement      |
 | 6     | TYPING   | Typing indicator         |
+| 7     | ROUTE_REQUEST | Route discovery flood |
+| 8     | ROUTE_REPLY   | Route discovery reply |
+| 9     | ROUTE_ERROR   | Broken next-hop announcement |
 
 ### `group_id` (1 byte)
 
 Unsigned integer 0-255. Value 0 means no group filter.
 
+### `hop_limit` (1 byte)
+
+Maximum hops for this frame. Set at the origin to `DEFAULT_ROUTE_TTL` (3) and never modified by relays. The frame is dropped once `hop_count` reaches `hop_limit`, so each hop in the limit adds at most one relay.
+
 ### `hop_count` (1 byte)
 
-Remaining relay count. Set to `DEFAULT_ROUTE_TTL` (3) on send, decremented at each hop. Dropped when reaching 0.
+Hops already travelled. The origin sends `0` and each relay increments it. Dropped when it reaches `hop_limit`.
 
 ### `message_id` (4 bytes)
 
@@ -88,7 +96,7 @@ IEEE 802.11 MAC addresses. Set automatically by the library.
 
 ### `timestamp` (4 bytes)
 
-Milliseconds since `mesh_now_init()` was called.
+Network time in milliseconds: a monotonic clock advanced by the beacon timestamps received via `mesh_now_sync_time()`. Relative to init, little-endian.
 
 ## Payload (unencrypted)
 
@@ -97,8 +105,10 @@ When `MSG_FLAG_ENCRYPTED` is not set, the payload is a raw MessagePack-encoded m
 ```yaml
 type: map
 fields:
-  content:    str         # message text (variable length)
-  node_name:  str         # optional, only in beacons when HAS_NODE_NAME flag set
+  content:        str         # message text (variable length)
+  node_name:      str         # optional, in beacons/RREQ/RREP when HAS_NODE_NAME flag set
+  neighbor_macs:  array       # zone announce: one-hop peer MACs (beacons only)
+  neighbor_names: array       # parallel peer names, one per neighbor_macs entry
 ```
 
 ## Payload (encrypted)
@@ -141,7 +151,7 @@ Total AAD: 18 bytes.
 
 ## Wire Size Comparison
 
-The payload carries only the message data, so total frame size is the 31-byte header plus a small typed map plus the message text.
+The payload carries only the message data, so total frame size is the 32-byte header plus a small typed map plus the message text.
 
 | Message       | Legacy (fixed 152B) | New | Savings |
 |:--------------|:--------------------|:----|:--------|

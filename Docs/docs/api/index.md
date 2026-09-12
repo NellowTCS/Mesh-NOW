@@ -85,7 +85,7 @@ esp_err_t mesh_now_send_direct(const uint8_t *target_mac, const char *message);
 
 **Message type:** `MSG_TYPE_DIRECT`
 **ACK:** Yes
-**Relay:** Yes
+**Relay:** Yes (route, or flood if no route is known)
 
 ### `mesh_now_send_group`
 
@@ -141,7 +141,7 @@ esp_err_t mesh_now_send_typing(const uint8_t *target_mac, bool typing);
 
 **Message type:** `MSG_TYPE_TYPING`
 **ACK:** No
-**Relay:** Conditional (only if target != self)
+**Relay:** Conditional (forwarded toward target like direct traffic)
 
 ## Peer Management
 
@@ -208,6 +208,113 @@ int mesh_now_snapshot_peers(mesh_peer_t *out, size_t max_out);
 
 **Returns:** Number of entries written, at most `max_out`. Entries are a point-in-time copy taken under the mutex.
 
+## Routing
+
+### `mesh_now_get_route`
+
+Copy the route to a virtual peer into `out`, if one exists.
+
+```c
+bool mesh_now_get_route(const uint8_t *dest_mac, mesh_route_t *out);
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `dest_mac` | `const uint8_t*` | 6-byte MAC of the virtual peer |
+| `out` | `mesh_route_t*` | Destination for the route entry |
+
+**Returns:** `true` if a route to `dest_mac` exists and was copied.
+
+### `mesh_now_get_route_count`
+
+Number of active route entries (routes to virtual peers).
+
+```c
+int mesh_now_get_route_count(void);
+```
+
+### `mesh_now_snapshot_routes`
+
+Thread-safe copy of the route table.
+
+```c
+int mesh_now_snapshot_routes(mesh_route_t *out, size_t max_out);
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `out` | `mesh_route_t*` | Destination buffer caller must allocate |
+| `max_out` | `size_t` | Capacity of `out` (entries) |
+
+**Returns:** Number of entries written, at most `max_out`.
+
+### `mesh_now_pin_route`
+
+Pin a fixed route to `dest_mac` via `proxy_mac`. Bypasses discovery and never expires.
+
+```c
+esp_err_t mesh_now_pin_route(const uint8_t *dest_mac, const uint8_t *proxy_mac);
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `dest_mac` | `const uint8_t*` | 6-byte MAC of the destination |
+| `proxy_mac` | `const uint8_t*` | 6-byte MAC of the relaying next hop |
+
+**Returns:** `ESP_OK` on success, `ESP_ERR_INVALID_ARG` if a parameter is NULL.
+
+### `mesh_now_unpin_route`
+
+Remove a previously pinned route. Fails if none exists for `dest_mac`.
+
+```c
+esp_err_t mesh_now_unpin_route(const uint8_t *dest_mac);
+```
+
+### `mesh_now_set_route_failure_callback`
+
+Install the handler fired when a route to a destination could not be found.
+
+```c
+void mesh_now_set_route_failure_callback(mesh_now_route_failure_callback_t cb);
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `cb` | `mesh_now_route_failure_callback_t` | Function pointer: `void (*)(const uint8_t *dest_mac)` |
+
+## Node Naming
+
+### `mesh_now_set_name`
+
+Set the local node name (truncated to `MESH_NOW_NODE_NAME_MAX` = 16 chars). Announced in beacons.
+
+```c
+esp_err_t mesh_now_set_name(const char *name);
+```
+
+| Parameter | Type | Description |
+| :-------- | :--- | :---------- |
+| `name` | `const char*` | Null-terminated name string |
+
+**Returns:** `ESP_OK` on success, `ESP_ERR_INVALID_ARG` if `name` is NULL.
+
+### `mesh_now_get_name`
+
+Return the current local node name (empty until `mesh_now_set_name()`).
+
+```c
+const char *mesh_now_get_name(void);
+```
+
+### `mesh_now_announce_name`
+
+Push the current name out immediately with an extra beacon instead of waiting for the next interval.
+
+```c
+esp_err_t mesh_now_announce_name(void);
+```
+
 ## Configuration
 
 ### `mesh_now_set_receive_callback`
@@ -253,6 +360,30 @@ esp_err_t mesh_now_set_encryption_key(const uint8_t *key, size_t len);
 
 **Returns:** `ESP_OK` on success, `ESP_ERR_INVALID_ARG` if key is NULL or `len` is not 16.
 
+### `mesh_now_is_encrypted`
+
+True once encryption is configured (after `mesh_now_set_encryption_key()`).
+
+```c
+bool mesh_now_is_encrypted(void);
+```
+
+### `mesh_now_peer_is_online`
+
+True if a peer entry was contacted within the peer expiry window.
+
+```c
+bool mesh_now_peer_is_online(const mesh_peer_t *peer);
+```
+
+### `mesh_now_get_group_id`
+
+Current local group id (0 = not in a group).
+
+```c
+uint8_t mesh_now_get_group_id(void);
+```
+
 ## Types
 
 ### `mesh_message_t`
@@ -262,6 +393,7 @@ typedef struct {
     uint8_t type;
     uint8_t flags;
     uint8_t group_id;
+    uint8_t hop_limit;
     uint8_t hop_count;
     uint32_t message_id;
     uint32_t reply_to;
@@ -270,6 +402,9 @@ typedef struct {
     uint32_t timestamp;
     char message[128];
     char node_name[17];
+    uint8_t neighbor_count;
+    uint8_t neighbor_macs[8][6];
+    char neighbor_names[8][17];
 } mesh_message_t;
 ```
 
@@ -295,10 +430,13 @@ typedef void (*mesh_now_receive_callback_t)(const mesh_message_t *message);
 | Constant | Value | Description |
 | :------- | :---- | :---------- |
 | `MAX_MESH_MESSAGE_LEN` | 128 | Max payload length |
-| `DEFAULT_ROUTE_TTL` | 3 | Default hop count |
-| `MAX_PEERS` | 20 | Max peer count |
+| `DEFAULT_ROUTE_TTL` | 3 | Default hop limit |
+| `MESH_NOW_WIRE_VERSION` | 1 | Wire format version |
+| `MESH_NOW_HEADER_LEN` | 32 | Wire header size |
+| `MAX_PEERS` | 20 | Max one-hop peer count |
 | `MSG_FLAG_REQUIRES_ACK` | `0x01` | ACK requested flag |
 | `MSG_FLAG_ENCRYPTED` | `0x02` | Encrypted payload flag |
+| `MSG_FLAG_HAS_NODE_NAME` | `0x04` | Beacon carries a name |
 | `MSG_TYPE_BEACON` | 0 | Discovery beacon |
 | `MSG_TYPE_CHAT` | 1 | Broadcast chat |
 | `MSG_TYPE_DIRECT` | 2 | Point-to-point |
@@ -306,6 +444,9 @@ typedef void (*mesh_now_receive_callback_t)(const mesh_message_t *message);
 | `MSG_TYPE_GROUP` | 4 | Group message |
 | `MSG_TYPE_PRESENCE` | 5 | Status announcement |
 | `MSG_TYPE_TYPING` | 6 | Typing indicator |
+| `MSG_TYPE_ROUTE_REQUEST` | 7 | Route discovery flood |
+| `MSG_TYPE_ROUTE_REPLY` | 8 | Route discovery reply |
+| `MSG_TYPE_ROUTE_ERROR` | 9 | Broken next-hop announcement |
 
 ## Next Steps
 
