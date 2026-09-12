@@ -1,0 +1,47 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'Docs/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'Docs/**'
+  workflow_dispatch:
+
+jobs:
+  host:
+    name: Host Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install CMake
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+
+      - name: Configure
+        run: cmake -S tests/unit -B build-tests -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build-tests --parallel
+
+      - name: Test
+        run: ctest --test-dir build-tests --output-on-failure
+
+      - name: Upload test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-log-${{ github.sha }}
+          path: |
+            build-tests/Testing/Temporary/LastTest.log
+          retention-days: 7
