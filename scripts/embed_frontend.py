@@ -81,16 +81,16 @@ def main():
         console.print(panel)
         console.print()
 
-    script_dir = Path(__file__).parent
+    script_dir = Path(__file__).resolve().parent
     project_dir = script_dir.parent
-    frontend_dir = (script_dir / ".." / ".." / ".." / "Demo").resolve()
+    frontend_dir = project_dir / "Demo"
     dist_dir = frontend_dir / "dist"
-    output_dir = project_dir / "main"
+    output_dir = project_dir / "Firmware" / "main"
 
     if not dist_dir.exists():
         if console and not args.ci:
             console.print("[red]Error: Frontend dist directory not found[/red]")
-            console.print("Run frontend build first: python Demo/build_frontend.py")
+            console.print("Run frontend build first: python scripts/build_frontend.py")
         else:
             print("Error: Frontend dist directory not found")
         sys.exit(1)

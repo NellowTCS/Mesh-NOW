@@ -15,17 +15,17 @@ target_include_directories(mesh_now_mocks INTERFACE
 )
 
 set(MESH_SRCS
-    "${MESH_NOW_TOP}/components/mesh_now/src/core/mesh_now.c"
-    "${MESH_NOW_TOP}/components/mesh_now/src/core/mesh_now_pending.c"
-    "${MESH_NOW_TOP}/components/mesh_now/src/net/mesh_now_peer.c"
-    "${MESH_NOW_TOP}/components/mesh_now/src/net/mesh_now_route.c"
-    "${MESH_NOW_TOP}/components/mesh_now/src/net/mesh_now_tx.c"
-    "${MESH_NOW_TOP}/components/mesh_now/src/net/mesh_now_tasks.c"
-    "${MESH_NOW_TOP}/components/mesh_now/src/net/mesh_now_retransmit.c"
-    "${MESH_NOW_TOP}/components/mesh_now/src/codec/mesh_now_codec.c"
+    "${MESH_NOW_TOP}/Build/src/core/mesh_now.c"
+    "${MESH_NOW_TOP}/Build/src/core/mesh_now_pending.c"
+    "${MESH_NOW_TOP}/Build/src/net/mesh_now_peer.c"
+    "${MESH_NOW_TOP}/Build/src/net/mesh_now_route.c"
+    "${MESH_NOW_TOP}/Build/src/net/mesh_now_tx.c"
+    "${MESH_NOW_TOP}/Build/src/net/mesh_now_tasks.c"
+    "${MESH_NOW_TOP}/Build/src/net/mesh_now_retransmit.c"
+    "${MESH_NOW_TOP}/Build/src/codec/mesh_now_codec.c"
 )
 
-set(MPACK_DIR "${MESH_NOW_TOP}/components/mpack/mpack/src/mpack")
+set(MPACK_DIR "${MESH_NOW_TOP}/Build/vendor/mpack/mpack/src/mpack")
 set(MPACK_SRCS
     "${MPACK_DIR}/mpack-common.c"
     "${MPACK_DIR}/mpack-expect.c"
@@ -50,10 +50,10 @@ add_executable(mesh_now_unit_tests
 )
 
 target_include_directories(mesh_now_unit_tests PRIVATE
-    "${MESH_NOW_TOP}/components/mesh_now/include"
-    "${MESH_NOW_TOP}/components/mesh_now/src/core"
-    "${MESH_NOW_TOP}/components/mesh_now/src/codec"
-    "${MESH_NOW_TOP}/components/mpack/mpack/src/mpack"
+    "${MESH_NOW_TOP}/Build/include"
+    "${MESH_NOW_TOP}/Build/src/core"
+    "${MESH_NOW_TOP}/Build/src/codec"
+    "${MESH_NOW_TOP}/Build/vendor/mpack/mpack/src/mpack"
 )
 
 target_link_libraries(mesh_now_unit_tests PRIVATE mesh_now_mocks)

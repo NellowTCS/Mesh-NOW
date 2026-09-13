@@ -1,0 +1,15 @@
+version: "1.0.0"
+description: "Lightweight mesh networking protocol library for ESP32 using ESP-NOW"
+url: "https://mesh-now.readthedocs.io"
+repository: "https://github.com/NellowTCS/Mesh-NOW.git"
+documentation: "https://mesh-now.readthedocs.io"
+issues: "https://github.com/NellowTCS/Mesh-NOW/issues"
+license: "MIT"
+targets:
+  - esp32
+  - esp32s2
+  - esp32s3
+  - esp32c3
+  - esp32c6
+dependencies:
+  idf: ">=5.0"

@@ -2,15 +2,15 @@ name: Unit Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths-ignore:
-      - '**.md'
-      - 'Docs/**'
+      - "**.md"
+      - "Docs/**"
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths-ignore:
-      - '**.md'
-      - 'Docs/**'
+      - "**.md"
+      - "Docs/**"
   workflow_dispatch:
 
 jobs:

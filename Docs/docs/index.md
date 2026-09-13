@@ -62,7 +62,7 @@ ACK-based retransmission with 3 retries and 2-second timeout for direct messages
 ::: /grid
 ::: grid
 ::: card "Encrypted Payloads" icon:lock
-Optional XOR-based payload encryption with up to 32-byte keys.
+Optional AES-128-GCM payload encryption with a 16-byte key.
 ::: /card
 ::: /grid
 ::: grid

@@ -23,27 +23,27 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
         cache-dependency-path: Demo/package-lock.json
 
     - name: Build frontend
       shell: bash
-      run: python Demo/build_frontend.py --ci
+      run: python scripts/build_frontend.py --ci
 
     - name: Embed frontend
       shell: bash
-      run: python examples/chat-app/scripts/embed_frontend.py --ci
+      run: python scripts/embed_frontend.py --ci
 
     - name: Build ESP32 firmware for ${{ inputs.target }}
       uses: espressif/esp-idf-ci-action@v1
       with:
         esp_idf_version: ${{ inputs.idf-version }}
         target: ${{ inputs.target }}
-        path: 'examples/chat-app'
+        path: 'Firmware'
         command: |
-          python scripts/build.py --target ${{ inputs.target }} --ci
-          
+          python ../scripts/build.py --target ${{ inputs.target }} --ci
+
           # Create build info
           echo "Target: ${{ inputs.target }}" > build_info.txt
           echo "Commit: ${{ inputs.sha }}" >> build_info.txt
@@ -54,7 +54,7 @@ runs:
       id: binary-info
       shell: bash
       run: |
-        BINARY_SIZE=$(stat -c%s examples/chat-app/build/mesh-now.bin)
+        BINARY_SIZE=$(stat -c%s Firmware/build/mesh-now.bin)
         BINARY_SIZE_KB=$((BINARY_SIZE / 1024))
         echo "size=$BINARY_SIZE_KB" >> $GITHUB_OUTPUT
         echo "Binary size: ${BINARY_SIZE_KB}KB"

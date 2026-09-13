@@ -9,6 +9,8 @@ import subprocess
 import shutil
 from pathlib import Path
 
+FIRMWARE_DIR = Path(__file__).resolve().parent.parent / "Firmware"
+
 try:
     from rich.console import Console
     from rich.table import Table
@@ -45,9 +47,9 @@ def run_command(cmd, cwd=None, console=None, silent=True):
         return False
 
 
-def test_target(target, console, script_dir):
+def test_target(target, console):
     """Test configuration for a target"""
-    config_file = script_dir.parent / f"sdkconfig.defaults.{target}"
+    config_file = FIRMWARE_DIR / f"sdkconfig.defaults.{target}"
     if not config_file.exists():
         return "Config file missing"
 
@@ -81,8 +83,7 @@ def main():
 
     check_idf_setup(console)
 
-    script_dir = Path(__file__).parent
-    os.chdir(script_dir.parent)  # Change to project root
+    os.chdir(FIRMWARE_DIR)  # Change to firmware project root
 
     targets = ["esp32", "esp32s2", "esp32s3", "esp32c3", "esp32c6"]
 
@@ -93,7 +94,7 @@ def main():
     results = []
     for target in targets:
         console.print(f"Testing {target}...")
-        result = test_target(target, console, script_dir)
+        result = test_target(target, console)
         results.append(f"{target}: {result}")
 
     console.print()

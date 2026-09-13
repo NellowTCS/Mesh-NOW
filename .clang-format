@@ -1,5 +1,5 @@
 ---
-# Style for the Mesh-NOW ESP-IDF components and chat-app firmware.
+# Style for the Mesh-NOW library (Build/) and chat-app firmware (Firmware/).
 
 BasedOnStyle: LLVM
 IndentWidth: 4

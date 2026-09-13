@@ -10,6 +10,11 @@ import argparse
 import shutil
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
+FIRMWARE_DIR = REPO_ROOT / "Firmware"
+DEMO_DIR = REPO_ROOT / "Demo"
+
 try:
     from rich.console import Console
     from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
@@ -52,9 +57,9 @@ def get_targets():
     return ["esp32", "esp32s2", "esp32s3", "esp32c3", "esp32c6"]
 
 
-def build_target(target, console, script_dir, progress=None):
+def build_target(target, console, progress=None):
     """Build for a specific target"""
-    build_dir = script_dir.parent / "build"
+    build_dir = FIRMWARE_DIR / "build"
 
     if build_dir.exists():
         shutil.rmtree(build_dir)
@@ -86,7 +91,7 @@ def build_target(target, console, script_dir, progress=None):
     if progress:
         progress.advance(task)
 
-    builds_dir = script_dir.parent / "builds" / target
+    builds_dir = FIRMWARE_DIR / "builds" / target
     builds_dir.mkdir(parents=True, exist_ok=True)
 
     artifacts = [
@@ -96,7 +101,7 @@ def build_target(target, console, script_dir, progress=None):
     ]
 
     for name, src in artifacts:
-        src_path = script_dir.parent / src
+        src_path = FIRMWARE_DIR / src
         if src_path.exists():
             shutil.copy2(src_path, builds_dir / name)
 
@@ -116,13 +121,14 @@ def build_target(target, console, script_dir, progress=None):
     return True
 
 
-def build_frontend(console, project_dir, ci_mode=False):
+def build_frontend(console, ci_mode=False):
     """Build the frontend"""
     if console and not ci_mode:
         console.print("[bold blue]Building frontend...[/bold blue]")
 
-    frontend_dir = project_dir / "frontend"
-    build_script = frontend_dir / "build_frontend.py"
+    # The chat GUI lives at repo/Demo and has its own package.json.
+    frontend_dir = DEMO_DIR
+    build_script = SCRIPT_DIR / "build_frontend.py"
 
     if not build_script.exists():
         if console and not ci_mode:
@@ -144,12 +150,12 @@ def build_frontend(console, project_dir, ci_mode=False):
     return True
 
 
-def embed_frontend(console, project_dir, ci_mode=False):
+def embed_frontend(console, ci_mode=False):
     """Embed frontend files into ESP32 firmware"""
     if console and not ci_mode:
         console.print("[bold blue]Embedding frontend files...[/bold blue]")
 
-    embed_script = project_dir / "scripts" / "embed_frontend.py"
+    embed_script = SCRIPT_DIR / "embed_frontend.py"
 
     if not embed_script.exists():
         if console and not ci_mode:
@@ -204,8 +210,7 @@ def main():
 
     check_idf_setup(console)
 
-    script_dir = Path(__file__).parent
-    os.chdir(script_dir.parent)  # idf.py build must run from the project root
+    os.chdir(FIRMWARE_DIR)  # idf.py build must run from the firmware project root
 
     if args.with_frontend:
         if console and not args.ci:
@@ -214,9 +219,9 @@ def main():
             )
             console.print()
 
-        if not build_frontend(console, script_dir.parent, args.ci):
+        if not build_frontend(console, args.ci):
             sys.exit(1)
-        if not embed_frontend(console, script_dir.parent, args.ci):
+        if not embed_frontend(console, args.ci):
             sys.exit(1)
 
         if console and not args.ci:
@@ -244,14 +249,14 @@ def main():
             console=console,
         ) as progress:
             for target in targets:
-                if build_target(target, console, script_dir, progress):
+                if build_target(target, console, progress):
                     successful_builds.append(target)
                 else:
                     failed_builds.append(target)
     else:
         for target in targets:
             console.print(f"Building for {target}...")
-            if build_target(target, console, script_dir):
+            if build_target(target, console):
                 successful_builds.append(target)
             else:
                 failed_builds.append(target)

@@ -20,7 +20,15 @@ Get a Mesh-NOW node running on your ESP32 in under 10 minutes.
    cd Mesh-NOW
    ```
 
-2. **Set your target**
+2. **Enter the firmware project**
+
+   The reference chat firmware lives in `Firmware/`:
+
+   ```bash
+   cd Mesh-NOW/Firmware
+   ```
+
+3. **Set your target**
 
    ```bash
    idf.py set-target esp32
@@ -28,15 +36,16 @@ Get a Mesh-NOW node running on your ESP32 in under 10 minutes.
 
    Replace `esp32` with your board's target: `esp32s2`, `esp32s3`, `esp32c3`, or `esp32c6`.
 
-3. **Build the library**
+4. **Build**
 
-   The mesh library lives in `components/mesh_now/`. Build it as part of any ESP-IDF project that depends on it.
+   The mesh library lives in `Build/` at the repository root and is pulled in
+   automatically via `EXTRA_COMPONENT_DIRS` in `Firmware/CMakeLists.txt`.
 
    ```bash
    idf.py build
    ```
 
-4. **Flash and monitor**
+5. **Flash and monitor**
 
    ```bash
    idf.py -p /dev/ttyUSB0 flash monitor
@@ -44,7 +53,7 @@ Get a Mesh-NOW node running on your ESP32 in under 10 minutes.
 
    Replace `/dev/ttyUSB0` with your serial port. On macOS it is typically `/dev/cu.usbserial-*`.
 
-5. **Connect and chat**
+6. **Connect and chat**
 
    - Wait for the node to boot (you will see `ESP-NOW mesh networking initialized successfully` in the log)
    - Connect to the WiFi network `MESH-NOW-XXXXXXXX` (password: `password`)

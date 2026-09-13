@@ -30,15 +30,15 @@
     ],
     "export": {
         "include": [
-            "components/mesh_now"
+            "Build"
         ]
     },
     "build": {
         "srcFilter": [
-            "+<components/mesh_now/src/>"
+            "+<Build/src/>"
         ],
         "includeDir": [
-            "components/mesh_now/include"
+            "Build/include"
         ]
     }
 }

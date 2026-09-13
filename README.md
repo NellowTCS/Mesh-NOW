@@ -46,25 +46,44 @@ void app_main(void) {
 
 ### ESP-IDF Component
 
-```bash
-git clone https://github.com/NellowTCS/Mesh-NOW.git
-cd Mesh-NOW
+The recommended way is the ESP-IDF component manager. Add this to your project's `idf_component.yml`:
+
+```yaml
+dependencies:
+  mesh_now:
+    git: https://github.com/NellowTCS/Mesh-NOW.git
+    path: Build
 ```
 
-Add to your project's `CMakeLists.txt`:
+The `path` field resolves the component subdirectory; the library registers under the name `mesh_now`.
+
+Alternatively, point `EXTRA_COMPONENT_DIRS` at `Build/` from your project's `CMakeLists.txt`. The library registers under the component name `Build` (the directory name), and is self-contained, vendored mpack is compiled into it:
 
 ```cmake
-set(EXTRA_COMPONENT_DIRS "/path/to/Mesh-NOW/components")
+set(EXTRA_COMPONENT_DIRS
+    "/path/to/Mesh-NOW/Build")
 ```
 
-Or copy `components/mesh_now/` into your project's `components/` directory.
+Then `REQUIRES Build` from your own components.
+
+Or copy `Build/` into your project's `components/` directory (renamed to `mesh_now`):
+
+```bash
+cp -r /path/to/Mesh-NOW/Build your-project/components/mesh_now
+```
 
 ### PlatformIO
+
+The root [library.json](/library.json) describes the library (`mesh_now`, ESP-IDF and Arduino frameworks):
 
 ```ini
 lib_deps =
     https://github.com/NellowTCS/Mesh-NOW.git
 ```
+
+### Arduino
+
+The root [library.properties](/library.properties) registers `mesh_now` with the Arduino Library Manager.
 
 ### Requirements
 
@@ -75,18 +94,19 @@ lib_deps =
 
 ```text
 Mesh-NOW/
-├── components/mesh_now/    # The library (use this)
-│   ├── include/
-│   │   ├── mesh_now.h
-│   │   └── message_queue.h
-│   └── src/
-│       ├── mesh_now.c
-│       └── message_queue.c
-├── Docs/                   # Documentation (docmd)
-├── examples/
-│   └── chat-app/           # Reference chat application
-├── library.json            # PlatformIO library manifest
-└── LICENSE                 # MIT
+├── Build/                   # The mesh library (ESP-IDF component "Build")
+│   ├── include/             #   public headers (mesh_now.h, message_queue.h)
+│   ├── src/                 #   core, net, codec, crypto, queue
+│   └── vendor/mpack/        #   vendored MessagePack library
+├── Firmware/                # Reference chat-app firmware (ESP-IDF project)
+├── Demo/                    # TypeScript chat GUI (baked into the firmware)
+├── Docs/                    # Documentation (docmd)
+├── Tests/                   # Host unit tests
+├── scripts/                 # Python + shell drivers
+├── mesh_now.ksy             # Wire-format spec (Kaitai)
+├── library.json             # PlatformIO library manifest
+├── library.properties       # Arduino library manifest
+└── LICENSE                  # MIT
 ```
 
 ## Documentation

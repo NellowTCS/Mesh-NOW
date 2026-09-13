@@ -3,30 +3,35 @@ title: "Installation"
 description: "Set up ESP-IDF and integrate the Mesh-NOW library into your project."
 ---
 
-Three ways to use Mesh-NOW: as an ESP-IDF component, as a PlatformIO library, or by copying the source directly.
+Four ways to use Mesh-NOW: as an ESP-IDF component (via the component manager or `EXTRA_COMPONENT_DIRS`), as a PlatformIO or Arduino library, or by copying the source directly.
 
 ::: tabs
 
 ::: tab "ESP-IDF Component"
 
-Add Mesh-NOW to your project's `components/` directory or use `EXTRA_COMPONENT_DIRS`:
+The recommended way is the ESP-IDF component manager. Add this to your project's `idf_component.yml`:
 
-```bash
-# Clone into your project's components directory
-git clone https://github.com/NellowTCS/Mesh-NOW.git components/mesh-now
+```yaml
+dependencies:
+  mesh_now:
+    git: https://github.com/NellowTCS/Mesh-NOW.git
+    path: Build
 ```
 
-Or in your project `CMakeLists.txt`:
+The `path` field resolves the component subdirectory, and the library registers under the name `mesh_now`.
+
+Alternatively, point `EXTRA_COMPONENT_DIRS` at `Build/` in your project's `CMakeLists.txt`. The library is self-contained (vendored mpack is compiled into it) and registers under the component name `Build`, the directory name:
 
 ```cmake
-set(EXTRA_COMPONENT_DIRS "/path/to/Mesh-NOW/components")
+set(EXTRA_COMPONENT_DIRS
+    "/path/to/Mesh-NOW/Build")
 ```
 
 Then depend on it in your component:
 
 ```cmake
 idf_component_register(SRCS "main.c"
-                       REQUIRES mesh_now)
+                       REQUIRES Build)
 ```
 
 ::: /tab
@@ -53,13 +58,27 @@ Or use the library manifest directly:
 
 ::: /tab
 
-::: tab "Manual"
+::: tab "Arduino"
 
-Copy the `components/mesh_now/` directory into your project:
+The root `library.properties` registers `mesh_now` with the Arduino ecosystem:
 
 ```bash
-cp -r /path/to/Mesh-NOW/components/mesh_now your-project/components/
+arduino-cli lib install --git-url https://github.com/NellowTCS/Mesh-NOW.git
 ```
+
+::: /tab
+
+::: tab "Manual"
+
+Copy the `Build/` directory into your project, renaming it to `mesh_now`:
+
+```bash
+cp -r /path/to/Mesh-NOW/Build your-project/components/mesh_now
+```
+
+This keeps the component registered under the `mesh_now` name. (When used
+in-place via `EXTRA_COMPONENT_DIRS`, the component is named `Build` because
+that is the directory name.)
 
 Ensure your build system includes the component directory.
 

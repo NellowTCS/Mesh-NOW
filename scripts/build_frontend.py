@@ -9,6 +9,8 @@ import subprocess
 import argparse
 from pathlib import Path
 
+DEMO_DIR = Path(__file__).resolve().parent.parent / "Demo"
+
 try:
     from rich.console import Console
     from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -82,14 +84,14 @@ def check_npm(console, ci_mode=False):
     return True, version
 
 
-def install_dependencies(console, script_dir, ci_mode=False):
+def install_dependencies(console, ci_mode=False):
     """Install npm dependencies if needed"""
-    node_modules = script_dir / "node_modules"
+    node_modules = DEMO_DIR / "node_modules"
     if not node_modules.exists():
         if console and not ci_mode:
             console.print("[yellow]Installing dependencies...[/yellow]")
 
-        success, _ = run_command("npm install", console, ci_mode, cwd=script_dir)
+        success, _ = run_command("npm install", console, ci_mode, cwd=DEMO_DIR)
         if not success:
             if console and not ci_mode:
                 console.print("[red]Failed to install dependencies[/red]")
@@ -104,19 +106,19 @@ def install_dependencies(console, script_dir, ci_mode=False):
     return True
 
 
-def build_frontend(console, script_dir, ci_mode=False):
+def build_frontend(console, ci_mode=False):
     """Build the frontend"""
     if console and not ci_mode:
         console.print("[bold blue]Building frontend...[/bold blue]")
         console.print()
 
-    success, _ = run_command("npm run build", console, ci_mode, cwd=script_dir)
+    success, _ = run_command("npm run build", console, ci_mode, cwd=DEMO_DIR)
     if not success:
         if console and not ci_mode:
             console.print("[red]Frontend build failed[/red]")
         return False
 
-    dist_dir = script_dir / "dist"
+    dist_dir = DEMO_DIR / "dist"
     if not dist_dir.exists():
         if console and not ci_mode:
             console.print("[red]Build completed but dist directory not found[/red]")
@@ -148,8 +150,6 @@ def main():
         console.print(panel)
         console.print()
 
-    script_dir = Path(__file__).parent
-
     if not check_nodejs(console, args.ci)[0]:
         sys.exit(1)
 
@@ -159,13 +159,13 @@ def main():
     if console and not args.ci:
         console.print()
 
-    if not install_dependencies(console, script_dir, args.ci):
+    if not install_dependencies(console, args.ci):
         sys.exit(1)
 
     if console and not args.ci:
         console.print()
 
-    if not build_frontend(console, script_dir, args.ci):
+    if not build_frontend(console, args.ci):
         sys.exit(1)
 
     if console and not args.ci:

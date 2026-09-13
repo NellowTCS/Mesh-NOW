@@ -3,4 +3,4 @@ idf_component_register(SRCS "main.c"
                        "src/serial_api.c"
                     INCLUDE_DIRS "."
                                  "include"
-                    REQUIRES esp_common esp_wifi nvs_flash esp_timer mesh_now json driver)
+                    REQUIRES esp_common esp_wifi nvs_flash esp_timer Build json driver)

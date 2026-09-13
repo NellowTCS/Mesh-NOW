@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-TESTS_DIR = REPO_ROOT / "tests" / "unit"
+TESTS_DIR = REPO_ROOT / "Tests" / "unit"
 BUILD_DIR = TESTS_DIR / "build"
 
 

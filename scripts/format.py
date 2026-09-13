@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-C_DIRS = (ROOT / "components", ROOT / "examples" / "chat-app" / "main")
+C_DIRS = (ROOT / "Build", ROOT / "Firmware" / "main")
 GENERATED_HEADERS = {"bundle_js.h", "index_html.h", "styles_css.h"}
 FRONTEND_DIR = ROOT / "Demo"
 FMT_EXCLUDE = r"/(mpack|node_modules|build|builds|\.git)/"
@@ -55,7 +55,7 @@ def run_py(black, check):
     cmd = [black]
     cmd += ["--check"] if check else []
     cmd += ["--skip-string-normalization", "--extend-exclude", FMT_EXCLUDE]
-    cmd += ["components", "examples", "scripts"]
+    cmd += ["Build", "Firmware", "Demo", "scripts"]
     return subprocess.call(cmd)
 
 

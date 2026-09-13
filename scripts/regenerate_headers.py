@@ -25,9 +25,9 @@ def write_header(input_path: Path, output_path: Path, var_name: str):
 
 
 def main():
-    repo = Path(__file__).parent.parent
-    dist = repo / 'frontend' / 'dist'
-    out = repo / 'main'
+    repo = Path(__file__).resolve().parent.parent
+    dist = repo / 'Demo' / 'dist'
+    out = repo / 'Firmware' / 'main'
     files = [
         ('index.html', 'index_html.h', 'INDEX_HTML'),
         ('bundle.js', 'bundle_js.h', 'BUNDLE_JS'),

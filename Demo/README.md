@@ -13,13 +13,13 @@ Modern TypeScript-based web interface for the ESP32 Mesh-NOW chat system.
 
 ### Prerequisites
 
-- Node.js 16+
-- npm or yarn
+- Node.js 20+
+- npm
 
 ### Setup
 
 ```bash
-cd frontend
+cd Demo
 npm install
 ```
 
@@ -41,19 +41,20 @@ This creates optimized files in the `dist/` directory.
 
 ### Integration
 
-The built files are automatically embedded into the ESP32 firmware using:
+The built files are embedded into the ESP32 firmware using:
 
 ```bash
-# From project root
-./scripts/embed_frontend.sh
+python scripts/build_frontend.py
+python scripts/embed_frontend.py
 ```
 
-This generates C header files that are included in `main.c`.
+This generates C header files (`Firmware/main/*_html.h`, `*_js.h`, `*_css.h`) that
+are included in `main.c`.
 
 ## File Structure
 
 ```bash
-frontend/
+Demo/
 ├── src/
 │   ├── index.ts          # Main application entry point
 │   └── styles.css        # Application styles
@@ -88,7 +89,7 @@ The frontend communicates with these ESP32 endpoints:
 1. Make changes to TypeScript/CSS files
 2. Test with `npm run dev`
 3. Build with `npm run build`
-4. Embed with `./scripts/embed_frontend.sh`
+4. Embed with `python ../scripts/embed_frontend.py`
 5. Build ESP32 firmware with `idf.py build`
 
 ## Bundle Size Optimization
