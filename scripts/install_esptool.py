@@ -15,9 +15,11 @@ try:
     from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.panel import Panel
     from rich.text import Text
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
+
 
 def setup_console():
     """Setup console for output"""
@@ -25,6 +27,7 @@ def setup_console():
         return Console()
     else:
         return None
+
 
 def run_command(cmd, console=None, ci_mode=False):
     """Run a command and return success"""
@@ -45,21 +48,28 @@ def run_command(cmd, console=None, ci_mode=False):
             console.print(f"[red]Error running command: {e}[/red]")
         return False, str(e)
 
+
 def check_python():
     """Check if Python is available"""
     try:
-        result = subprocess.run([sys.executable, "--version"], capture_output=True, text=True)
+        result = subprocess.run(
+            [sys.executable, "--version"], capture_output=True, text=True
+        )
         return result.returncode == 0, result.stdout.strip()
     except:
         return False, ""
 
+
 def check_pip():
     """Check if pip is available"""
     try:
-        result = subprocess.run([sys.executable, "-m", "pip", "--version"], capture_output=True, text=True)
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "--version"], capture_output=True, text=True
+        )
         return result.returncode == 0, result.stdout.strip()
     except:
         return False, ""
+
 
 def install_esptool(console, ci_mode=False):
     """Install esptool.py"""
@@ -67,7 +77,6 @@ def install_esptool(console, ci_mode=False):
         console.print("[bold blue]Installing esptool.py...[/bold blue]")
         console.print()
 
-    # Check Python
     python_ok, python_version = check_python()
     if not python_ok:
         if console and not ci_mode:
@@ -77,7 +86,6 @@ def install_esptool(console, ci_mode=False):
     if console and not ci_mode:
         console.print(f"[green]✓ Python found: {python_version}[/green]")
 
-    # Check pip
     pip_ok, pip_version = check_pip()
     if not pip_ok:
         if console and not ci_mode:
@@ -88,7 +96,6 @@ def install_esptool(console, ci_mode=False):
     if console and not ci_mode:
         console.print(f"[green]✓ Pip found: {pip_version.split()[0]}[/green]")
 
-    # Install esptool
     if console and not ci_mode:
         with Progress(
             SpinnerColumn(),
@@ -96,17 +103,20 @@ def install_esptool(console, ci_mode=False):
             console=console,
         ) as progress:
             task = progress.add_task("Installing esptool...", total=None)
-            success, output = run_command(f"{sys.executable} -m pip install esptool", console, ci_mode)
+            success, output = run_command(
+                f"{sys.executable} -m pip install esptool", console, ci_mode
+            )
             progress.update(task, completed=True)
     else:
-        success, output = run_command(f"{sys.executable} -m pip install esptool", console, ci_mode)
+        success, output = run_command(
+            f"{sys.executable} -m pip install esptool", console, ci_mode
+        )
 
     if not success:
         if console and not ci_mode:
             console.print("[red]Failed to install esptool[/red]")
         return False
 
-    # Verify installation
     success, version_output = run_command("esptool.py version", console, ci_mode)
     if not success:
         if console and not ci_mode:
@@ -123,6 +133,7 @@ def install_esptool(console, ci_mode=False):
 
     return True
 
+
 def main():
     parser = argparse.ArgumentParser(description="Install ESP32 flashing tools")
     parser.add_argument("--ci", action="store_true", help="CI mode - minimal output")
@@ -131,7 +142,6 @@ def main():
     console = setup_console() if not args.ci else None
 
     if console and not args.ci:
-        # Show header
         title = Text("ESP32 Tool Installer", style="bold blue")
         panel = Panel(title, border_style="blue")
         console.print(panel)
@@ -146,6 +156,7 @@ def main():
     else:
         if console and not args.ci:
             console.print("[green]Installation completed successfully![/green]")
+
 
 if __name__ == "__main__":
     main()

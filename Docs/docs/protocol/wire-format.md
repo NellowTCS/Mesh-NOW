@@ -1,0 +1,182 @@
+---
+title: "Wire Format"
+description: "Binary frame layout, field sizes, byte order, and encoding specification."
+---
+
+Mesh-NOW messages are transmitted as binary frames over ESP-NOW. The wire format uses MessagePack serialization with optional AES-128-GCM encryption.
+
+The canonical protocol specification is [`mesh_now.ksy`](/mesh_now.ksy) at the repository root.
+
+## Frame Layout
+
+```text
+Offset  Size    Field
+------  ------  -----
+0       2       magic (0x4d 0x4e)
+2       1       version (1)
+3       1       flags
+4       1       msg_type
+5       1       group_id
+6       1       hop_limit
+7       1       hop_count
+8       4       message_id (LE)
+12      4       reply_to (LE)
+16      6       sender_mac
+22      6       target_mac
+28      4       timestamp (LE)
+32      ...     payload (MessagePack or encrypted)
+------  ------  -----
+```
+
+The header is always 32 bytes. The payload follows immediately after.
+
+## Field Encoding
+
+All multi-byte fields use **little-endian** byte order.
+
+### `magic` (2 bytes)
+
+Fixed bytes `0x4d 0x4e` ("MN"). Identifies a Mesh-NOW frame.
+
+### `version` (1 byte)
+
+Protocol version. Currently `1`.
+
+### `flags` (1 byte)
+
+Bitfield encoding:
+
+```text
+Bit 0 (0x01): MSG_FLAG_REQUIRES_ACK
+Bit 1 (0x02): MSG_FLAG_ENCRYPTED
+Bit 2 (0x04): MSG_FLAG_HAS_NODE_NAME
+Bits 3-7:     Reserved (must be 0)
+```
+
+### `msg_type` (1 byte)
+
+Message type identifier. Values 0-9 are defined.
+
+| Value | Name     | Description              |
+|:------|:---------|:-------------------------|
+| 0     | BEACON   | Peer discovery broadcast |
+| 1     | CHAT     | Broadcast chat message   |
+| 2     | DIRECT   | Point-to-point message   |
+| 3     | ACK      | Acknowledgment           |
+| 4     | GROUP    | Group-scoped broadcast   |
+| 5     | PRESENCE | Status announcement      |
+| 6     | TYPING   | Typing indicator         |
+| 7     | ROUTE_REQUEST | Route discovery flood |
+| 8     | ROUTE_REPLY   | Route discovery reply |
+| 9     | ROUTE_ERROR   | Broken next-hop announcement |
+
+### `group_id` (1 byte)
+
+Unsigned integer 0-255. Value 0 means no group filter.
+
+### `hop_limit` (1 byte)
+
+Maximum hops for this frame. Set at the origin to `DEFAULT_ROUTE_TTL` (3) and never modified by relays. The frame is dropped once `hop_count` reaches `hop_limit`, so each hop in the limit adds at most one relay.
+
+### `hop_count` (1 byte)
+
+Hops already travelled. The origin sends `0` and each relay increments it. Dropped when it reaches `hop_limit`.
+
+### `message_id` (4 bytes)
+
+Monotonically increasing `uint32_t`. Assigned by the sender, seeded from `esp_random()` on first use. Used for duplicate detection and ACK matching.
+
+### `reply_to` (4 bytes)
+
+For `ACK` frames, the `message_id` of the message being acknowledged. For all other frame types this is `0`. Allowing each ACK to carry its own `message_id` (rather than reusing the acked message's id) lets ACKs participate in seen-message dedup, so routed ACKs are not re-flooded by every relay.
+
+### `sender_mac` / `target_mac` (6 bytes each)
+
+IEEE 802.11 MAC addresses. Set automatically by the library.
+
+### `timestamp` (4 bytes)
+
+Network time in milliseconds: a monotonic clock advanced by the beacon timestamps received via `mesh_now_sync_time()`. Relative to init, little-endian.
+
+## Payload (unencrypted)
+
+When `MSG_FLAG_ENCRYPTED` is not set, the payload is a raw MessagePack-encoded map:
+
+```yaml
+type: map
+fields:
+  content:        str         # message text (variable length)
+  node_name:      str         # optional, in beacons/RREQ/RREP when HAS_NODE_NAME flag set
+  neighbor_macs:  array       # zone announce: one-hop peer MACs (beacons only)
+  neighbor_names: array       # parallel peer names, one per neighbor_macs entry
+```
+
+## Payload (encrypted)
+
+When `MSG_FLAG_ENCRYPTED` is set, the payload contains:
+
+```text
+Offset  Size    Field
+------  ------  -----
+0       12      nonce (IV)
+12      ...     ciphertext (MessagePack-encoded plaintext)
+...     16      AES-GCM auth tag
+```
+
+### Nonce Construction
+
+The 12-byte nonce is built from:
+
+- `message_id` (4 bytes, little-endian)
+- `sender_mac` (6 bytes)
+- a fixed `0x00 0x00` pad (2 bytes)
+
+This ensures each message has a unique nonce as long as message IDs are unique per sender; the fixed pad is a domain separator and the sender MAC disambiguates nodes sharing a network key.
+
+### Auth Tag
+
+16-byte AES-GCM authentication tag appended after the ciphertext. Provides integrity and authenticity for both the ciphertext and the AAD (header fields).
+
+### AAD (Additional Authenticated Data)
+
+The following header fields are authenticated but not encrypted:
+
+- `msg_type` (1 byte)
+- `sender_mac` (6 bytes)
+- `target_mac` (6 bytes)
+- `group_id` (1 byte)
+- `timestamp` (4 bytes)
+
+Total AAD: 18 bytes.
+
+## Wire Size Comparison
+
+The payload carries only the message data, so total frame size is the 32-byte header plus a small typed map plus the message text.
+
+| Message       | Legacy (fixed 152B) | New | Savings |
+|:--------------|:--------------------|:----|:--------|
+| ACK           | 152 bytes           | 41 bytes   | 73% |
+| Typing        | 152 bytes           | 47 bytes   | 69% |
+| Short "ok"    | 152 bytes           | 43 bytes   | 72% |
+| 100-char chat | 152 bytes           | 142 bytes  | 7% |
+| Full 128B     | 152 bytes           | 170 bytes (198 encrypted) | -12% |
+
+::: callout info title:"ESP-NOW Compatibility"
+ESP-NOW supports frames up to 250 bytes. A max-length 128-char message encodes to 170 bytes unencrypted and 198 bytes encrypted, both comfortably within the cap.
+::: /callout
+
+## Next Steps
+
+::: grids
+::: grid
+::: button "Encryption" ../guide/encryption.md icon:lock
+::: /grid
+
+::: grid
+::: button "Message Format" ../guide/message-format.md icon:file-text
+::: /grid
+
+::: grid
+::: button "State Machine" ./state-machine.md icon:cpu
+::: /grid
+::: /grids

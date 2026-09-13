@@ -1,0 +1,3 @@
+[submodule "Build/vendor/mpack/mpack"]
+	path = Build/vendor/mpack/mpack
+	url = https://github.com/ludocode/mpack.git

@@ -2,6 +2,7 @@
 import sys
 from pathlib import Path
 
+
 def write_header(input_path: Path, output_path: Path, var_name: str):
     data = input_path.read_bytes()
     size = len(data)
@@ -11,9 +12,8 @@ def write_header(input_path: Path, output_path: Path, var_name: str):
         f.write(f"#define {var_name}_H\n\n")
         f.write("#include <stddef.h>\n\n")
         f.write("const unsigned char %s[] = {\n" % var_name)
-        # write bytes grouped
         for i in range(0, size, 12):
-            chunk = data[i:i+12]
+            chunk = data[i : i + 12]
             line = ', '.join(f"0x{b:02x}" for b in chunk)
             if i + 12 < size:
                 f.write("    " + line + ",\n")
@@ -25,9 +25,9 @@ def write_header(input_path: Path, output_path: Path, var_name: str):
 
 
 def main():
-    repo = Path(__file__).parent.parent
-    dist = repo / 'frontend' / 'dist'
-    out = repo / 'main'
+    repo = Path(__file__).resolve().parent.parent
+    dist = repo / 'Demo' / 'dist'
+    out = repo / 'Firmware' / 'main'
     files = [
         ('index.html', 'index_html.h', 'INDEX_HTML'),
         ('bundle.js', 'bundle_js.h', 'BUNDLE_JS'),
@@ -45,6 +45,7 @@ def main():
     if missing:
         print("Missing dist files:", missing)
         sys.exit(1)
+
 
 if __name__ == '__main__':
     main()
