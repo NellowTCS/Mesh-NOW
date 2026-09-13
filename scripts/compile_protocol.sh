@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 KSY_FILE="$REPO_ROOT/mesh_now.ksy"
-OUTPUT_DIR="$REPO_ROOT/examples/chat-app/frontend/src/generated"
+OUTPUT_DIR="$REPO_ROOT/Demo/src/generated"
 
 if command -v ksc &>/dev/null; then
     COMPILER=ksc

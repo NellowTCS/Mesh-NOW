@@ -105,38 +105,18 @@ def show_target_table(targets, console):
     console.print()
 
 
-def select_target_interactive(targets, console):
-    """Interactive target selection"""
-    if not console:
-        return None
-
-    while True:
-        try:
-            choice = IntPrompt.ask(
-                "Select target", choices=[str(i) for i in range(1, len(targets) + 1)]
-            )
-            target_names = list(targets.keys())
-            if 1 <= choice <= len(target_names):
-                selected_target = target_names[choice - 1]
-                return selected_target, targets[selected_target]
-        except KeyboardInterrupt:
-            console.print("\n[yellow]Cancelled[/yellow]")
-            return None
-
-        console.print("[red]Invalid selection. Please try again.[/red]")
-
-
-def select_port(console, ci_mode=False):
-    """Select serial port"""
-    if ci_mode:
-        return "/dev/ttyUSB0" if os.name != 'nt' else "COM1"
-
-    if console:
-        default_port = "/dev/ttyUSB0" if os.name != 'nt' else "COM1"
-        port = Prompt.ask("Enter COM port", default=default_port)
-        return port
+def select_target_interactive(targets, console, ci_mode=False):
+    if len(targets) == 1:
+        name, path = next(iter(targets.items()))
+        if console and not ci_mode:
+            console.print(f"[dim]Using only available target: {name}[/dim]")
+        return name, path
     else:
-        return "/dev/ttyUSB0" if os.name != 'nt' else "COM1"
+        if console and not ci_mode:
+            console.print(
+                "[red]Multiple firmware targets found. Pass --firmware-dir explicitly.[/red]"
+            )
+        return None
 
 
 def flash_target(target_name, target_path, port, console, ci_mode=False):

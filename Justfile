@@ -8,33 +8,33 @@ scripts := "examples/chat-app/scripts"
 
 # Pass-through to build scripts
 build *args:
-    python3 {{scripts}}/build.py {{args}} --ci
+    python3 {{ scripts }}/build.py {{ args }} --ci
 
 build-all *args:
-    python3 {{scripts}}/build_all.py {{args}} --ci
+    python3 {{ scripts }}/build_all.py {{ args }} --ci
 
 flash *args:
-    cd examples/chat-app && idf.py flash {{args}}
+    cd examples/chat-app && idf.py flash {{ args }}
 
 test-targets *args:
-    python3 {{scripts}}/test_targets.py {{args}}
+    python3 {{ scripts }}/test_targets.py {{ args }}
 
 # Frontend pipeline
 frontend:
-    python3 examples/chat-app/frontend/build_frontend.py --ci
+    python3 Demo/build_frontend.py --ci
 
 fe-install:
-    cd examples/chat-app/frontend && npm install
+    cd Demo && npm install
 
 fe-watch:
-    cd examples/chat-app/frontend && npm run dev
+    cd Demo && npm run dev
 
 fe-serve:
-    cd examples/chat-app/frontend && npm run serve
+    cd Demo && npm run serve
 
 # Formatting
 format *flags:
-    python3 scripts/format.py {{flags}}
+    python3 scripts/format.py {{ flags }}
 
 format-check:
     python3 scripts/format.py --check
@@ -45,16 +45,19 @@ protocol:
 
 # Docs
 docs *args:
-    cd Docs && npm run {{args}}
+    cd Docs && npm run {{ args }}
 
 # Meta
 setup:
     git submodule update --init --recursive
-    cd examples/chat-app/frontend && npm install
+    cd Demo && npm install
 
 clean:
     rm -rf examples/chat-app/build examples/chat-app/builds
-    rm -rf examples/chat-app/frontend/dist
-    rm -rf examples/chat-app/frontend/src/generated
+    rm -rf Demo/dist
+    rm -rf Demo/src/generated
 
-all: setup frontend build
+test:
+    python3 scripts/test_unit.py
+
+all: setup frontend test build

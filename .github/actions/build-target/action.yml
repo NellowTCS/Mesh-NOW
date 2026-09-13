@@ -25,11 +25,11 @@ runs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: examples/chat-app/frontend/package-lock.json
+        cache-dependency-path: Demo/package-lock.json
 
     - name: Build frontend
       shell: bash
-      run: python examples/chat-app/frontend/build_frontend.py --ci
+      run: python Demo/build_frontend.py --ci
 
     - name: Embed frontend
       shell: bash

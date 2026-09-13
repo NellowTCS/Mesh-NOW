@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 """
-Mesh-NOW Formatting
-
-Format the project's C/C++, frontend (prettier), and Python (black) sources.
-Runs in place by default; pass --check to only report files that would change
-(used by CI).
+Mesh-NOW Formatter
 
 Usage:
     python3 scripts/format.py            # format everything
@@ -24,13 +20,11 @@ ROOT = Path(__file__).resolve().parent.parent
 
 C_DIRS = (ROOT / "components", ROOT / "examples" / "chat-app" / "main")
 GENERATED_HEADERS = {"bundle_js.h", "index_html.h", "styles_css.h"}
-FRONTEND_DIR = ROOT / "examples" / "chat-app" / "frontend"
+FRONTEND_DIR = ROOT / "Demo"
 FMT_EXCLUDE = r"/(mpack|node_modules|build|builds|\.git)/"
 
 
 def c_files():
-    """Yield the project C/H files, excluding the mpack submodule and the
-    generated embedded-asset headers."""
     for base in C_DIRS:
         for path in base.rglob("*"):
             if path.suffix not in (".c", ".h"):

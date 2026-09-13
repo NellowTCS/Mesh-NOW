@@ -83,14 +83,14 @@ def main():
 
     script_dir = Path(__file__).parent
     project_dir = script_dir.parent
-    frontend_dir = project_dir / "frontend"
+    frontend_dir = (script_dir / ".." / ".." / ".." / "Demo").resolve()
     dist_dir = frontend_dir / "dist"
     output_dir = project_dir / "main"
 
     if not dist_dir.exists():
         if console and not args.ci:
             console.print("[red]Error: Frontend dist directory not found[/red]")
-            console.print("Run frontend build first: python frontend/build_frontend.py")
+            console.print("Run frontend build first: python Demo/build_frontend.py")
         else:
             print("Error: Frontend dist directory not found")
         sys.exit(1)

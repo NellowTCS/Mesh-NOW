@@ -1,5 +1,9 @@
 # Build artifacts
-build/
+examples/chat-app/build
+examples/chat-app/builds
+build-tests/
+Tests/unit/build
+Tests/unit/builds
 site/
 
 # Dependencies
@@ -31,7 +35,7 @@ examples/chat-app/main/*_js.h
 examples/chat-app/main/*_css.h
 
 # Generated protocol parser
-examples/chat-app/frontend/src/generated/
+Demo/src/generated/
 
 # Python
 __pycache__/

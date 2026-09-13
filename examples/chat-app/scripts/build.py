@@ -285,30 +285,33 @@ def embed_frontend(console, project_dir, ci_mode=False):
 def main():
     parser = argparse.ArgumentParser(description="Mesh-NOW Target Selector and Builder")
     parser.add_argument(
-        '--ci', action='store_true', help='Disable colors and TUI for CI'
+        "--ci", action="store_true", help="Disable colors and TUI for CI"
     )
     parser.add_argument(
-        '--target', type=str, help='Build specific target (non-interactive)'
+        "--target",
+        type=str,
+        default=None,
+        help="Build a specific target (esp32, esp32s2, esp32s3, esp32c3, esp32c6)",
     )
     parser.add_argument(
-        '--with-frontend',
-        action='store_true',
-        help='Build and embed frontend before ESP32 build',
+        "--with-frontend",
+        action="store_true",
+        help="Build and embed frontend before ESP32 build",
     )
     args = parser.parse_args()
 
     if RICH_AVAILABLE and not args.ci:
+        from rich.console import Console
+
         console = Console()
     else:
-        # Fallback to plain console
+
         class PlainConsole:
             def print(self, *args, **kwargs):
                 if args:
-                    # Strip rich markup for plain output
                     import re
 
-                    text = re.sub(r'\[.*?\]', '', str(args[0]))
-                    print(text)
+                    print(re.sub(r'\[.*?\]', '', str(args[0])))
                 else:
                     print()
 
@@ -320,56 +323,44 @@ def main():
     os.chdir(script_dir.parent)  # idf.py build must run from the project root
 
     if args.with_frontend:
-        if console and not args.ci:
-            console.print(
-                Panel.fit("[bold green]Frontend Integration Enabled[/bold green]")
-            )
-            console.print()
-
-        if not build_frontend(console, script_dir.parent, args.ci):
+        if not build_frontend(console, script_dir, args.ci):
             sys.exit(1)
-        if not embed_frontend(console, script_dir.parent, args.ci):
+        if not embed_frontend(console, script_dir, args.ci):
             sys.exit(1)
-
-        if console and not args.ci:
-            console.print()
 
     targets = get_targets()
 
     if args.target:
-        # Non-interactive mode
-        if args.target not in [t[0] for t in targets.values()]:
-            console.print(f"[red]Invalid target: {args.target}[/red]")
+        if args.target not in list(targets.values()):
+            if args.ci:
+                print(f"Invalid target: {args.target}")
+            else:
+                console.print(f"[red]Invalid target: {args.target}[/red]")
             sys.exit(1)
-        build_target(args.target, console, script_dir)
-        return
+        if not build_target(args.target, console, script_dir):
+            sys.exit(1)
+        sys.exit(0)
 
-    # Interactive mode
-    while True:
-        show_menu(console, targets)
+    # Honzo-style: no TUI. Default builds all targets sequentially.
+    all_targets = list(targets.values())
+    failed = []
+    for target in all_targets:
+        if args.ci:
+            print(f"Building {target}...")
+        if not build_target(target, console, script_dir):
+            failed.append(target)
 
-        if RICH_AVAILABLE and not args.ci:
-            choice = IntPrompt.ask("Select target (0-6)", default=0)
+    if failed:
+        if args.ci:
+            print(f"Failed targets: {', '.join(failed)}")
         else:
-            try:
-                choice = int(input("Select target (0-6): "))
-            except ValueError:
-                choice = -1
+            console.print(f"[red]Failed targets: {', '.join(failed)}[/red]")
+        sys.exit(1)
 
-        if choice == 0:
-            console.print("Goodbye!")
-            break
-        elif choice in targets:
-            target, desc = targets[choice]
-            if build_target(target, console, script_dir):
-                break
-        elif choice == 6:
-            success = build_all_targets(console, script_dir, args.ci)
-            if success:
-                break
-        else:
-            console.print("[red]Invalid choice. Please select 0-6.[/red]")
-            console.print()
+    if args.ci:
+        print("All targets built successfully")
+    else:
+        console.print("[green]All targets built successfully[/green]")
 
 
 if __name__ == "__main__":

@@ -114,7 +114,7 @@ jobs:
           idf-version: 'v5.5.1'
 
       - name: Build frontend
-        run: python examples/chat-app/frontend/build_frontend.py --ci
+        run: python Demo/build_frontend.py --ci
 
       - name: Embed frontend
         run: python examples/chat-app/scripts/embed_frontend.py --ci
@@ -164,7 +164,7 @@ jobs:
           idf-version: ${{ matrix.idf_version }}
 
       - name: Build frontend
-        run: python examples/chat-app/frontend/build_frontend.py --ci
+        run: python Demo/build_frontend.py --ci
 
       - name: Embed frontend
         run: python examples/chat-app/scripts/embed_frontend.py --ci
