@@ -3,174 +3,111 @@
 Mesh-NOW Frontend Builder
 """
 
-import os
-import sys
-import subprocess
 import argparse
+import subprocess
+import sys
 from pathlib import Path
 
 DEMO_DIR = Path(__file__).resolve().parent.parent / "Demo"
 
-try:
-    from rich.console import Console
-    from rich.progress import Progress, SpinnerColumn, TextColumn
-    from rich.panel import Panel
-    from rich.text import Text
 
-    RICH_AVAILABLE = True
-except ImportError:
-    RICH_AVAILABLE = False
-
-
-def setup_console():
-    """Setup console for output"""
-    if RICH_AVAILABLE:
-        return Console()
-    else:
-        return None
-
-
-def run_command(cmd, console=None, ci_mode=False, cwd=None):
-    """Run a command and return success"""
+def run_command(cmd, cwd=None):
+    """Run a command and return (success, output)."""
     try:
-        if ci_mode:
-            result = subprocess.run(
-                cmd, shell=True, cwd=cwd, capture_output=True, text=True
-            )
-        else:
-            result = subprocess.run(
-                cmd, shell=True, cwd=cwd, capture_output=True, text=True
-            )
-
-        if result.returncode != 0:
-            if console and not ci_mode:
-                console.print(f"[red]Command failed: {cmd}[/red]")
-                console.print(f"[dim]{result.stderr}[/dim]")
-            return False, result.stderr
-        return True, result.stdout
-    except Exception as e:
-        if console and not ci_mode:
-            console.print(f"[red]Error running command: {e}[/red]")
+        result = subprocess.run(
+            cmd, shell=True, cwd=cwd, capture_output=True, text=True
+        )
+    except OSError as e:
+        print(f"Error running command: {e}", file=sys.stderr)
         return False, str(e)
+    if result.returncode != 0:
+        print(f"Command failed: {cmd}", file=sys.stderr)
+        if result.stderr.strip():
+            print(result.stderr, file=sys.stderr, end="")
+        return False, result.stderr
+    return True, result.stdout
 
 
-def check_nodejs(console, ci_mode=False):
-    """Check if Node.js is available"""
-    success, output = run_command("node --version", console, ci_mode)
+def check_nodejs():
+    """Check that Node.js is available."""
+    success, output = run_command("node --version")
     if not success:
-        if console and not ci_mode:
-            console.print("[red]Error: Node.js not found[/red]")
-            console.print("Please install Node.js from https://nodejs.org")
-        return False, ""
-
-    version = output.strip()
-    if console and not ci_mode:
-        console.print(f"[green]✓ Node.js found: {version}[/green]")
-    return True, version
-
-
-def check_npm(console, ci_mode=False):
-    """Check if npm is available"""
-    success, output = run_command("npm --version", console, ci_mode)
-    if not success:
-        if console and not ci_mode:
-            console.print("[red]Error: npm not found[/red]")
-            console.print("Please install npm (usually comes with Node.js)")
-        return False, ""
-
-    version = output.strip()
-    if console and not ci_mode:
-        console.print(f"[green]✓ npm found: {version}[/green]")
-    return True, version
-
-
-def install_dependencies(console, ci_mode=False):
-    """Install npm dependencies if needed"""
-    node_modules = DEMO_DIR / "node_modules"
-    if not node_modules.exists():
-        if console and not ci_mode:
-            console.print("[yellow]Installing dependencies...[/yellow]")
-
-        success, _ = run_command("npm install", console, ci_mode, cwd=DEMO_DIR)
-        if not success:
-            if console and not ci_mode:
-                console.print("[red]Failed to install dependencies[/red]")
-            return False
-
-        if console and not ci_mode:
-            console.print("[green]✓ Dependencies installed[/green]")
-    else:
-        if console and not ci_mode:
-            console.print("[green]✓ Dependencies already installed[/green]")
-
+        print("Error: Node.js not found", file=sys.stderr)
+        print("Install Node.js from https://nodejs.org", file=sys.stderr)
+        return False
+    print(f"Node.js found: {output.strip()}")
     return True
 
 
-def build_frontend(console, ci_mode=False):
-    """Build the frontend"""
-    if console and not ci_mode:
-        console.print("[bold blue]Building frontend...[/bold blue]")
-        console.print()
-
-    success, _ = run_command("npm run build", console, ci_mode, cwd=DEMO_DIR)
+def check_npm():
+    """Check that npm is available."""
+    success, output = run_command("npm --version")
     if not success:
-        if console and not ci_mode:
-            console.print("[red]Frontend build failed[/red]")
+        print("Error: npm not found", file=sys.stderr)
+        print("npm usually comes with Node.js", file=sys.stderr)
+        return False
+    print(f"npm found: {output.strip()}")
+    return True
+
+
+def install_dependencies():
+    """Install npm dependencies if needed."""
+    if (DEMO_DIR / "node_modules").exists():
+        print("Dependencies already installed")
+        return True
+
+    print("Installing dependencies...")
+    success, _ = run_command("npm install", cwd=DEMO_DIR)
+    if not success:
+        print("Failed to install dependencies", file=sys.stderr)
+        return False
+    print("Dependencies installed")
+    return True
+
+
+def build_frontend():
+    """Build the frontend."""
+    print("Building frontend...")
+    success, _ = run_command("npm run build", cwd=DEMO_DIR)
+    if not success:
+        print("Frontend build failed", file=sys.stderr)
         return False
 
     dist_dir = DEMO_DIR / "dist"
     if not dist_dir.exists():
-        if console and not ci_mode:
-            console.print("[red]Build completed but dist directory not found[/red]")
+        print("Build completed but dist directory not found", file=sys.stderr)
         return False
 
-    if console and not ci_mode:
-        console.print("[green]✓ Frontend built successfully![/green]")
-        console.print("[dim]Built files:[/dim]")
-
-        for file_path in dist_dir.iterdir():
-            if file_path.is_file():
-                size = file_path.stat().st_size
-                size_str = f"{size}B" if size < 1024 else f"{size//1024}KB"
-                console.print(f"  {file_path.name}: {size_str}")
-
+    print("Frontend built successfully!")
+    print("Built files:")
+    for file_path in dist_dir.iterdir():
+        if file_path.is_file():
+            size = file_path.stat().st_size
+            size_str = f"{size}B" if size < 1024 else f"{size // 1024}KB"
+            print(f"  {file_path.name}: {size_str}")
     return True
 
 
 def main():
     parser = argparse.ArgumentParser(description="Build Mesh-NOW frontend")
-    parser.add_argument("--ci", action="store_true", help="CI mode - minimal output")
-    args = parser.parse_args()
+    parser.parse_args()
 
-    console = setup_console() if not args.ci else None
-
-    if console and not args.ci:
-        title = Text("Mesh-NOW Frontend Builder", style="bold blue")
-        panel = Panel(title, border_style="blue")
-        console.print(panel)
-        console.print()
-
-    if not check_nodejs(console, args.ci)[0]:
+    if not check_nodejs():
         sys.exit(1)
 
-    if not check_npm(console, args.ci)[0]:
+    if not check_npm():
         sys.exit(1)
 
-    if console and not args.ci:
-        console.print()
-
-    if not install_dependencies(console, args.ci):
+    print()
+    if not install_dependencies():
         sys.exit(1)
 
-    if console and not args.ci:
-        console.print()
-
-    if not build_frontend(console, args.ci):
+    print()
+    if not build_frontend():
         sys.exit(1)
 
-    if console and not args.ci:
-        console.print()
-        console.print("[green]Frontend build completed![/green]")
+    print()
+    print("Frontend build completed!")
 
 
 if __name__ == "__main__":

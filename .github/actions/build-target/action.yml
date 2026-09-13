@@ -20,21 +20,6 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: Demo/package-lock.json
-
-    - name: Build frontend
-      shell: bash
-      run: python scripts/build_frontend.py --ci
-
-    - name: Embed frontend
-      shell: bash
-      run: python scripts/embed_frontend.py --ci
-
     - name: Build ESP32 firmware for ${{ inputs.target }}
       uses: espressif/esp-idf-ci-action@v1
       with:
@@ -42,7 +27,7 @@ runs:
         target: ${{ inputs.target }}
         path: 'Firmware'
         command: |
-          python ../scripts/build.py --target ${{ inputs.target }} --ci
+          python ../scripts/build.py --target ${{ inputs.target }}
 
           # Create build info
           echo "Target: ${{ inputs.target }}" > build_info.txt

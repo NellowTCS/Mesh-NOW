@@ -56,8 +56,8 @@ Get a Mesh-NOW node running on your ESP32 in under 10 minutes.
 6. **Connect and chat**
 
    - Wait for the node to boot (you will see `ESP-NOW mesh networking initialized successfully` in the log)
-   - Connect to the WiFi network `MESH-NOW-XXXXXXXX` (password: `password`)
-   - Open `http://192.168.4.1` in a browser
+   - Run the web UI: `cd Demo && npm install && npm run serve`
+   - Open `http://localhost:3000` and connect the node's USB port via Web Serial
 
 ::: /steps
 

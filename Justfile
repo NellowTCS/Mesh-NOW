@@ -8,10 +8,10 @@ scripts := "scripts"
 
 # Pass-through to build scripts
 build *args:
-    python3 {{ scripts }}/build.py {{ args }} --ci
+    python3 {{ scripts }}/build.py {{ args }}
 
 build-all *args:
-    python3 {{ scripts }}/build_all.py {{ args }} --ci
+    python3 {{ scripts }}/build_all.py {{ args }}
 
 flash *args:
     cd Firmware && idf.py flash {{ args }}
@@ -21,7 +21,7 @@ test-targets *args:
 
 # Frontend pipeline
 frontend:
-    python3 scripts/build_frontend.py --ci
+    python3 scripts/build_frontend.py
 
 fe-install:
     cd Demo && npm install

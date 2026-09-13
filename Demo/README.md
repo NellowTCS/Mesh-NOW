@@ -41,15 +41,16 @@ This creates optimized files in the `dist/` directory.
 
 ### Integration
 
-The built files are embedded into the ESP32 firmware using:
+The web UI connects to nodes over Web Serial (Chrome/Edge). Build the bundle with:
 
 ```bash
 python scripts/build_frontend.py
-python scripts/embed_frontend.py
 ```
 
-This generates C header files (`Firmware/main/*_html.h`, `*_js.h`, `*_css.h`) that
-are included in `main.c`.
+or from inside `Demo/` with `npm run build`. Serve it locally with `npm run serve`
+(or `npm run dev` for hot reload), open the page, and connect a node's USB port.
+The Mesh-NOW node firmware exports a Web Serial API; it does not embed the
+frontend.
 
 ## File Structure
 
@@ -89,8 +90,8 @@ The frontend communicates with these ESP32 endpoints:
 1. Make changes to TypeScript/CSS files
 2. Test with `npm run dev`
 3. Build with `npm run build`
-4. Embed with `python ../scripts/embed_frontend.py`
-5. Build ESP32 firmware with `idf.py build`
+4. Connect a node via Web Serial and chat
+5. Build the node firmware with `cd Firmware && idf.py build`
 
 ## Bundle Size Optimization
 
