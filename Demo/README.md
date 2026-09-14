@@ -1,13 +1,17 @@
 # Mesh-NOW Frontend
 
-Modern TypeScript-based web interface for the ESP32 Mesh-NOW chat system.
+TypeScript web interface for the ESP32 Mesh-NOW chat system, built with Vite as
+a multi-page app.
 
 ## Architecture
 
 - **TypeScript**: Type-safe development with modern JavaScript features
 - **Modular CSS**: Clean, maintainable styles with CSS custom properties
-- **Webpack**: Optimized bundling for embedded systems
-- **Embedded**: Frontend files are embedded directly into ESP32 firmware
+- **Vite**: Fast dev server and optimized production bundling
+- **Multi-page**: `index.html` (chat UI) and `flasher.html` (web installer) are
+  separate entry points sharing one build
+- **Web flasher**: The installer page flashes node firmware over Web Serial
+  with `esptool-js`, driven by firmware manifests published to GitHub Pages
 
 ## Development
 
@@ -29,7 +33,8 @@ npm install
 npm run dev
 ```
 
-This starts a development server on `http://localhost:3000` with hot reloading.
+This starts the Vite dev server on `http://localhost:3000`. The chat UI is at
+`/` and the web installer at `/flasher.html`.
 
 ### Production Build
 
@@ -37,53 +42,57 @@ This starts a development server on `http://localhost:3000` with hot reloading.
 npm run build
 ```
 
-This creates optimized files in the `dist/` directory.
+This creates optimized files in the `dist/` directory with `./`-relative asset
+paths, so both pages work when served from a project-site subpath.
 
 ### Integration
 
-The web UI connects to nodes over Web Serial (Chrome/Edge). Build the bundle with:
+The chat UI connects to nodes over Web Serial (Chrome/Edge). Build the bundle
+with:
 
 ```bash
 python scripts/build_frontend.py
 ```
 
-or from inside `Demo/` with `npm run build`. Serve it locally with `npm run serve`
-(or `npm run dev` for hot reload), open the page, and connect a node's USB port.
-The Mesh-NOW node firmware exports a Web Serial API; it does not embed the
-frontend.
+or from inside `Demo/` with `npm run build`. Serve it locally with `npm run
+serve` (or `npm run dev` for hot reload), open the page, and connect a node's
+USB port. The Mesh-NOW node firmware exports a Web Serial API; it does not
+embed the frontend.
 
 ## File Structure
 
 ```bash
 Demo/
 ├── src/
-│   ├── index.ts          # Main application entry point
-│   └── styles.css        # Application styles
-├── public/
-│   └── index.html        # HTML template
+│   ├── index.ts          # Chat application entry point
+│   ├── styles.css        # Chat application styles
+│   └── flasher/
+│       ├── main.ts       # Web installer entry point
+│       ├── style.css     # Web installer styles
+│       └── types.ts      # Flasher manifest types
+├── index.html            # Chat page template
+├── flasher.html          # Web installer page template
 ├── dist/                 # Built files (generated)
+├── vite.config.ts        # Vite multi-page config
 ├── package.json
-├── tsconfig.json
-└── webpack.config.js
+└── tsconfig.json
 ```
 
-## API Endpoints
+## Protocol
 
-The frontend communicates with these ESP32 endpoints:
-
-- `GET /` - Main HTML page
-- `GET /bundle.js` - JavaScript bundle
-- `GET /styles.css` - CSS styles
-- `POST /send` - Send a message
-- `GET /messages` - Poll for new messages
+The frontend speaks a JSON line protocol over the node's USB serial connection
+(UART0 or the USB-serial/JTAG port, depending on the target). There is no HTTP
+interface on the device; the browser owns the serial port while connected.
 
 ## Features
 
-- **Real-time messaging**: Automatic polling for new messages
+- **Real-time messaging**: Automatic refresh of peer presence and messages
+- **Group and DM routing**: Target messages per peer or per group
 - **Responsive design**: Works on desktop and mobile
 - **TypeScript**: Full type safety and modern development experience
 - **Clean UI**: Modern, accessible interface
-- **Embedded optimized**: Minimal bundle size for ESP32 constraints
+- **Web installer**: Version-targeted firmware flashing with data-preserving
+  updates
 
 ## Development Workflow
 
@@ -93,20 +102,8 @@ The frontend communicates with these ESP32 endpoints:
 4. Connect a node via Web Serial and chat
 5. Build the node firmware with `cd Firmware && idf.py build`
 
-## Bundle Size Optimization
-
-The build is optimized for embedded systems:
-
-- **Minified JavaScript**: Reduced file size
-- **Extracted CSS**: Separate caching of styles
-- **No external dependencies**: Self-contained bundle
-- **ES2018 target**: Modern but widely supported
-
 ## Browser Support
 
-- Chrome 70+
-- Firefox 65+
-- Safari 12+
-- Edge 79+
+- Chrome 89+ (Web Serial and the web installer require Chromium)
 
-Works on modern mobile browsers as well.
+The web installer requires a Chromium-based browser with the Web Serial API.

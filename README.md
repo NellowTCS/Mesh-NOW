@@ -15,6 +15,19 @@ Mesh-NOW is a protocol and library that turns any ESP32 into a mesh networking n
 - **Payload encryption** - optional AES-128-GCM with a 16-byte key
 - **FreeRTOS integration** - message queue, pinned tasks, callback support
 - **5 ESP32 targets** - ESP32, S2, S3, C3, C6
+- **Web installer** - flash node firmware from the browser with esptool-js
+
+## Web Installer
+
+The [web installer](/Demo/flasher.html) flashes firmware to a node over Web
+Serial, without installing esptool or building anything. Pick a firmware
+version and target chip, plug in the node, and flash. Each tagged release
+publishes to GitHub Pages at [https://nellowtcs.github.io/Mesh-NOW/flasher.html](https://nellowtcs.github.io/Mesh-NOW/flasher.html), maintained by the
+`static-site` workflow:
+
+- [https://nellowtcs.github.io/Mesh-NOW](https://nellowtcs.github.io/Mesh-NOW) - chat UI
+- [https://nellowtcs.github.io/Mesh-NOW/flasher.html](https://nellowtcs.github.io/Mesh-NOW/flasher.html) - web installer
+- [https://nellowtcs.github.io/Mesh-NOW/docs](https://nellowtcs.github.io/Mesh-NOW/docs) - documentation site
 
 ## Quick Example
 
@@ -116,7 +129,9 @@ Mesh-NOW/
 │   ├── src/                 #   core, net, codec, crypto, queue
 │   └── vendor/mpack/        #   vendored MessagePack library
 ├── Firmware/                # Reference chat-app firmware (ESP-IDF project)
-├── Demo/                    # TypeScript chat GUI (baked into the firmware)
+├── Demo/                    # Web UI (Vite MPA): chat GUI + web installer
+│   ├── index.html           #   chat page (Web Serial)
+│   └── flasher.html         #   web installer page (esptool-js)
 ├── Docs/                    # Documentation (docmd)
 ├── Tests/                   # Host unit tests
 ├── scripts/                 # Python + shell drivers

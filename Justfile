@@ -26,6 +26,12 @@ test-targets *args:
 frontend:
     python3 scripts/build_frontend.py
 
+fe-build:
+    cd Demo && npm run build
+
+fe-check:
+    cd Demo && npx tsc --noEmit
+
 fe-install:
     cd Demo && npm install
 
@@ -34,6 +40,10 @@ fe-watch:
 
 fe-serve:
     cd Demo && npm run serve
+
+# Webflasher
+webflasher *args:
+    python3 {{ scripts }}/webflasher.py {{ args }}
 
 # Formatting
 format *flags:

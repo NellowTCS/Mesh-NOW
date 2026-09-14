@@ -38,6 +38,13 @@ export default {
             { text: "Discussions", url: "https://github.com/NellowTCS/Mesh-NOW/discussions" },
           ],
         },
+        {
+          title: "Web",
+          links: [
+            { text: "Demo", url: "https://NellowTCS.github.io/Mesh-NOW/index.html" },
+            { text: "Web Installer", url: "https://NellowTCS.github.io/Mesh-NOW/flasher.html" },
+          ],
+        },
       ],
     },
   },
@@ -116,6 +123,18 @@ export default {
       title: "GitHub",
       path: "https://github.com/NellowTCS/Mesh-NOW",
       icon: "github",
+      external: true,
+    },
+    {
+      title: "Demo",
+      path: "https://NellowTCS.github.io/Mesh-NOW/index.html",
+      icon: "monitor",
+      external: true,
+    },
+    {
+      title: "Web Flasher",
+      path: "https://NellowTCS.github.io/Mesh-NOW/flasher.html",
+      icon: "download",
       external: true,
     },
   ],

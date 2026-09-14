@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+            name="description"
+            content="Flash Mesh-NOW firmware to your ESP32 device via USB using your web browser."
+        />
+        <meta name="author" content="NellowTCS" />
+        <meta
+            name="keywords"
+            content="Mesh-NOW, firmware, web installer, esptool, ESP32, mesh, ESP-NOW, flash, USB, Web Serial API"
+        />
+
+        <title>Mesh-NOW Web Installer</title>
+
+        <link rel="stylesheet" href="/src/flasher/style.css" />
+    </head>
+
+    <body>
+        <header class="site-header">
+            <div class="header-container">
+                <h1 class="site-title">
+                    <a href="/">Mesh-NOW</a>
+                </h1>
+                <p class="site-subtitle">ESP-NOW mesh networking</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <h1>Web Installer</h1>
+            <p>Flash firmware to your ESP32 node via USB</p>
+
+            <div class="connect-section">
+                <button id="flash-btn" class="flash-button" disabled>
+                    Select firmware version
+                </button>
+                <div class="progress-bar" id="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                    <div class="progress-text" id="progress-text">0%</div>
+                </div>
+                <div class="status-text" id="status">
+                    Select a version to begin
+                </div>
+                <div
+                    class="dev-build"
+                    id="dev-info"
+                    style="display: none"
+                    aria-live="polite"
+                ></div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-controls-row">
+                    <div style="flex: 2">
+                        <div class="form-group">
+                            <label for="version-select">Firmware Version</label>
+                            <div class="select-wrapper">
+                                <select
+                                    id="version-select"
+                                    aria-label="Firmware Version"
+                                >
+                                    <option value="">
+                                        Loading versions...
+                                    </option>
+                                </select>
+                            </div>
+                            <div
+                                id="latest-version-text"
+                                class="latest-version-text"
+                            ></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="target-select">Target Chip</label>
+                            <div class="select-wrapper">
+                                <select
+                                    id="target-select"
+                                    aria-label="Target Chip"
+                                >
+                                    <option value="esp32">ESP32</option>
+                                    <option value="esp32s2">ESP32-S2</option>
+                                    <option value="esp32s3">ESP32-S3</option>
+                                    <option value="esp32c3">ESP32-C3</option>
+                                    <option value="esp32c6">ESP32-C6</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <div class="checkbox-option">
+                                    <input
+                                        type="checkbox"
+                                        id="preserve-data"
+                                        name="preserve-data"
+                                        checked
+                                    />
+                                    <label for="preserve-data"
+                                        >Preserve node data during
+                                        installation</label
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <strong>Installation Options</strong>
+                <p>
+                    When "Preserve node data" is checked, only the application
+                    partition is flashed, keeping your settings and saved
+                    content.
+                </p>
+                <p>
+                    When unchecked, a complete installation is performed, which
+                    erases all data and settings.
+                </p>
+            </div>
+
+            <div class="info-box">
+                <strong>Requirements</strong>
+                <p>
+                    This tool requires a Chromium-based browser (Chrome, Edge,
+                    Opera) with Web Serial API support.
+                </p>
+                <p>
+                    Connect your device via USB and ensure no other program is
+                    using the serial port.
+                </p>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="footer-content">
+                <p>Mesh-NOW</p>
+                <hr class="footer-separator" />
+                <p>
+                    <a href="https://github.com/NellowTCS/Mesh-NOW"
+                        >NellowTCS/Mesh-NOW</a
+                    >
+                </p>
+            </div>
+        </footer>
+
+        <script type="module" src="src/flasher/main.ts"></script>
+    </body>
+</html>
