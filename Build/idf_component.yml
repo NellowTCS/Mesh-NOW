@@ -2,7 +2,7 @@ version: "1.0.0"
 description: "Lightweight mesh networking protocol library for ESP32 using ESP-NOW"
 url: "https://github.com/NellowTCS/Mesh-NOW"
 repository: "https://github.com/NellowTCS/Mesh-NOW.git"
-documentation: "https://nellowtcs.me/Mesh-NOW"
+documentation: "https://nellowtcs.me/Mesh-NOW/docs"
 issues: "https://github.com/NellowTCS/Mesh-NOW/issues"
 license: "MIT"
 targets:
