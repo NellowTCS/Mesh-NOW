@@ -1,0 +1,64 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  guard:
+    name: Verify tag matches manifests
+    environment: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check manifest versions
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python3 scripts/bump_version.py --check --expected "$VERSION"
+
+  esp-registry:
+    name: Publish to ESP Component Registry
+    environment: release
+    needs: guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Upload component
+        uses: espressif/upload-components-ci-action@v2
+        with:
+          namespace: nellowtcs
+          components: mesh_now:Build
+
+  platformio:
+    name: Publish to PlatformIO Registry
+    environment: release
+    needs: guard
+    runs-on: ubuntu-latest
+    env:
+      PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+
+      - name: Publish library
+        run: pio pkg publish --no-notify --no-interactive

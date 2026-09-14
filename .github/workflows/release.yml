@@ -1,4 +1,4 @@
-name: Release & Deploy
+name: Release
 
 on:
   release:
@@ -12,102 +12,94 @@ on:
         description: 'Release version (e.g., v1.0.0)'
         required: true
         type: string
-      prerelease:
-        description: 'Mark as pre-release'
-        required: false
-        default: false
-        type: boolean
 
 env:
   IDF_VERSION: 'v5.5.1'
 
 jobs:
-  # Build release artifacts
   build-release:
     name: Build Release Artifacts
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
       changelog: ${{ steps.changelog.outputs.changelog }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history for changelog
-
-      - name: Setup ESP-IDF
-        uses: ./.github/actions/setup-espidf
-        with:
-          idf-version: ${{ env.IDF_VERSION }}
+          submodules: recursive
 
       - name: Determine version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          elif [ "${{ github.event_name }}" = "release" ]; then
+          if [ "${{ github.event_name }}" = "release" ]; then
             VERSION="${{ github.event.release.tag_name }}"
           else
-            VERSION="${{ github.ref_name }}"
+            VERSION="${{ github.event.inputs.version || github.ref_name }}"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Release version: $VERSION"
 
       - name: Generate changelog
         id: changelog
-        uses: ./.github/actions/generate-changelog
-        with:
-          version: ${{ steps.version.outputs.version }}
-          idf-version: ${{ env.IDF_VERSION }}
+        shell: bash
+        run: |
+          mkdir -p ci-artifacts
+
+          # Previous release tag, or the root commit when this is the first release.
+          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed -n '2p')
+          if [ -z "$PREV_TAG" ]; then
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          {
+            echo "## Changes since $PREV_TAG"
+            echo
+            git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD"
+            echo
+          } > ci-artifacts/CHANGELOG.md
+
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          cat ci-artifacts/CHANGELOG.md >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Build all targets
-        run: |
-          python scripts/build_all.py --ci
+        uses: ./.github/actions/build-all
+        with:
+          idf-version: ${{ env.IDF_VERSION }}
 
-      - name: Create release packages
+      - name: Package release
         run: |
           mkdir -p release/{firmware,flash-tools,documentation}
-          
-          # Copy flash tools
+
+          # Flash tools
           cp scripts/install_esptool.py release/flash-tools/
           cp scripts/flash_mesh_now.py release/flash-tools/
-          
-          # Package firmware files
-          cd builds
-          for target in */; do
-            target_name=${target%/}
-            echo "Packaging $target_name..."
-            
-            # Create target-specific package
-            mkdir -p ../release/firmware/$target_name
-            cp $target_name/mesh-now.bin ../release/firmware/$target_name/
-            cp $target_name/bootloader.bin ../release/firmware/$target_name/
-            cp $target_name/partition-table.bin ../release/firmware/$target_name/
-            
-            # Copy and customize flash script
-            cp ../../scripts/flash.py ../release/firmware/$target_name/
-            # The flash.py script auto-detects the target, so no need to customize
-            
-            # Create target-specific README
-            cp ../../docs/templates/firmware_readme.md ../release/firmware/$target_name/README.md
-            sed -i "s/{TARGET}/$target_name/g" ../release/firmware/$target_name/README.md
-            # Add target-specific information (you can expand this)
-            sed -i "s/{ARCHITECTURE}/ESP32 Architecture/g" ../release/firmware/$target_name/README.md
-            sed -i "s/{RAM}/Target-specific RAM/g" ../release/firmware/$target_name/README.md
-            
-            # Create compressed package
-            tar -czf ../release/mesh-now-$target_name-${{ steps.version.outputs.version }}.tar.gz $target_name/
-          done
-          
-          cd ..
 
-      - name: Create documentation package
-        run: |
+          # Per-target firmware packages
+          for dir in Firmware/builds/*/; do
+            target_name=$(basename "$dir")
+            echo "Packaging $target_name..."
+            mkdir -p "release/firmware/$target_name"
+            cp "$dir/mesh-now.bin" "release/firmware/$target_name/"
+            cp "$dir/bootloader.bin" "release/firmware/$target_name/"
+            cp "$dir/partition-table.bin" "release/firmware/$target_name/"
+            cp scripts/flash.py "release/firmware/$target_name/"
+            tar -czf "release/mesh-now-$target_name-${{ steps.version.outputs.version }}.tar.gz" \
+              -C "release/firmware" "$target_name"
+          done
+
+          # Documentation
           cp README.md release/documentation/
-          cp MULTI_TARGET_SUPPORT.md release/documentation/
-          cp ci-artifacts/CHANGELOG.md release/documentation/
-          cp docs/QUICK_START.md release/documentation/
+          cp Docs/docs/getting-started/quickstart.md release/documentation/QUICKSTART.md
+
+      - name: Create release checksums
+        run: |
+          cd release
+          find . -type f \( -name '*.tar.gz' -o -name '*.bin' \) -print0 | xargs -0 sha256sum > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
@@ -116,20 +108,12 @@ jobs:
           path: release/
           retention-days: 90
 
-      - name: Create release checksums
-        run: |
-          cd release
-          find . -name "*.tar.gz" -o -name "*.bin" | xargs sha256sum > SHA256SUMS
-          echo "Generated checksums:"
-          cat SHA256SUMS
-
-  # Create GitHub release
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: build-release
     if: github.event_name != 'release'  # Don't duplicate if triggered by release
-    
+
     steps:
       - name: Download release artifacts
         uses: actions/download-artifact@v4
@@ -143,45 +127,7 @@ jobs:
           tag_name: ${{ needs.build-release.outputs.version }}
           name: Mesh-NOW ${{ needs.build-release.outputs.version }}
           body: ${{ needs.build-release.outputs.changelog }}
-          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           files: |
             release/*.tar.gz
             release/SHA256SUMS
-            release/documentation/CHANGELOG.md
           token: ${{ secrets.GITHUB_TOKEN }}
-
-  # Update documentation
-  update-docs:
-    name: Update Documentation
-    runs-on: ubuntu-latest
-    needs: [build-release, create-release]
-    if: always() && needs.build-release.result == 'success'
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update version in README
-        run: |
-          VERSION=${{ needs.build-release.outputs.version }}
-          sed -i "s/Version: .*/Version: $VERSION/" README.md
-          
-          # Update download links if they exist
-          if grep -q "download" README.md; then
-            sed -i "s|releases/download/v[0-9]*\.[0-9]*\.[0-9]*|releases/download/$VERSION|g" README.md
-          fi
-
-      - name: Commit version update
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          if git diff --quiet; then
-            echo "No changes to commit"
-          else
-            git add README.md
-            git commit -m "Update version to ${{ needs.build-release.outputs.version }} [skip ci]"
-            git push
-          fi

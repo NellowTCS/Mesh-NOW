@@ -32,7 +32,7 @@ assignees: ""
 ## Target Information
 
 **ESP32 Target:** (e.g., esp32, esp32s2, esp32s3, esp32c3, esp32c6, or "all targets")
-**Configuration:** (e.g., using configs/sdkconfig.esp32)
+**Configuration:** (e.g., using `Firmware/sdkconfig.defaults.esp32`)
 
 ## Error Details
 

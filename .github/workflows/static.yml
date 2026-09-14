@@ -1,0 +1,167 @@
+name: Static Site
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+env:
+  IDF_VERSION: 'v5.5.1'
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Static Site
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Determine version
+        id: version
+        run: |
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          if [ -n "$RELEASE_TAG" ]; then
+            VERSION="$RELEASE_TAG"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="dev-$(date +%Y%m%d-%H%M%S)"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Release version: $VERSION"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: Demo/package-lock.json
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+        working-directory: Demo
+
+      - name: Build all firmware targets
+        uses: ./.github/actions/build-all
+        with:
+          idf-version: ${{ env.IDF_VERSION }}
+
+      - name: Set up Node.js for Docs
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: Docs/package-lock.json
+
+      - name: Build docs site
+        run: |
+          npm ci
+          npm run build
+        working-directory: Docs
+
+      - name: Assemble static site release
+        run: |
+          set -euo pipefail
+
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p webflash/firmware
+
+          cp Demo/dist/flasher.html webflash/flasher.html
+          cp Demo/dist/index.html webflash/index.html
+          cp -r Demo/dist/assets webflash/assets
+
+          mkdir -p webflash/docs
+          cp -r Docs/site/. webflash/docs/
+
+          pip install packaging
+
+          python3 - "$VERSION" <<'EOF'
+          import json
+          import shutil
+          import sys
+          from pathlib import Path
+
+          version = sys.argv[1]
+          root = Path.cwd() / "webflash"
+          builds_root = Path.cwd() / "Firmware" / "builds"
+
+          chip_family = {
+              "esp32": "ESP32",
+              "esp32s2": "ESP32-S2",
+              "esp32s3": "ESP32-S3",
+              "esp32c3": "ESP32-C3",
+              "esp32c6": "ESP32-C6",
+          }
+
+          for target_dir in sorted(builds_root.iterdir()):
+              target = target_dir.name
+              if not target_dir.is_dir():
+                  continue
+
+              dst = root / "firmware" / version / target
+              dst.mkdir(parents=True, exist_ok=True)
+
+              for name in ["bootloader.bin", "partition-table.bin", "mesh-now.bin"]:
+                  src = target_dir / name
+                  if src.exists():
+                      shutil.copy2(src, dst / name)
+
+              manifest = {
+                  "name": "Mesh-NOW",
+                  "version": version,
+                  "builds": [
+                      {
+                          "chipFamily": chip_family.get(target, target),
+                          "parts": [
+                              {"path": "bootloader.bin", "offset": 0},
+                              {"path": "partition-table.bin", "offset": 0x8000},
+                              {"path": "mesh-now.bin", "offset": 0x10000},
+                          ],
+                      }
+                  ],
+              }
+              (dst / "manifest.json").write_text(
+                  json.dumps(manifest, indent=2) + "\n"
+              )
+              print(f"Packaged {target}: {version}")
+          EOF
+
+          jq -n \
+            --arg release_tag "$VERSION" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_number "$GITHUB_RUN_NUMBER" \
+            --arg sha "$GITHUB_SHA" \
+            --arg timestamp "$(date --utc +%Y-%m-%dT%H:%M:%SZ)" \
+            '{release_tag: $release_tag, run_id: $run_id, run_number: $run_number, sha: $sha, timestamp: $timestamp}' \
+            > webflash/deploy-info.json
+
+      - name: Preserve prior releases and rebuild index
+        run: |
+          python3 scripts/webflasher.py \
+            --workspace "$GITHUB_WORKSPACE" \
+            --version "${{ steps.version.outputs.version }}" \
+            --repo-url "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            --gh-pages-dir "$(mktemp -d)" \
+            --keep-dev 2
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./webflash
+          keep_files: false
+          commit_message: "chore(pages): deploy static site from run ${{ github.run_number }}"

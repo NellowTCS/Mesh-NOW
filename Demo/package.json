@@ -1,0 +1,33 @@
+{
+  "name": "mesh-now-frontend",
+  "version": "1.0.0",
+  "description": "Web interface for ESP32 Mesh-NOW chat system",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "serve": "vite --port 3000",
+    "clean": "rm -rf dist/*",
+    "format": "prettier --write \"src/**/*.{ts,css}\" \"*.js\"",
+    "format:check": "prettier --check \"src/**/*.{ts,css}\" \"*.js\""
+  },
+  "devDependencies": {
+    "@types/blueimp-md5": "^2.18.2",
+    "@types/node": "^26.4.0",
+    "@types/w3c-web-serial": "^1.0.8",
+    "@types/w3c-web-usb": "^1.0.14",
+    "@types/web": "^0.0.354",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0"
+  },
+  "dependencies": {
+    "blueimp-md5": "^2.19.0",
+    "eruda": "^3.4.3",
+    "esptool-js": "^0.6.1",
+    "web-serial-polyfill": "^1.0.15"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

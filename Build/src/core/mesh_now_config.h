@@ -1,0 +1,69 @@
+#ifndef MESH_NOW_CONFIG_H
+#define MESH_NOW_CONFIG_H
+
+// Build-time defaults for every private tuning constant. Each value has a
+// single source of truth in Kconfig; these fallbacks make the component
+// compilable in host-test and other builds without an sdkconfig, and are
+// overridden by the Kconfig-generated CONFIG_MESH_NOW_* macros.
+
+#ifndef CONFIG_MESH_NOW_BEACON_INTERVAL_MS
+#define CONFIG_MESH_NOW_BEACON_INTERVAL_MS 5000
+#endif
+
+#ifndef CONFIG_MESH_NOW_RETRANSMIT_TIMEOUT_MS
+#define CONFIG_MESH_NOW_RETRANSMIT_TIMEOUT_MS 2000
+#endif
+
+#ifndef CONFIG_MESH_NOW_MAX_RETRIES
+#define CONFIG_MESH_NOW_MAX_RETRIES 3
+#endif
+
+#ifndef CONFIG_MESH_NOW_MAX_PENDING_MESSAGES
+#define CONFIG_MESH_NOW_MAX_PENDING_MESSAGES 16
+#endif
+
+#ifndef CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS
+#define CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS 128
+#endif
+
+#ifndef CONFIG_MESH_NOW_PEER_EXPIRY_SEC
+#define CONFIG_MESH_NOW_PEER_EXPIRY_SEC 30
+#endif
+
+#ifndef CONFIG_MESH_NOW_MAX_ROUTES
+#define CONFIG_MESH_NOW_MAX_ROUTES 32
+#endif
+
+#ifndef CONFIG_MESH_NOW_ROUTE_LIFETIME_SEC
+#define CONFIG_MESH_NOW_ROUTE_LIFETIME_SEC 30
+#endif
+
+#ifndef CONFIG_MESH_NOW_ROUTE_REQ_TTL
+#define CONFIG_MESH_NOW_ROUTE_REQ_TTL 8
+#endif
+
+#ifndef CONFIG_MESH_NOW_ROUTE_REQ_TIMEOUT_MS
+#define CONFIG_MESH_NOW_ROUTE_REQ_TIMEOUT_MS 3000
+#endif
+
+#ifndef CONFIG_MESH_NOW_MAX_ROUTE_REQ_RETRIES
+#define CONFIG_MESH_NOW_MAX_ROUTE_REQ_RETRIES 3
+#endif
+
+#ifndef CONFIG_MESH_NOW_MAX_ROUTE_REQUESTS
+#define CONFIG_MESH_NOW_MAX_ROUTE_REQUESTS 8
+#endif
+
+#ifndef CONFIG_MESH_NOW_RREQ_CACHE_SIZE
+#define CONFIG_MESH_NOW_RREQ_CACHE_SIZE 32
+#endif
+
+#ifndef CONFIG_MESH_NOW_WIFI_CHANNEL
+#define CONFIG_MESH_NOW_WIFI_CHANNEL 1
+#endif
+
+#ifndef CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS
+#define CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS 8
+#endif
+
+#endif // MESH_NOW_CONFIG_H

@@ -1,15 +1,49 @@
-/build
-/builds
-/__pycache__/
-*.pyc
-.env
-.DS_Store
+# Build artifacts
+Firmware/build
+Firmware/builds
+build-tests/
+Tests/unit/build
+Tests/unit/builds
+site/
+
+# Dependencies
+node_modules/
+
+# Editor
 .vscode/
 .idea/
-node_modules/
-dist/
-*.log
-index_html.h
-bundle_js.h
-styles_css.h
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ESP-IDF generated
+sdkconfig
 sdkconfig.old
+*.bin
+*.elf
+*.map
+*.csv
+dependencies.lock
+
+# Generated frontend headers
+Firmware/main/*_html.h
+Firmware/main/*_js.h
+Firmware/main/*_css.h
+
+# Generated protocol parser
+Demo/src/generated/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Logs
+*.log
+
+_docmd-search/
+dist/

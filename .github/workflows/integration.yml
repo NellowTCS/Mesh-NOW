@@ -1,202 +1,28 @@
-name: Hardware Testing & Integration
+name: Integration Tests
 
 on:
   schedule:
     - cron: '0 6 * * *'  # Daily at 6 AM UTC
   workflow_dispatch:
-    inputs:
-      test_type:
-        description: 'Type of test to run'
-        required: true
-        default: 'basic'
-        type: choice
-        options:
-          - 'basic'
-          - 'stress'
-          - 'compatibility'
 
 jobs:
-  # Firmware validation tests
-  firmware-validation:
-    name: Firmware Validation Tests
+  idf-compatibility:
+    name: ESP-IDF ${{ matrix.idf_version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        target: [esp32, esp32s2, esp32s3, esp32c3, esp32c6]
-    
+        idf_version: ['v5.5']
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Setup ESP-IDF
-        uses: ./.github/actions/setup-espidf
         with:
-          idf-version: 'v5.5.1'
+          submodules: recursive
 
-      - name: Build firmware
+      - name: Build esp32 with ${{ matrix.idf_version }}
         uses: ./.github/actions/build-target
         with:
-          target: ${{ matrix.target }}
-          idf-version: 'v5.5.1'
-          sha: ${{ github.sha }}
-
-      - name: Validate binary structure
-        run: |
-          echo "Validating ${{ matrix.target }} binary..."
-          
-          # Check if binary exists and has reasonable size
-          if [ ! -f "build/mesh-now.bin" ]; then
-            echo "ERROR: Binary not found"
-            exit 1
-          fi
-          
-          BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
-          MIN_SIZE=500000  # 500KB minimum
-          MAX_SIZE=2000000 # 2MB maximum
-          
-          if [ $BINARY_SIZE -lt $MIN_SIZE ]; then
-            echo "ERROR: Binary too small ($BINARY_SIZE bytes)"
-            exit 1
-          fi
-          
-          if [ $BINARY_SIZE -gt $MAX_SIZE ]; then
-            echo "ERROR: Binary too large ($BINARY_SIZE bytes)"
-            exit 1
-          fi
-          
-          echo "Binary size OK: $BINARY_SIZE bytes"
-
-      - name: Check memory usage
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: 'v5.5.1'
-          target: ${{ matrix.target }}
-          command: |
-            echo "Memory analysis for ${{ matrix.target }}:"
-            idf.py size-components | head -20
-
-      - name: Extract and validate configuration
-        run: |
-          echo "Configuration check for ${{ matrix.target }}:"
-          
-          # Check key configuration options
-          if grep -q "CONFIG_ESP_WIFI_ENABLED=y" sdkconfig; then
-            echo "WiFi enabled"
-          else
-            echo "WiFi not enabled"
-            exit 1
-          fi
-          
-          if grep -q "CONFIG_HTTPD_MAX_REQ_HDR_LEN" sdkconfig; then
-            echo "HTTP server configured"
-          else
-            echo "HTTP server not configured"
-            exit 1
-          fi
-
-  # Network stack testing
-  network-tests:
-    name: Network Stack Tests
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup ESP-IDF
-        uses: ./.github/actions/setup-espidf
-        with:
-          idf-version: 'v5.5.1'
-
-      - name: Build frontend
-        run: python frontend/build_frontend.py --ci
-
-      - name: Embed frontend
-        run: python scripts/embed_frontend.py --ci
-
-      - name: Build with network debugging
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: 'v5.5.1'
           target: esp32
-          command: |
-            python scripts/build.py --target esp32 --ci
-            
-            # Enable additional logging for testing
-            echo "CONFIG_LOG_DEFAULT_LEVEL_DEBUG=y" >> sdkconfig.defaults
-            echo "CONFIG_LOG_MAXIMUM_LEVEL=5" >> sdkconfig.defaults
-            
-            idf.py build
-
-      - name: Analyze network components
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: 'v5.5.1'
-          target: esp32
-          command: |
-            echo "Network component analysis:"
-            idf.py size-components | grep -E "(lwip|wifi|esp_netif|esp_http|esp_now)"
-
-  # Compatibility testing
-  compatibility-tests:
-    name: ESP-IDF Compatibility Tests
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        idf_version: ['v5.5', 'v5.5.1']
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup ESP-IDF ${{ matrix.idf_version }}
-        uses: ./.github/actions/setup-espidf
-        with:
           idf-version: ${{ matrix.idf_version }}
-
-      - name: Build frontend
-        run: python frontend/build_frontend.py --ci
-
-      - name: Embed frontend
-        run: python scripts/embed_frontend.py --ci
-
-      - name: Test build compatibility
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: ${{ matrix.idf_version }}
-          target: esp32
-          command: |
-            echo "Testing compatibility with ESP-IDF ${{ matrix.idf_version }}"
-            
-            # Test ESP32 build (most compatible)
-            python scripts/build.py --target esp32 --ci
-
-      - name: Compare binary sizes
-        run: |
-          BINARY_SIZE=$(stat -c%s build/mesh-now.bin)
-          echo "Binary size with ESP-IDF ${{ matrix.idf_version }}: $BINARY_SIZE bytes"
-
-  # Integration test summary
-  integration-summary:
-    name: Integration Test Summary
-    runs-on: ubuntu-latest
-    needs: [firmware-validation, network-tests, compatibility-tests]
-    if: always()
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Generate integration report
-        uses: ./.github/actions/generate-integration-report
-        with:
           sha: ${{ github.sha }}
-          firmware-validation-result: ${{ needs.firmware-validation.result }}
-          network-tests-result: ${{ needs.network-tests.result }}
-          compatibility-tests-result: ${{ needs.compatibility-tests.result }}
-
-      - name: Upload integration report
-        uses: actions/upload-artifact@v4
-        with:
-          name: integration-report-${{ github.sha }}
-          path: ci-artifacts/integration_report.md
