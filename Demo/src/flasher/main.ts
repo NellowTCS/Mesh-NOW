@@ -1,4 +1,4 @@
-import md5 from 'blueimp-md5';
+import SparkMD5 from 'spark-md5';
 import { ESPLoader, Transport } from 'esptool-js';
 
 const NUMBER_OF_VERSIONS_SHOWN = 5;
@@ -289,14 +289,10 @@ async function fetchUint8(path: string): Promise<Uint8Array> {
     return new Uint8Array(buf);
 }
 
-function uint8ToBinaryString(u8: Uint8Array): string {
-    const CHUNK = 0x8000;
-    let result = '';
-    for (let i = 0; i < u8.length; i += CHUNK) {
-        const sub = u8.subarray(i, i + CHUNK);
-        result += String.fromCharCode.apply(null, Array.from(sub));
-    }
-    return result;
+function binaryFileMd5(u8: Uint8Array): string {
+    const copy = new Uint8Array(u8.byteLength);
+    copy.set(u8);
+    return SparkMD5.ArrayBuffer.hash(copy.buffer);
 }
 
 async function flashFirmware(): Promise<void> {
@@ -395,8 +391,7 @@ async function flashFirmware(): Promise<void> {
                 progressFill.style.width = `${percent}%`;
                 progressText.textContent = `${percent}%`;
             },
-            calculateMD5Hash: (image: Uint8Array) =>
-                md5(uint8ToBinaryString(image)),
+            calculateMD5Hash: (image: Uint8Array) => binaryFileMd5(image),
         };
 
         await esploader.writeFlash(flashOptions);
