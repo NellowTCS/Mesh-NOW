@@ -3,7 +3,7 @@ title: "Groups"
 description: "Group messaging with configurable group IDs."
 ---
 
-Mesh-NOW supports group-scoped messaging where only nodes belonging to a specific group receive messages.
+Mesh-NOW supports group-scoped messaging. Only nodes that belong to the group receive the message; everyone else ignores it for delivery purposes.
 
 ## Setting a Group
 
@@ -15,7 +15,7 @@ mesh_now_set_group(42);
 mesh_now_set_group(0);
 ```
 
-The group ID is a single byte (`uint8_t`), supporting groups 0-255. Group 0 is the default and means "no group filter."
+The group ID is a single byte (`uint8_t`), so there are 255 usable groups. Group 0 is the default and means "no group filter."
 
 ## Sending Group Messages
 
@@ -28,7 +28,7 @@ mesh_now_send_group(42, "Hello, group!");
 
 ## Receiving Group Messages
 
-When a `MSG_TYPE_GROUP` message arrives, the library checks the group ID:
+When a `MSG_TYPE_GROUP` message arrives, the library checks the local group ID:
 
 ```c
 else if (mesh_msg.type == MSG_TYPE_GROUP)
@@ -45,28 +45,28 @@ else if (mesh_msg.type == MSG_TYPE_GROUP)
 ```
 
 ::: callout warning title:"Relay Behavior"
-All nodes relay group messages regardless of their own group membership. Only the callback/queue delivery is filtered by group ID. This ensures messages reach their intended group even through non-group intermediate nodes.
+All nodes relay group messages even when they are not in the group. Group filtering only applies to callback/queue delivery, not to forwarding. That is what lets a message reach its group through intermediate nodes that do not belong to it.
 ::: /callout
 
 ## Group ID Reference
 
-| Value | Meaning |
-| :---- | :------ |
-| 0 | No group (default) |
+| Value | Meaning                 |
+| ----- | ----------------------- |
+| 0     | No group (default)      |
 | 1-255 | Active group membership |
 
 ## Use Cases
 
-- **Department channels**: Each department gets a group ID
-- **Event coordination**: Temporary groups for events
-- **Access control**: Nodes only process messages for their group
-- **Multi-tenant meshes**: Shared infrastructure, isolated communication
+- Department channels: each department gets a group ID
+- Event coordination: temporary groups for events
+- Access control: nodes only process messages for their group
+- Multi-tenant meshes: shared infrastructure, isolated communication
 
 ## Limitations
 
-- A node can only be in **one group at a time**
-- Group membership is **local** (not advertised to peers)
-- No group discovery or registration protocol
+- A node can only be in one group at a time
+- Group membership is local (not advertised to peers)
+- There is no group discovery or registration protocol
 
 ::: grids
 ::: grid

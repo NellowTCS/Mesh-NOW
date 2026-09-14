@@ -9,7 +9,7 @@ Four ways to use Mesh-NOW: as an ESP-IDF component (via the component manager or
 
 ::: tab "ESP-IDF Component"
 
-The recommended way is the ESP-IDF component manager. Add this to your project's `idf_component.yml`:
+The recommended path is the ESP-IDF component manager. Add this to your project's `idf_component.yml`:
 
 ```yaml
 dependencies:
@@ -20,7 +20,7 @@ dependencies:
 
 The `path` field resolves the component subdirectory, and the library registers under the name `mesh_now`.
 
-Alternatively, point `EXTRA_COMPONENT_DIRS` at `Build/` in your project's `CMakeLists.txt`. The library is self-contained (vendored mpack is compiled into it) and registers under the component name `Build`, the directory name:
+Alternatively, point `EXTRA_COMPONENT_DIRS` at `Build/` in your project's `CMakeLists.txt`. The library is self-contained (the vendored mpack is compiled in) and registers under the component name `Build`, which is just the directory name:
 
 ```cmake
 set(EXTRA_COMPONENT_DIRS
@@ -45,16 +45,7 @@ lib_deps =
     https://github.com/NellowTCS/Mesh-NOW.git
 ```
 
-Or use the library manifest directly:
-
-```json
-{
-    "name": "mesh_now",
-    "version": "1.0.0",
-    "platforms": ["espressif32"],
-    "frameworks": ["arduino", "espidf"]
-}
-```
+The repository root carries a `library.json` manifest that matches the ESP-IDF and Arduino frameworks.
 
 ::: /tab
 
@@ -76,11 +67,9 @@ Copy the `Build/` directory into your project, renaming it to `mesh_now`:
 cp -r /path/to/Mesh-NOW/Build your-project/components/mesh_now
 ```
 
-This keeps the component registered under the `mesh_now` name. (When used
-in-place via `EXTRA_COMPONENT_DIRS`, the component is named `Build` because
-that is the directory name.)
+That keeps the component registered under the name `mesh_now`. (When used in-place via `EXTRA_COMPONENT_DIRS`, the component is named `Build` because that is the directory name.)
 
-Ensure your build system includes the component directory.
+Make sure your build system includes the component directory.
 
 ::: /tab
 
@@ -89,7 +78,7 @@ Ensure your build system includes the component directory.
 ## Prerequisites
 
 ::: callout info title:"ESP-IDF"
-Mesh-NOW requires ESP-IDF v5.5 or later. ESP-IDF v4.x is partially supported via compatibility macros.
+Mesh-NOW requires ESP-IDF v5.5 or later. The code targets the v5.x ESP-NOW APIs and `esp_timer`, so v4.x is not supported.
 ::: /callout
 
 ### Install ESP-IDF
@@ -114,7 +103,7 @@ idf.py --version
 #include "mesh_now.h"
 ```
 
-The header provides all public types, constants, and function declarations. The `extern "C"` wrapper is included for C++ compatibility.
+The header exposes all public types, constants, and function declarations. It carries an `extern "C"` wrapper for C++ projects.
 
 ## Next Steps
 

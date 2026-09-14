@@ -6,9 +6,11 @@ description: "Get a mesh node running in under 10 minutes."
 Get a Mesh-NOW node running on your ESP32 in under 10 minutes.
 
 ::: callout tip title:"Prerequisites"
+
 - ESP32 development board (any variant)
 - ESP-IDF v5.5.1+ installed and sourced
 - USB cable
+
 ::: /callout
 
 ::: steps
@@ -38,7 +40,7 @@ Get a Mesh-NOW node running on your ESP32 in under 10 minutes.
 
 4. **Build**
 
-   The mesh library lives in `Build/` at the repository root and is pulled in
+   The mesh library lives in `Build/` at the repository root and gets pulled in
    automatically via `EXTRA_COMPONENT_DIRS` in `Firmware/CMakeLists.txt`.
 
    ```bash
@@ -51,11 +53,11 @@ Get a Mesh-NOW node running on your ESP32 in under 10 minutes.
    idf.py -p /dev/ttyUSB0 flash monitor
    ```
 
-   Replace `/dev/ttyUSB0` with your serial port. On macOS it is typically `/dev/cu.usbserial-*`.
+   Replace `/dev/ttyUSB0` with your serial port. On macOS it is usually `/dev/cu.usbserial-*`.
 
 6. **Connect and chat**
 
-   - Wait for the node to boot (you will see `ESP-NOW mesh networking initialized successfully` in the log)
+   - Wait for the node to boot; you should see `ESP-NOW mesh networking initialized successfully` in the log
    - Run the web UI: `cd Demo && npm install && npm run serve`
    - Open `http://localhost:3000` and connect the node's USB port via Web Serial
 
@@ -63,7 +65,7 @@ Get a Mesh-NOW node running on your ESP32 in under 10 minutes.
 
 ## Multiple Nodes
 
-Flash two or more ESP32 boards. Power them on and they will automatically discover each other via beacons. Messages sent from any node propagate through the mesh.
+Flash two or more ESP32 boards. Power them on and they discover each other via beacons on their own. Messages sent from any node propagate through the mesh.
 
 ```mermaid
 sequenceDiagram

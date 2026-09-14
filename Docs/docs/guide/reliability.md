@@ -3,7 +3,7 @@ title: "Reliability"
 description: "ACK mechanism, retransmission, and pending message management."
 ---
 
-Mesh-NOW provides reliable delivery for direct messages via an ACK/retransmit system.
+Mesh-NOW gives direct messages reliable delivery through an ACK and retransmit system.
 
 ## ACK Mechanism
 
@@ -17,7 +17,7 @@ static void mesh_now_send_ack(const mesh_message_t *received_msg)
     // Give the ACK its own fresh id so it can participate in seen-message dedup
     ack_msg.message_id = mesh_now_generate_message_id();
     ack_msg.reply_to = received_msg->message_id;
-    ack_msg.hop_limit = DEFAULT_ROUTE_TTL;  // hop_count starts at 0
+    ack_msg.hop_limit = DEFAULT_ROUTE_TTL;  // origin of this ACK, hop_count 0
     esp_read_mac(ack_msg.sender_mac, ESP_MAC_WIFI_STA);
     memcpy(ack_msg.target_mac, received_msg->sender_mac, ESP_NOW_ETH_ALEN);
 
@@ -33,7 +33,7 @@ static void mesh_now_send_ack(const mesh_message_t *received_msg)
 }
 ```
 
-The ACK's `reply_to` identifies the message being acknowledged while `message_id` carries a fresh value, so routed ACKs are not re-flooded by every relay's seen-message dedup. The ACK propagates back to the original sender, where it clears the pending message slot.
+The ACK's `reply_to` names the message being acknowledged, while `message_id` holds a fresh value. That fresh value lets routed ACKs survive each relay's seen-message dedup instead of being re-flooded. The ACK finds its way back to the original sender, where it clears the pending message slot.
 
 ## Retransmission
 
@@ -59,7 +59,7 @@ static void retransmit_task(void *pvParameters)
             if (now_ms - pending->last_send_time_ms < RETRANSMIT_TIMEOUT_MS)
                 continue;
 
-            // Drop after max retries
+            // Give up after max retries
             if (pending->retries >= MAX_RETRIES) {
                 pending->active = false;
                 continue;
@@ -79,7 +79,7 @@ static void retransmit_task(void *pvParameters)
 
 ## Pending Message Table
 
-Unacknowledged messages are tracked in a fixed-size table. Each slot stores the pre-serialized wire buffer (not a `mesh_message_t`) so retransmits avoid re-encoding:
+Unacknowledged messages live in a fixed-size table. Each slot stores the pre-serialized wire buffer (not a `mesh_message_t`), so retransmits avoid re-encoding:
 
 ```c
 typedef struct {
@@ -98,7 +98,7 @@ typedef struct {
 #define MAX_PENDING_MESSAGES 16
 ```
 
-The table is protected by the internal `state_mutex`, so the retransmit task and the sending path never observe a partially-initialized entry.
+The table sits behind the internal `state_mutex`, so the retransmit task and the sending path never observe a half-initialized entry.
 
 ### Lifecycle
 
@@ -116,30 +116,30 @@ stateDiagram-v2
 
 ## Parameters
 
-| Parameter | Default | Description |
-| :-------- | :------ | :---------- |
-| `RETRANSMIT_TIMEOUT_MS` | 2000ms | Time before retransmit attempt |
-| `MAX_RETRIES` | 3 | Maximum retransmission attempts |
-| `MAX_PENDING_MESSAGES` | 16 | Slots in the pending message table |
+| Parameter               | Default | Description                        |
+| ----------------------- | ------- | ---------------------------------- |
+| `RETRANSMIT_TIMEOUT_MS` | 2000ms  | Time before retransmit attempt     |
+| `MAX_RETRIES`           | 3       | Maximum retransmission attempts    |
+| `MAX_PENDING_MESSAGES`  | 16      | Slots in the pending message table |
 
 ## Which Messages Use ACK
 
-| Message Type | ACK Required | Retransmit |
-| :----------- | :----------- | :--------- |
-| `MSG_TYPE_CHAT` | No | No |
-| `MSG_TYPE_DIRECT` | Yes | Yes |
-| `MSG_TYPE_GROUP` | No | No |
-| `MSG_TYPE_PRESENCE` | No | No |
-| `MSG_TYPE_TYPING` | No | No |
-| `MSG_TYPE_BEACON` | No | No |
+| Message Type        | ACK Required | Retransmit |
+| ------------------- | ------------ | ---------- |
+| `MSG_TYPE_CHAT`     | No           | No         |
+| `MSG_TYPE_DIRECT`   | Yes          | Yes        |
+| `MSG_TYPE_GROUP`    | No           | No         |
+| `MSG_TYPE_PRESENCE` | No           | No         |
+| `MSG_TYPE_TYPING`   | No           | No         |
+| `MSG_TYPE_BEACON`   | No           | No         |
 
 ::: callout info title:"Broadcast Messages"
-Chat, group, presence, and typing messages are fire-and-forget. They rely on the mesh's broadcast nature for delivery rather than individual ACKs. This keeps broadcast overhead low.
+Chat, group, presence, and typing are fire-and-forget. They lean on the mesh's broadcast nature for delivery instead of individual ACKs. That keeps broadcast overhead low.
 ::: /callout
 
 ## ACK Routing
 
-ACKs are relayed through the mesh in the same way as other direct traffic. An intermediate node that is not the ACK target forwards it one hop toward the target; the ACK recipient clears its pending slot:
+ACKs are relayed through the mesh the same way as other direct traffic. An intermediate node that is not the ACK target forwards it one hop toward the target; the ACK recipient clears its pending slot:
 
 ```c
 if (mesh_msg.type == MSG_TYPE_ACK) {

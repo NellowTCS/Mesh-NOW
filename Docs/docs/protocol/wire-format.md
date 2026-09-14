@@ -3,7 +3,7 @@ title: "Wire Format"
 description: "Binary frame layout, field sizes, byte order, and encoding specification."
 ---
 
-Mesh-NOW messages are transmitted as binary frames over ESP-NOW. The wire format uses MessagePack serialization with optional AES-128-GCM encryption.
+Mesh-NOW messages travel as binary frames over ESP-NOW. The wire format uses MessagePack serialization with optional AES-128-GCM encryption.
 
 The canonical protocol specification is [`mesh_now.ksy`](/mesh_now.ksy) at the repository root.
 
@@ -32,7 +32,7 @@ The header is always 32 bytes. The payload follows immediately after.
 
 ## Field Encoding
 
-All multi-byte fields use **little-endian** byte order.
+All multi-byte fields use little-endian byte order.
 
 ### `magic` (2 bytes)
 
@@ -57,18 +57,18 @@ Bits 3-7:     Reserved (must be 0)
 
 Message type identifier. Values 0-9 are defined.
 
-| Value | Name     | Description              |
-|:------|:---------|:-------------------------|
-| 0     | BEACON   | Peer discovery broadcast |
-| 1     | CHAT     | Broadcast chat message   |
-| 2     | DIRECT   | Point-to-point message   |
-| 3     | ACK      | Acknowledgment           |
-| 4     | GROUP    | Group-scoped broadcast   |
-| 5     | PRESENCE | Status announcement      |
-| 6     | TYPING   | Typing indicator         |
-| 7     | ROUTE_REQUEST | Route discovery flood |
-| 8     | ROUTE_REPLY   | Route discovery reply |
-| 9     | ROUTE_ERROR   | Broken next-hop announcement |
+| Value   | Name          | Description                  |
+| ------- | ------------- | ---------------------------- |
+| 0       | BEACON        | Peer discovery broadcast     |
+| 1       | CHAT          | Broadcast chat message       |
+| 2       | DIRECT        | Point-to-point message       |
+| 3       | ACK           | Acknowledgment               |
+| 4       | GROUP         | Group-scoped broadcast       |
+| 5       | PRESENCE      | Status announcement          |
+| 6       | TYPING        | Typing indicator             |
+| 7       | ROUTE_REQUEST | Route discovery flood        |
+| 8       | ROUTE_REPLY   | Route discovery reply        |
+| 9       | ROUTE_ERROR   | Broken next-hop announcement |
 
 ### `group_id` (1 byte)
 
@@ -76,7 +76,7 @@ Unsigned integer 0-255. Value 0 means no group filter.
 
 ### `hop_limit` (1 byte)
 
-Maximum hops for this frame. Set at the origin to `DEFAULT_ROUTE_TTL` (3) and never modified by relays. The frame is dropped once `hop_count` reaches `hop_limit`, so each hop in the limit adds at most one relay.
+Maximum hops for this frame. Set at the origin to `DEFAULT_ROUTE_TTL` (3) and never modified by relays. The frame is dropped once `hop_count` reaches `hop_limit`, so a limit of N permits at most N-1 relays.
 
 ### `hop_count` (1 byte)
 
@@ -84,11 +84,11 @@ Hops already travelled. The origin sends `0` and each relay increments it. Dropp
 
 ### `message_id` (4 bytes)
 
-Monotonically increasing `uint32_t`. Assigned by the sender, seeded from `esp_random()` on first use. Used for duplicate detection and ACK matching.
+A monotonically increasing `uint32_t`. Assigned by the sender, seeded from `esp_random()` on first use. Used for duplicate detection and ACK matching.
 
 ### `reply_to` (4 bytes)
 
-For `ACK` frames, the `message_id` of the message being acknowledged. For all other frame types this is `0`. Allowing each ACK to carry its own `message_id` (rather than reusing the acked message's id) lets ACKs participate in seen-message dedup, so routed ACKs are not re-flooded by every relay.
+For `ACK` frames, the `message_id` of the message being acknowledged. For all other frame types this is `0`. Giving each ACK its own `message_id` (instead of reusing the acked message's id) lets ACKs participate in seen-message dedup, so routed ACKs are not re-flooded by every relay.
 
 ### `sender_mac` / `target_mac` (6 bytes each)
 
@@ -131,7 +131,7 @@ The 12-byte nonce is built from:
 - `sender_mac` (6 bytes)
 - a fixed `0x00 0x00` pad (2 bytes)
 
-This ensures each message has a unique nonce as long as message IDs are unique per sender; the fixed pad is a domain separator and the sender MAC disambiguates nodes sharing a network key.
+This gives each message a unique nonce as long as message IDs are unique per sender. The fixed pad is a domain separator, and the sender MAC disambiguates nodes that share a network key.
 
 ### Auth Tag
 
@@ -153,16 +153,16 @@ Total AAD: 18 bytes.
 
 The payload carries only the message data, so total frame size is the 32-byte header plus a small typed map plus the message text.
 
-| Message       | Legacy (fixed 152B) | New | Savings |
-|:--------------|:--------------------|:----|:--------|
-| ACK           | 152 bytes           | 41 bytes   | 73% |
-| Typing        | 152 bytes           | 47 bytes   | 69% |
-| Short "ok"    | 152 bytes           | 43 bytes   | 72% |
-| 100-char chat | 152 bytes           | 142 bytes  | 7% |
-| Full 128B     | 152 bytes           | 170 bytes (198 encrypted) | -12% |
+| Message         | Legacy (fixed 152B)   | New                       | Savings   |
+| --------------- | --------------------- | ------------------------- | --------- |
+| ACK             | 152 bytes             | 41 bytes                  | 73%       |
+| Typing          | 152 bytes             | 47 bytes                  | 69%       |
+| Short "ok"      | 152 bytes             | 43 bytes                  | 72%       |
+| 100-char chat   | 152 bytes             | 142 bytes                 | 7%        |
+| Full 128B       | 152 bytes             | 170 bytes (198 encrypted) | -12%      |
 
 ::: callout info title:"ESP-NOW Compatibility"
-ESP-NOW supports frames up to 250 bytes. A max-length 128-char message encodes to 170 bytes unencrypted and 198 bytes encrypted, both comfortably within the cap.
+ESP-NOW supports frames up to 250 bytes. A max-length 128-char message encodes to 170 bytes unencrypted and 198 bytes encrypted, both comfortably inside the cap.
 ::: /callout
 
 ## Next Steps

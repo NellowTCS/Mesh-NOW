@@ -3,7 +3,7 @@ title: "State Machine"
 description: "Node lifecycle, message states, and peer states with Mermaid diagrams."
 ---
 
-Mesh-NOW's behavior can be modeled as a set of interacting state machines.
+Mesh-NOW's behavior is easiest to model as a set of interacting state machines.
 
 ## Node Lifecycle
 
@@ -20,13 +20,13 @@ stateDiagram-v2
 
 ### States
 
-| State | Description |
-| :---- | :---------- |
-| **Off** | No mesh activity. ESP-NOW not initialized. |
-| **Initializing** | `mesh_now_init()` executing. Registering callbacks, adding broadcast peer, creating tasks. |
-| **Running** | Normal operation. Beacon task broadcasting, retransmit task polling, receive callback registered. |
-| **Error** | Initialization failed (ESP-NOW init, callback registration, or task creation). |
-| **Deinitializing** | `mesh_now_deinit()` executing. Deleting tasks, removing peers, unregistering callbacks. |
+| State              | Description                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| **Off**            | No mesh activity. ESP-NOW not initialized.                                                        |
+| **Initializing**   | `mesh_now_init()` executing. Registering callbacks, adding broadcast peer, creating tasks.        |
+| **Running**        | Normal operation. Beacon task broadcasting, retransmit task polling, receive callback registered. |
+| **Error**          | Initialization failed (ESP-NOW init, callback registration, or task creation).                    |
+| **Deinitializing** | `mesh_now_deinit()` executing. Deleting tasks, clearing peers, unregistering callbacks.           |
 
 ## Message State Machine
 
@@ -52,7 +52,6 @@ stateDiagram-v2
     Retransmitting --> Pending: retry < 3, resend
     Retransmitting --> Dropped: retry >= 3
     Pending --> Cleared: ACK received
-    Pending --> Cleared: ACK received via relay
     Cleared --> [*]
     Dropped --> [*]
 ```
@@ -84,12 +83,12 @@ stateDiagram-v2
 
 ### Peer Lifecycle
 
-| Transition | Trigger | Action |
-| :--------- | :------ | :----- |
-| Unknown -> Discovered | Beacon or message received from MAC | `mesh_now_add_peer()` called |
-| Discovered -> Active | MAC not in peer table, not self, not duplicate | Added to ESP-NOW subsystem and local table |
-| Active -> Removed | `mesh_now_remove_peer()` called | Removed from ESP-NOW subsystem and local table |
-| Active -> Lost | Node reboots | Peer table cleared on boot |
+| Transition            | Trigger                                        | Action                                         |
+| --------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| Unknown -> Discovered | Beacon or message received from MAC            | `mesh_now_add_peer()` called                   |
+| Discovered -> Active  | MAC not in peer table, not self, not duplicate | Added to ESP-NOW subsystem and local table     |
+| Active -> Removed     | `mesh_now_remove_peer()` called                | Removed from ESP-NOW subsystem and local table |
+| Active -> Lost        | Node reboots                                   | Peer table cleared on boot                     |
 
 ## Message Processing Flow
 
@@ -123,12 +122,12 @@ flowchart TB
 
 ## Timing Constants
 
-| Event | Interval | State Impact |
-| :---- | :------- | :----------- |
-| Beacon broadcast | Every 5000ms | Triggers peer discovery at receivers |
-| Retransmit poll | Every 500ms | Checks pending messages for timeout |
-| Retransmit timeout | 2000ms | Moves pending message to retransmit state |
-| Max retries | 3 | Drops message after 3 failed retransmits |
+| Event              | Interval     | State Impact                              |
+| ------------------ | ------------ | ----------------------------------------- |
+| Beacon broadcast   | Every 5000ms | Triggers peer discovery at receivers      |
+| Retransmit poll    | Every 500ms  | Checks pending messages for timeout       |
+| Retransmit timeout | 2000ms       | Moves pending message to retransmit state |
+| Max retries        | 3            | Drops message after 3 failed retransmits  |
 
 ## Next Steps
 

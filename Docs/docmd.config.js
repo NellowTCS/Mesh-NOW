@@ -89,6 +89,7 @@ export default {
         { title: "Routing", path: "/guide/routing", icon: "radio" },
         { title: "Groups", path: "/guide/groups", icon: "users" },
         { title: "Encryption", path: "/guide/encryption", icon: "lock" },
+        { title: "Security", path: "/guide/security", icon: "shield" },
         { title: "Reliability", path: "/guide/reliability", icon: "refresh-cw" },
         { title: "Configuration", path: "/guide/configuration", icon: "settings" },
       ],

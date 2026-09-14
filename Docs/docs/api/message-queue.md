@@ -3,7 +3,7 @@ title: "Message Queue"
 description: "FreeRTOS-based message queue for received messages."
 ---
 
-The message queue provides a thread-safe buffer for received messages when no custom callback is set.
+The message queue is a thread-safe buffer for received messages when no custom callback is set.
 
 ## Overview
 
@@ -56,11 +56,11 @@ Enqueue a received message. Called internally by the receive handler.
 esp_err_t message_queue_send(const message_t *msg);
 ```
 
-| Parameter | Type | Description |
-| :-------- | :--- | :---------- |
-| `msg` | `const message_t*` | Message to enqueue |
+| Parameter | Type               | Description        |
+| --------- | ------------------ | ------------------ |
+| `msg`     | `const message_t*` | Message to enqueue |
 
-**Returns:** `ESP_OK` on success, `ESP_FAIL` if queue is full or not initialized.
+**Returns:** `ESP_OK` on success, `ESP_FAIL` if the queue is full or not initialized.
 
 ### `message_queue_receive`
 
@@ -70,10 +70,10 @@ Dequeue a message. Blocks for up to `timeout` ticks.
 esp_err_t message_queue_receive(message_t *msg, TickType_t timeout);
 ```
 
-| Parameter | Type | Description |
-| :-------- | :--- | :---------- |
-| `msg` | `message_t*` | Output buffer for the received message |
-| `timeout` | `TickType_t` | Maximum wait time in FreeRTOS ticks |
+| Parameter | Type         | Description                            |
+| --------- | ------------ | -------------------------------------- |
+| `msg`     | `message_t*` | Output buffer for the received message |
+| `timeout` | `TickType_t` | Maximum wait time in FreeRTOS ticks    |
 
 **Returns:** `ESP_OK` if a message was received, `ESP_FAIL` on timeout or error.
 
@@ -93,7 +93,7 @@ typedef struct {
 ```
 
 ::: callout info title:"Buffer Size"
-The `message` field in `message_t` is 256 bytes, larger than the 128-byte payload in `mesh_message_t`. This provides headroom for future expansion.
+The `message` field in `message_t` is 256 bytes, twice the 128-byte payload in `mesh_message_t`. The headroom means your consumer never re-sizes as payload limits grow.
 ::: /callout
 
 ## Usage Example
@@ -108,7 +108,7 @@ void app_main(void)
     message_queue_init();
     mesh_now_init();
 
-    // No callback set -- messages go to the queue
+    // No callback set: messages land in the queue
 
     message_t msg;
     while (1) {
@@ -122,23 +122,25 @@ void app_main(void)
 }
 ```
 
+Of note: `message_queue_init()` is also called inside `mesh_now_init()`, so the explicit call above is only there to make the flow obvious.
+
 ## Queue Parameters
 
-| Parameter | Value |
-| :-------- | :---- |
-| Queue capacity | 50 messages |
-| Message size | `sizeof(message_t)` (~272 bytes) |
-| Total queue RAM | ~13 KB |
+| Parameter       | Value                            |
+| --------------- | -------------------------------- |
+| Queue capacity  | 50 messages                      |
+| Message size    | `sizeof(message_t)` (276 bytes)  |
+| Total queue RAM | ~13.8 KB                         |
 
 ## Callback vs. Queue
 
-| Approach | Use When |
-| :------- | :------- |
-| Custom callback | You need real-time processing, low latency |
-| Message queue | You want simple polling, thread-safe consumption |
+| Approach        | Use When                                         |
+| --------------- | ------------------------------------------------ |
+| Custom callback | You need real-time processing, low latency       |
+| Message queue   | You want simple polling, thread-safe consumption |
 
 ::: callout warning title:"Not Both"
-If you set a receive callback, messages are delivered directly to it and **not** enqueued. To use the queue, do not set a callback.
+If you set a receive callback, messages go directly to it and are not enqueued. To use the queue, do not set a callback.
 ::: /callout
 
 ## Next Steps

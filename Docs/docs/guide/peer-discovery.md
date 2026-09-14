@@ -3,11 +3,11 @@ title: "Peer Discovery"
 description: "How nodes find each other using beacons and maintain the peer table."
 ---
 
-Mesh-NOW uses periodic beacon broadcasts for automatic peer discovery. No manual peer configuration is required.
+Mesh-NOW discovers peers through periodic beacon broadcasts. No manual peer configuration is needed.
 
 ## Beacon Mechanism
 
-Every node runs a `beacon_task` that broadcasts a `MSG_TYPE_BEACON` message every 5 seconds. Each beacon carries the sender's node name plus a zone announce: up to `CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS` of the sender's one-hop peers, so two-hop nodes learn virtual-peer routes proactively. The announce is trimmed to the densest set that fits the 250-byte ESP-NOW frame cap (shortest names first), so a full neighbor set never overflows a frame.
+Every node runs a `beacon_task` that broadcasts a `MSG_TYPE_BEACON` every 5 seconds by default (`CONFIG_MESH_NOW_BEACON_INTERVAL_MS`). Each beacon carries the sender's node name plus a zone announce: up to `CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS` of the sender's one-hop peers. That lets two-hop nodes learn routes to those peers proactively. The announce is trimmed to the densest set that fits the 250-byte ESP-NOW frame cap (shortest names first), so a full neighbor set never overflows a frame.
 
 ```c
 // Simplified beacon construction
@@ -54,7 +54,7 @@ mesh_now_remove_peer(const uint8_t *mac);
 // Get current peer count
 int mesh_now_get_peer_count(void);
 
-// Get pointer to peer table (not thread-safe, internal state)
+// Get pointer to peer table (internal state, not thread-safe)
 mesh_peer_t* mesh_now_get_peers(void);
 
 // Thread-safe copy of the peer table
@@ -62,7 +62,7 @@ int mesh_now_snapshot_peers(mesh_peer_t *out, size_t max_out);
 ```
 
 ::: callout warning title:"Self-Exclusion"
-`mesh_now_add_peer()` automatically ignores your own MAC address. You cannot accidentally add yourself as a peer.
+`mesh_now_add_peer()` ignores your own MAC address. You cannot add yourself as a peer.
 ::: /callout
 
 ## Discovery Flow
@@ -82,7 +82,7 @@ sequenceDiagram
 
 ## Peer Expiration
 
-Each peer records `last_seen` (monotonic us) whenever it is contacted. The `beacon_task` periodically expels peers that have not been seen within `PEER_EXPIRY_US` (default 30 seconds, configurable via the `MESH_NOW_PEER_EXPIRY_SEC` Kconfig option). Expired peers are removed from the active table, and the table compacts so `peer_count` reflects only active peers.
+Each peer records `last_seen` (monotonic us) whenever it is contacted. The `beacon_task` periodically expels peers that have not been seen within `PEER_EXPIRY_US` (default 30 seconds, set by `CONFIG_MESH_NOW_PEER_EXPIRY_SEC`). Expired peers are removed from the active table, and the table compacts so `peer_count` reflects only active entries.
 
 ```c
 // Expired when no beacon/message received within the window:
@@ -90,22 +90,22 @@ Each peer records `last_seen` (monotonic us) whenever it is contacted. The `beac
 ```
 
 ::: callout info title:"Expiry vs. Removal"
-Expiry drops a peer from the active table, compacts it out, and calls `esp_now_del_peer()` to free the ESP-NOW registration slot. If the same node contacts the mesh again, `mesh_now_add_peer()` reactivates the entry (re-registering it) and refreshes `last_seen`. Because expired entries are compacted out, `mesh_now_get_peer_count()` and `mesh_now_snapshot_peers()` report only online-tracking entries and the table cannot be starved by dead peers.
+Expiry drops a peer from the active table, compacts it out, and calls `esp_now_del_peer()` to free the ESP-NOW registration slot. If the same node contacts the mesh again, `mesh_now_add_peer()` reactivates the entry (re-registering it) and refreshes `last_seen`. Because expired entries are compacted out, `mesh_now_get_peer_count()` and `mesh_now_snapshot_peers()` report only online-tracked entries, and dead peers can never starve the table.
 ::: /callout
 
 ## Peer Events
 
 Peers are also discovered (and added) when receiving any of these message types:
 
-| Message Type | Peer Added? |
-| :----------- | :---------- |
-| `MSG_TYPE_BEACON` | Yes |
-| `MSG_TYPE_CHAT` | Yes |
-| `MSG_TYPE_DIRECT` | Yes (target only) |
-| `MSG_TYPE_GROUP` | Yes |
-| `MSG_TYPE_PRESENCE` | Yes |
-| `MSG_TYPE_TYPING` | No (routed, not added) |
-| `MSG_TYPE_ACK` | No |
+| Message Type        | Peer Added?            |
+| ------------------- | ---------------------- |
+| `MSG_TYPE_BEACON`   | Yes                    |
+| `MSG_TYPE_CHAT`     | Yes                    |
+| `MSG_TYPE_DIRECT`   | Yes (target only)      |
+| `MSG_TYPE_GROUP`    | Yes                    |
+| `MSG_TYPE_PRESENCE` | Yes                    |
+| `MSG_TYPE_TYPING`   | No (routed, not added) |
+| `MSG_TYPE_ACK`      | No                     |
 
 ## Next Steps
 
