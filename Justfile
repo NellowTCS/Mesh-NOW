@@ -13,6 +13,9 @@ build *args:
 build-all *args:
     python3 {{ scripts }}/build_all.py {{ args }}
 
+bump *args:
+    python3 {{ scripts }}/bump_version.py {{ args }}
+
 flash *args:
     cd Firmware && idf.py flash {{ args }}
 

@@ -3,7 +3,7 @@ title: "Installation"
 description: "Set up ESP-IDF and integrate the Mesh-NOW library into your project."
 ---
 
-Four ways to use Mesh-NOW: as an ESP-IDF component (via the component manager or `EXTRA_COMPONENT_DIRS`), as a PlatformIO or Arduino library, or by copying the source directly.
+Three ways to use Mesh-NOW: as an ESP-IDF component (via the component manager or `EXTRA_COMPONENT_DIRS`), as a PlatformIO library, or by copying the source directly.
 
 ::: tabs
 
@@ -45,17 +45,7 @@ lib_deps =
     https://github.com/NellowTCS/Mesh-NOW.git
 ```
 
-The repository root carries a `library.json` manifest that matches the ESP-IDF and Arduino frameworks.
-
-::: /tab
-
-::: tab "Arduino"
-
-The root `library.properties` registers `mesh_now` with the Arduino ecosystem:
-
-```bash
-arduino-cli lib install --git-url https://github.com/NellowTCS/Mesh-NOW.git
-```
+The repository root carries a `library.json` manifest that matches the ESP-IDF and Arduino frameworks; the Arduino framework is used through PlatformIO or Git Submodule rather than the Arduino Library Manager (see the [README](https://github.com/NellowTCS/Mesh-NOW#arduino)).
 
 ::: /tab
 

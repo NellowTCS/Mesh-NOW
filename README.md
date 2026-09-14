@@ -46,7 +46,23 @@ void app_main(void) {
 
 ### ESP-IDF Component
 
-The recommended way is the ESP-IDF component manager. Add this to your project's `idf_component.yml`:
+The recommended way is the ESP-IDF component manager. Mesh-NOW is published to
+the [ESP Component Registry](https://components.espressif.com) as
+`nellowtcs/mesh_now`. Add this to your project's `idf_component.yml`:
+
+```yaml
+dependencies:
+  nellowtcs/mesh_now: "^1.0.0"
+```
+
+Or install it with the CLI:
+
+```bash
+idf.py add-dependency "nellowtcs/mesh_now"
+```
+
+For local development you can also point the component manager at this
+repository:
 
 ```yaml
 dependencies:
@@ -74,16 +90,17 @@ cp -r /path/to/Mesh-NOW/Build your-project/components/mesh_now
 
 ### PlatformIO
 
-The root [library.json](/library.json) describes the library (`mesh_now`, ESP-IDF and Arduino frameworks):
+The root [library.json](/library.json) describes the library (`mesh_now`, ESP-IDF and Arduino frameworks). It is published to the [PlatformIO Registry](https://registry.platformio.org) as `NellowTCS/Mesh-NOW`:
 
 ```ini
-lib_deps =
-    https://github.com/NellowTCS/Mesh-NOW.git
+lib_deps = NellowTCS/Mesh-NOW
 ```
 
 ### Arduino
 
-The root [library.properties](/library.properties) registers `mesh_now` with the Arduino Library Manager.
+The [Arduino Library Manager](https://www.arduino.cc/reference/en/libraries/) is not supported. The library ships as an ESP-IDF component under `Build/`, and `arduino-lint` requires a root `src/` folder plus a top-level `mesh_now.h` for Library Manager submission, which is incompatible with that layout.
+
+To use `mesh_now` from the Arduino ecosystem, build it through [PlatformIO](#platformio): the [library.json](/library.json) manifest declares the Arduino framework, so any `esp32` PlatformIO board project can just add `lib_deps = NellowTCS/Mesh-NOW`. A [library.properties](/library.properties) metadata file is kept at the root for tools that read it, but it is not registered with the Library Manager. You *can* still use it via git submodule or something, but it's not as easy as I would have liked :/
 
 ### Requirements
 
@@ -105,7 +122,7 @@ Mesh-NOW/
 ├── scripts/                 # Python + shell drivers
 ├── mesh_now.ksy             # Wire-format spec (Kaitai)
 ├── library.json             # PlatformIO library manifest
-├── library.properties       # Arduino library manifest
+├── library.properties       # Arduino metadata (not on Library Manager)
 └── LICENSE                  # MIT
 ```
 

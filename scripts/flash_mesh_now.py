@@ -113,7 +113,9 @@ def flash_target(target_name, target_path, port):
 def main():
     parser = argparse.ArgumentParser(description="Universal Mesh-NOW flash tool")
     parser.add_argument("firmware_dir", nargs="?", help="Path to firmware directory")
-    parser.add_argument("--port", default=None, help="Serial port (auto-detected if omitted)")
+    parser.add_argument(
+        "--port", default=None, help="Serial port (auto-detected if omitted)"
+    )
     args = parser.parse_args()
 
     firmware_dirs = find_firmware_dirs(args.firmware_dir)
@@ -136,7 +138,10 @@ def main():
         target_name, target_path = list(firmware_dirs.items())[0]
         print(f"Using only available target: {target_name}")
     else:
-        print("Multiple targets found. Specify the firmware directory explicitly.", file=sys.stderr)
+        print(
+            "Multiple targets found. Specify the firmware directory explicitly.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     port = args.port or select_port()

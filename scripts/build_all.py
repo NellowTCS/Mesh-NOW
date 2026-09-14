@@ -87,7 +87,9 @@ def build_target(target):
 
 def main():
     parser = argparse.ArgumentParser(description="Mesh-NOW Multi-Target Build Script")
-    parser.add_argument("--targets", nargs="*", help="Build specific targets (default: all)")
+    parser.add_argument(
+        "--targets", nargs="*", help="Build specific targets (default: all)"
+    )
     args = parser.parse_args()
 
     check_idf_setup()
@@ -135,7 +137,9 @@ def main():
 
     if failed_builds:
         print()
-        print("Some builds failed. Check the output above for details.", file=sys.stderr)
+        print(
+            "Some builds failed. Check the output above for details.", file=sys.stderr
+        )
         sys.exit(1)
 
     print()

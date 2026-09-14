@@ -1,8 +1,7 @@
 # TODO
 
 - [ ] OMG WEBFLASHER
-- [X] Document encryption threat model - beacons/ACKs are deliberately unencrypted; state what this protects against and what it does not
-- [ ] Publish to ESP Component Registry, PlatformIO Registry, Arduino Library Manager
+- [ ] Publish to ESP Component Registry, PlatformIO Registry
 
 ## Future
 
