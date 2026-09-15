@@ -7,8 +7,9 @@
 #include <driver/usb_serial_jtag.h>
 #else
 #include <driver/uart.h>
-#include <driver/gpio.h>
+#include <soc/gpio_num.h>
 #endif
+#include <esp_idf_version.h>
 #include <esp_log.h>
 #include <esp_mac.h>
 #include <esp_timer.h>
@@ -63,7 +64,12 @@ static esp_err_t serial_io_init(void)
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
         .source_clk = UART_SCLK_DEFAULT,
+#else
+        // UART_SCLK_DEFAULT was introduced in ESP-IDF 5.0
+        .source_clk = UART_SCLK_APB,
+#endif
     };
     esp_err_t err =
         uart_driver_install(SERIAL_UART, RX_BUF_SIZE, RX_BUF_SIZE, 0, NULL, 0);
