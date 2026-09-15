@@ -1,9 +1,9 @@
 {
   "name": "Mesh-NOW",
-  "version": "dev-20260915-190623",
+  "version": "dev-20260915-200339",
   "builds": [
     {
-      "chipFamily": "ESP32-C6",
+      "chipFamily": "ESP32-S2",
       "parts": [
         {
           "path": "bootloader.bin",
