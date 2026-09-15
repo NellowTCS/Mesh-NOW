@@ -7,7 +7,7 @@ path: /api/message-queue/
 updated: 2026-09-15
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-15T21:31:17.358Z"
+  generated_at: "2026-09-15T21:34:56.409Z"
 ---
 ---
 title: "Message Queue"
