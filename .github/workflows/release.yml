@@ -116,7 +116,7 @@ jobs:
 
     steps:
       - name: Download release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: mesh-now-release-${{ needs.build-release.outputs.version }}
           path: release/
