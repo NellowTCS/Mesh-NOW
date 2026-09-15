@@ -4,10 +4,17 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Validate packaging and registry checks without publishing anything'
+        type: boolean
+        default: false
 
 jobs:
   guard:
     name: Verify tag matches manifests
+    if: github.event_name == 'push'
     environment: release
     runs-on: ubuntu-latest
     steps:
@@ -23,6 +30,7 @@ jobs:
 
   esp-registry:
     name: Publish to ESP Component Registry
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.guard.result == 'success') }}
     environment: release
     needs: guard
     runs-on: ubuntu-latest
@@ -40,9 +48,11 @@ jobs:
         with:
           namespace: nellowtcs
           components: mesh_now:Build
+          dry_run: ${{ inputs.dry_run || false }}
 
   platformio:
     name: Publish to PlatformIO Registry
+    if: ${{ !cancelled() && (github.event_name == 'workflow_dispatch' || needs.guard.result == 'success') }}
     environment: release
     needs: guard
     runs-on: ubuntu-latest
@@ -61,4 +71,9 @@ jobs:
         run: pip install --upgrade platformio
 
       - name: Publish library
+        if: ${{ !(inputs.dry_run || false) }}
         run: pio pkg publish --no-notify --no-interactive
+
+      - name: Dry run package
+        if: ${{ inputs.dry_run || false }}
+        run: pio pkg pack --output .
