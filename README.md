@@ -1,5 +1,7 @@
 # Mesh-NOW
 
+[![Component Registry](https://components.espressif.com/components/nellowtcs/mesh_now/badge.svg)](https://components.espressif.com/components/nellowtcs/mesh_now)
+
 > Lightweight mesh networking protocol for ESP32 using ESP-NOW.
 
 Mesh-NOW is a protocol and library that turns any ESP32 into a mesh networking node. Device-to-device communication over ESP-NOW with automatic peer discovery, multi-hop routing, message queuing, and optional payload encryption.
