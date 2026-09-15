@@ -151,23 +151,6 @@ npm install
 npm run dev
 ```
 
-Or read the source markdown directly in `Docs/docs/`.
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│              Application Layer              │
-│         (your code, callbacks, UI)          │
-├─────────────────────────────────────────────┤
-│           Mesh-NOW Library (C)              │
-│  Peer Mgmt │ Routing │ Reliability │ Queue  │
-├─────────────────────────────────────────────┤
-│              ESP-NOW Transport              │
-│        (Espressif device-to-device)         │
-└─────────────────────────────────────────────┘
-```
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) file.
