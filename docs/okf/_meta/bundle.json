@@ -1,0 +1,183 @@
+{
+  "okf_version": "0.9.5",
+  "bundle": {
+    "name": "mesh-now",
+    "title": "Mesh-NOW",
+    "description": "",
+    "url": "https://NellowTCS.github.io/Mesh-NOW",
+    "generated_by": "@docmd/plugin-okf",
+    "generated_at": "2026-09-15T06:04:46.655Z",
+    "default_type": "concept"
+  },
+  "stats": {
+    "concepts": 16,
+    "by_type": {
+      "api": 2,
+      "concept": 14
+    },
+    "locales": [],
+    "versions": []
+  },
+  "concepts": [
+    {
+      "id": "api",
+      "type": "api",
+      "title": "Mesh NOW API",
+      "path": "/api/",
+      "file": "concepts/api.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "api-message-queue",
+      "type": "api",
+      "title": "Message Queue",
+      "path": "/api/message-queue/",
+      "file": "concepts/api-message-queue.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "getting-started-concepts",
+      "type": "concept",
+      "title": "Core Concepts",
+      "path": "/getting-started/concepts/",
+      "file": "concepts/getting-started-concepts.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "getting-started-installation",
+      "type": "concept",
+      "title": "Installation",
+      "path": "/getting-started/installation/",
+      "file": "concepts/getting-started-installation.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "getting-started-quickstart",
+      "type": "concept",
+      "title": "Quick Start",
+      "path": "/getting-started/quickstart/",
+      "file": "concepts/getting-started-quickstart.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "guide-configuration",
+      "type": "concept",
+      "title": "Configuration",
+      "path": "/guide/configuration/",
+      "file": "concepts/guide-configuration.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "guide-encryption",
+      "type": "concept",
+      "title": "Encryption",
+      "path": "/guide/encryption/",
+      "file": "concepts/guide-encryption.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "guide-groups",
+      "type": "concept",
+      "title": "Groups",
+      "path": "/guide/groups/",
+      "file": "concepts/guide-groups.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "guide-message-format",
+      "type": "concept",
+      "title": "Message Format",
+      "path": "/guide/message-format/",
+      "file": "concepts/guide-message-format.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "guide-peer-discovery",
+      "type": "concept",
+      "title": "Peer Discovery",
+      "path": "/guide/peer-discovery/",
+      "file": "concepts/guide-peer-discovery.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "guide-reliability",
+      "type": "concept",
+      "title": "Reliability",
+      "path": "/guide/reliability/",
+      "file": "concepts/guide-reliability.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "guide-routing",
+      "type": "concept",
+      "title": "Routing",
+      "path": "/guide/routing/",
+      "file": "concepts/guide-routing.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "guide-security",
+      "type": "concept",
+      "title": "Security",
+      "path": "/guide/security/",
+      "file": "concepts/guide-security.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "root",
+      "type": "concept",
+      "title": "Mesh-NOW",
+      "path": "/",
+      "file": "concepts/root.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "protocol-state-machine",
+      "type": "concept",
+      "title": "State Machine",
+      "path": "/protocol/state-machine/",
+      "file": "concepts/protocol-state-machine.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    },
+    {
+      "id": "protocol-wire-format",
+      "type": "concept",
+      "title": "Wire Format",
+      "path": "/protocol/wire-format/",
+      "file": "concepts/protocol-wire-format.md",
+      "locale": "",
+      "version": "",
+      "tags": []
+    }
+  ]
+}

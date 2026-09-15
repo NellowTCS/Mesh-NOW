@@ -1,0 +1,2423 @@
+<!--
+  ---------------------------------------------------------------
+  docmd : the zero-config documentation engine.
+  @website https://docmd.io
+  [docmd-source] - Please do not remove this header.
+  ---------------------------------------------------------------
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="generator" content="docmd v0.9.5">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script>
+      var root = "../";
+      if (root && !root.endsWith('/')) root += '/';
+      if (root === '') root = './';
+      window.DOCMD_ROOT = root;
+
+      window.DOCMD_SITE_ROOT = "/Mesh-NOW/";
+
+      window.DOCMD_APPEARANCE = "system";
+      window.DOCMD_VERSION_ROOT = "/";
+      window.DOCMD_BASE = "/Mesh-NOW/";
+      window.DOCMD_LOCALE = "";
+      window.DOCMD_DEFAULT_LOCALE = "";
+    </script>
+    <script>/**
+ * --------------------------------------------------------------------
+ * docmd : the zero-config documentation engine.
+ *
+ * @package     @docmd/core (and ecosystem)
+ * @website     https://docmd.io
+ * @repository  https://github.com/docmd-io/docmd
+ * @license     MIT
+ * @copyright   Copyright (c) 2025-present docmd.io
+ *
+ * [docmd-source] - Please do not remove this header.
+ * --------------------------------------------------------------------
+ */
+
+(function () {
+  try {
+    // 1. Determine Theme
+    //
+    // Resolve from three sources, in priority order:
+    //   1. localStorage explicit user choice (light / dark)
+    //   2. window.DOCMD_APPEARANCE  (current canonical name, set by EJS templates)
+    //   3. window.DOCMD_DEFAULT_MODE (legacy alias kept for pre-0.8.7 outputs)
+    //   4. 'light' as the final fallback
+    //
+    // Note: localStorage is only honoured when it holds an explicit
+    // 'light' or 'dark' value. A stored 'system' value (from a prior
+    // session where the user picked "follow system") must NOT win over
+    // a freshly resolved config value — the resolved value will itself
+    // be 'system' in that case and the OS preference check below takes
+    // over, so this is a no-op for the in-session behaviour but keeps
+    // any future storage migration simple.
+    var localValue = localStorage.getItem('docmd-theme');
+    var configValue = window.DOCMD_APPEARANCE
+      || window.DOCMD_DEFAULT_MODE
+      || 'light';
+    var theme = (localValue === 'light' || localValue === 'dark')
+      ? localValue
+      : configValue;
+
+    if (theme === 'system') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    // 2. Apply to Root
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // 3. Highlight.js Toggle Strategy
+    var lightLink = document.getElementById('hljs-light');
+    var darkLink = document.getElementById('hljs-dark');
+
+    if (lightLink && darkLink) {
+      if (theme === 'dark') {
+        lightLink.disabled = true;
+        darkLink.disabled = false;
+      } else {
+        lightLink.disabled = false;
+        darkLink.disabled = true;
+      }
+    }
+
+    document.documentElement.style.visibility = "visible";
+  } catch (e) {
+    document.documentElement.style.visibility = "visible";
+    console.error('Theme init failed', e);
+  }
+})();</script>
+    <style>
+      html {
+        visibility: hidden;
+      }
+    </style>
+    <title>
+      Mesh NOW API : Mesh-NOW
+    </title>
+    
+    
+
+    <link id="site-favicon" rel="icon" href="../assets/favicon.ico?v=mu29oi7h">
+    <link rel="stylesheet" href="../assets/css/docmd-main.css?v=mu29oi7h">
+    
+    <link rel="stylesheet" href="../assets/css/docmd-highlight-light.css?v=mu29oi7h" id="hljs-light" >
+    <link rel="stylesheet" href="../assets/css/docmd-highlight-dark.css?v=mu29oi7h" id="hljs-dark" disabled>
+    
+    
+<meta name="description" content="Complete C API reference for the mesh_now library.">
+<link rel="canonical" href="https://NellowTCS.github.io/Mesh-NOW/api/">
+<meta property="og:title" content="Mesh NOW API - Mesh-NOW">
+<meta property="og:description" content="Complete C API reference for the mesh_now library.">
+<meta property="og:url" content="https://NellowTCS.github.io/Mesh-NOW/api/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mesh NOW API - Mesh-NOW">
+<meta name="twitter:description" content="Complete C API reference for the mesh_now library.">
+
+
+
+
+<link rel="stylesheet" href="../assets/css/docmd-theme-ruby.css?v=mu29oi7h" >
+<link rel="stylesheet" href="../assets/css/docmd-git.css?v=mu29oi7h" >
+<link rel="stylesheet" href="../assets/css/docmd-openapi.css?v=mu29oi7h" >
+<link rel="stylesheet" href="../assets/css/docmd-ai.css?v=mu29oi7h" >
+
+    
+    
+  </head>
+  <body
+    class="sidebar-collapsible"
+    data-default-collapsed="false"
+    data-copy-code-enabled="true" data-spa-enabled="true" data-source-file="docs/api/index.md">
+
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    
+    
+
+    
+    
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          
+<h1><a href="../">
+                Mesh-NOW
+              </a></h1>
+          
+          <span class="mobile-view sidebar-menu-button float-right">
+            
+<svg class="lucide-icon icon-menu " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-menu"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M4 5h16" />
+  <path d="M4 12h16" />
+  <path d="M4 19h16" />
+</svg>
+
+          </span>
+        </div>
+        <div class="sidebar-top-group">
+          
+          
+          
+          
+        </div>
+        
+
+<nav class="sidebar-nav" aria-label="Main Navigation">
+  <ul>
+    
+      <li class="" >
+      
+        <a href="../" class=" "
+          >
+           
+<svg class="lucide-icon icon-home " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-house"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+  <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Home
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="expanded nav-group" >
+      
+        <span class="nav-label nav-group">
+           
+<svg class="lucide-icon icon-rocket " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-rocket"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09" />
+  <path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z" />
+  <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Getting Started
+          </span>
+          
+        </span>
+        
+
+        
+          <ul class="submenu">
+            
+      <li class="" >
+      
+        <a href="../getting-started/quickstart/" class=" "
+          >
+           
+<svg class="lucide-icon icon-play " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-play"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Quick Start
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../getting-started/installation/" class=" "
+          >
+           
+<svg class="lucide-icon icon-download " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-download"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 15V3" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <path d="m7 10 5 5 5-5" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Installation
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../getting-started/concepts/" class=" "
+          >
+           
+<svg class="lucide-icon icon-book " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-book"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Core Concepts
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+          </ul>
+        
+      </li>
+    
+      <li class="expanded nav-group" >
+      
+        <span class="nav-label nav-group">
+           
+<svg class="lucide-icon icon-book-open " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-book-open"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 5v16" />
+  <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Guide
+          </span>
+          
+        </span>
+        
+
+        
+          <ul class="submenu">
+            
+      <li class="" >
+      
+        <a href="../guide/message-format/" class=" "
+          >
+           
+<svg class="lucide-icon icon-file-text " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-file-text"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 9H8" />
+  <path d="M16 13H8" />
+  <path d="M16 17H8" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Message Format
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../guide/peer-discovery/" class=" "
+          >
+           
+<svg class="lucide-icon icon-search " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-search"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Peer Discovery
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../guide/routing/" class=" "
+          >
+           
+<svg class="lucide-icon icon-radio " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-radio"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M16.247 7.761a6 6 0 0 1 0 8.478" />
+  <path d="M19.075 4.933a10 10 0 0 1 0 14.134" />
+  <path d="M4.925 19.067a10 10 0 0 1 0-14.134" />
+  <path d="M7.753 16.239a6 6 0 0 1 0-8.478" />
+  <circle cx="12" cy="12" r="2" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Routing
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../guide/groups/" class=" "
+          >
+           
+<svg class="lucide-icon icon-users " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-users"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+  <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+  <circle cx="9" cy="7" r="4" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Groups
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../guide/encryption/" class=" "
+          >
+           
+<svg class="lucide-icon icon-lock " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-lock"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Encryption
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../guide/security/" class=" "
+          >
+           
+<svg class="lucide-icon icon-shield " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-shield"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Security
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../guide/reliability/" class=" "
+          >
+           
+<svg class="lucide-icon icon-refresh-cw " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-refresh-cw"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+  <path d="M21 3v5h-5" />
+  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+  <path d="M8 16H3v5" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Reliability
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../guide/configuration/" class=" "
+          >
+           
+<svg class="lucide-icon icon-settings " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-settings"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+  <circle cx="12" cy="12" r="3" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Configuration
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+          </ul>
+        
+      </li>
+    
+      <li class="active-parent expanded nav-group" >
+      
+        <span class="nav-label nav-group">
+           
+<svg class="lucide-icon icon-code " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-code"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m16 18 6-6-6-6" />
+  <path d="m8 6-6 6 6 6" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            API Reference
+          </span>
+          
+        </span>
+        
+
+        
+          <ul class="submenu">
+            
+      <li class="active" >
+      
+        <a href="../api/" class="active "
+          >
+           
+<svg class="lucide-icon icon-box " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-box"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+  <path d="m3.3 7 8.7 5 8.7-5" />
+  <path d="M12 22V12" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Mesh NOW API
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../api/message-queue/" class=" "
+          >
+           
+<svg class="lucide-icon icon-layers " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-layers"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Message Queue
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+          </ul>
+        
+      </li>
+    
+      <li class="expanded nav-group" >
+      
+        <span class="nav-label nav-group">
+           
+<svg class="lucide-icon icon-file-code " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-file-code"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 12.5 8 15l2 2.5" />
+  <path d="m14 12.5 2 2.5-2 2.5" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Protocol
+          </span>
+          
+        </span>
+        
+
+        
+          <ul class="submenu">
+            
+      <li class="" >
+      
+        <a href="../protocol/wire-format/" class=" "
+          >
+           
+<svg class="lucide-icon icon-hash " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-hash"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <line x1="4" x2="20" y1="9" y2="9" />
+  <line x1="4" x2="20" y1="15" y2="15" />
+  <line x1="10" x2="8" y1="3" y2="21" />
+  <line x1="16" x2="14" y1="3" y2="21" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Wire Format
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../protocol/state-machine/" class=" "
+          >
+           
+<svg class="lucide-icon icon-cpu " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-cpu"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 20v2" />
+  <path d="M12 2v2" />
+  <path d="M17 20v2" />
+  <path d="M17 2v2" />
+  <path d="M2 12h2" />
+  <path d="M2 17h2" />
+  <path d="M2 7h2" />
+  <path d="M20 12h2" />
+  <path d="M20 17h2" />
+  <path d="M20 7h2" />
+  <path d="M7 20v2" />
+  <path d="M7 2v2" />
+  <rect x="4" y="4" width="16" height="16" rx="2" />
+  <rect x="8" y="8" width="8" height="8" rx="1" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            State Machine
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+          </ul>
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="https://github.com/NellowTCS/Mesh-NOW" class=" "
+          target=&quot;_blank&quot; rel=&quot;noopener&quot;>
+           
+          
+          <span class="nav-item-title">
+            GitHub
+            </span>
+          
+           
+<svg class="lucide-icon icon-external-link nav-external-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-external-link"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 3h6v6" />
+  <path d="M10 14 21 3" />
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+</svg>
+
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="https://NellowTCS.github.io/Mesh-NOW/index.html" class=" "
+          target=&quot;_blank&quot; rel=&quot;noopener&quot;>
+           
+<svg class="lucide-icon icon-monitor " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-monitor"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="20" height="14" x="2" y="3" rx="2" />
+  <line x1="8" x2="16" y1="21" y2="21" />
+  <line x1="12" x2="12" y1="17" y2="21" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Demo
+            </span>
+          
+           
+<svg class="lucide-icon icon-external-link nav-external-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-external-link"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 3h6v6" />
+  <path d="M10 14 21 3" />
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+</svg>
+
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="https://NellowTCS.github.io/Mesh-NOW/flasher.html" class=" "
+          target=&quot;_blank&quot; rel=&quot;noopener&quot;>
+           
+<svg class="lucide-icon icon-download " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-download"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 15V3" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <path d="m7 10 5 5 5-5" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Web Flasher
+            </span>
+          
+           
+<svg class="lucide-icon icon-external-link nav-external-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-external-link"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 3h6v6" />
+  <path d="M10 14 21 3" />
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+</svg>
+
+          
+        </a>
+        
+
+        
+      </li>
+    
+  </ul>
+</nav>
+        <div class="sidebar-bottom-group mt-auto">
+          
+          
+          
+          
+        </div>
+      </aside>
+      
+      <div class="main-content-wrapper">
+        
+        
+        
+          <header class="page-header">
+            <div class="header-left">
+              
+                <button id="sidebar-toggle-button" class="sidebar-toggle-button"
+                  aria-label="Toggle Sidebar">
+                  
+<svg class="lucide-icon icon-chevron-left " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m15 18-6-6 6-6" />
+</svg>
+
+                </button>
+              
+              <div class="header-titles-wrapper">
+                <span class="header-title">
+                  Mesh NOW API
+                </span>
+              </div>
+            </div>
+            <div class="header-right">
+              
+                
+
+
+<div class="docmd-options-menu">
+    
+    <button class="docmd-search-trigger" aria-label="Search">
+        
+<svg class="lucide-icon icon-search " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-search"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" />
+</svg>
+
+        <span class="search-label">Search</span>
+        <span class="search-keys"><kbd class="docmd-kbd">⌘</kbd><kbd class="docmd-kbd">K</kbd></span>
+    </button>
+    
+
+    
+
+    
+
+    
+    <button class="theme-toggle-button" aria-label="Toggle theme">
+        
+<svg class="lucide-icon icon-sun icon-sun" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-sun"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="4" />
+  <path d="M12 2v2" />
+  <path d="M12 20v2" />
+  <path d="m4.93 4.93 1.41 1.41" />
+  <path d="m17.66 17.66 1.41 1.41" />
+  <path d="M2 12h2" />
+  <path d="M20 12h2" />
+  <path d="m6.34 17.66-1.41 1.41" />
+  <path d="m19.07 4.93-1.41 1.41" />
+</svg>
+ 
+<svg class="lucide-icon icon-moon icon-moon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-moon"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
+</svg>
+
+    </button>
+    
+
+    
+</div>
+
+              
+            </div>
+          </header>
+        
+        <div class="content-theme-cover">
+          <main class="content-area" id="main-content">
+            <div class="content-layout">
+              <div class="main-content">
+                <div class="docmd-breadcrumbs-row">
+                  <div id="docmd-raw-markdown" data-content="---%0Atitle%3A%20%22Mesh%20NOW%20API%22%0Adescription%3A%20%22Complete%20C%20API%20reference%20for%20the%20mesh_now%20library.%22%0A---%0A%0AFull%20API%20reference%20for%20the%20Mesh-NOW%20library.%20All%20functions%20are%20declared%20in%20%60mesh_now.h%60.%0A%0A%23%23%20Initialization%0A%0A%23%23%23%20%60mesh_now_init%60%0A%0AInitialize%20the%20ESP-NOW%20mesh%20networking%20subsystem.%20Registers%20callbacks%2C%20adds%20the%20broadcast%20peer%2C%20and%20starts%20the%20beacon%20and%20retransmit%20tasks.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_init(void)%3B%0A%60%60%60%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success%2C%20appropriate%20%60esp_err_t%60%20on%20failure.%0A%0A**Side%20effects%3A**%0A%0A-%20Initializes%20ESP-NOW%0A-%20Registers%20send%20and%20receive%20callbacks%0A-%20Adds%20the%20broadcast%20peer%20(%60FF%3AFF%3AFF%3AFF%3AFF%3AFF%60)%0A-%20Creates%20%60beacon_task%60%20pinned%20to%20core%200%0A-%20Creates%20%60retransmit_task%60%20pinned%20to%20core%200%0A%0A%23%23%23%20%60mesh_now_deinit%60%0A%0ADeinitialize%20the%20mesh.%20Stops%20tasks%2C%20removes%20peers%2C%20unregisters%20callbacks.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_deinit(void)%3B%0A%60%60%60%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success.%0A%0A**Side%20effects%3A**%0A%0A-%20Deletes%20beacon%20and%20retransmit%20tasks%0A-%20Removes%20the%20broadcast%20peer%0A-%20Unregisters%20ESP-NOW%20callbacks%0A-%20Clears%20the%20peer%20table%0A%0A%23%23%20Sending%0A%0A%23%23%23%20%60mesh_now_send_broadcast%60%0A%0ASend%20a%20chat%20message%20to%20all%20nodes%20in%20range.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_send_broadcast(const%20char%20*message)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20---------%20%7C%20-------------%20%7C%20-------------------------------------------------------%20%7C%0A%7C%20%60message%60%20%7C%20%60const%20char*%60%20%7C%20Null-terminated%20message%20string%20(truncated%20to%20127%20chars)%20%7C%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success.%0A%0A**Message%20type%3A**%20%60MSG_TYPE_CHAT%60%0A**ACK%3A**%20No%0A**Relay%3A**%20Yes%0A%0A%23%23%23%20%60mesh_now_send_message%60%0A%0AAlias%20for%20%60mesh_now_send_broadcast%60.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_send_message(const%20char%20*message)%3B%0A%60%60%60%0A%0A%23%23%23%20%60mesh_now_send_direct%60%0A%0ASend%20a%20message%20to%20a%20specific%20peer.%20Acknowledged%20and%20retransmitted%20up%20to%203%20times%20when%20the%20ACK%20does%20not%20arrive.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_send_direct(const%20uint8_t%20*target_mac%2C%20const%20char%20*message)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%20%20%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20------------%20%7C%20----------------%20%7C%20--------------------------------%20%7C%0A%7C%20%60target_mac%60%20%7C%20%60const%20uint8_t*%60%20%7C%206-byte%20MAC%20address%20of%20the%20target%20%7C%0A%7C%20%60message%60%20%20%20%20%7C%20%60const%20char*%60%20%20%20%20%7C%20Null-terminated%20message%20string%20%20%20%7C%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success%2C%20%60ESP_ERR_INVALID_ARG%60%20if%20parameters%20are%20NULL.%0A%0A**Message%20type%3A**%20%60MSG_TYPE_DIRECT%60%0A**ACK%3A**%20Yes%0A**Relay%3A**%20Yes%20(route%2C%20or%20flood%20if%20no%20route%20is%20known)%0A%0A%23%23%23%20%60mesh_now_send_group%60%0A%0ASend%20a%20message%20to%20all%20nodes%20in%20a%20specific%20group.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_send_group(uint8_t%20group_id%2C%20const%20char%20*message)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20----------%20%7C%20-------------%20%7C%20------------------------------%20%7C%0A%7C%20%60group_id%60%20%7C%20%60uint8_t%60%20%20%20%20%20%7C%20Group%20identifier%20(0-255)%20%20%20%20%20%20%20%7C%0A%7C%20%60message%60%20%20%7C%20%60const%20char*%60%20%7C%20Null-terminated%20message%20string%20%7C%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success.%0A%0A**Message%20type%3A**%20%60MSG_TYPE_GROUP%60%0A**ACK%3A**%20No%0A**Relay%3A**%20Yes%0A%0A%23%23%23%20%60mesh_now_send_presence%60%0A%0ABroadcast%20a%20presence%2Fstatus%20announcement.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_send_presence(const%20char%20*status)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20---------%20%7C%20-------------%20%7C%20--------------------------------------%20%7C%0A%7C%20%60status%60%20%20%7C%20%60const%20char*%60%20%7C%20Status%20string%20(e.g.%2C%20%22online%22%2C%20%22away%22)%20%7C%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success.%0A%0A**Message%20type%3A**%20%60MSG_TYPE_PRESENCE%60%0A**ACK%3A**%20No%0A**Relay%3A**%20Yes%0A%0A%23%23%23%20%60mesh_now_send_typing%60%0A%0ASend%20a%20typing%20indicator%20to%20a%20specific%20peer.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_send_typing(const%20uint8_t%20*target_mac%2C%20bool%20typing)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%20%20%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20------------%20%7C%20----------------%20%7C%20------------------------------------%20%7C%0A%7C%20%60target_mac%60%20%7C%20%60const%20uint8_t*%60%20%7C%206-byte%20MAC%20address%20of%20the%20target%20%20%20%20%20%7C%0A%7C%20%60typing%60%20%20%20%20%20%7C%20%60bool%60%20%20%20%20%20%20%20%20%20%20%20%7C%20%60true%60%20if%20typing%2C%20%60false%60%20if%20stopped%20%7C%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success%2C%20%60ESP_ERR_INVALID_ARG%60%20if%20%60target_mac%60%20is%20NULL.%0A%0A**Message%20type%3A**%20%60MSG_TYPE_TYPING%60%0A**ACK%3A**%20No%0A**Relay%3A**%20Conditional%20(forwarded%20toward%20target%20like%20direct%20traffic)%0A%0A%23%23%20Peer%20Management%0A%0A%23%23%23%20%60mesh_now_add_peer%60%0A%0AAdd%20a%20peer%20to%20the%20mesh.%20Called%20automatically%20when%20receiving%20beacons%20and%20messages.%20Ignores%20the%20local%20MAC%20address.%0A%0A%60%60%60c%0Avoid%20mesh_now_add_peer(const%20uint8_t%20*mac)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%7C%0A%7C%20---------%20%7C%20----------------%20%7C%20------------------%20%7C%0A%7C%20%60mac%60%20%20%20%20%20%7C%20%60const%20uint8_t*%60%20%7C%206-byte%20MAC%20address%20%7C%0A%0A%23%23%23%20%60mesh_now_remove_peer%60%0A%0ARemove%20a%20peer%20from%20the%20mesh.%0A%0A%60%60%60c%0Avoid%20mesh_now_remove_peer(const%20uint8_t%20*mac)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%7C%0A%7C%20---------%20%7C%20----------------%20%7C%20------------------%20%7C%0A%7C%20%60mac%60%20%20%20%20%20%7C%20%60const%20uint8_t*%60%20%7C%206-byte%20MAC%20address%20%7C%0A%0A%23%23%23%20%60mesh_now_get_peer_count%60%0A%0AGet%20the%20number%20of%20active%2C%20non-expired%20peers.%0A%0A%60%60%60c%0Aint%20mesh_now_get_peer_count(void)%3B%0A%60%60%60%0A%0A**Returns%3A**%20Current%20active%20peer%20count.%20Expired%20peers%20are%20compacted%20out%20of%20the%20table%2C%20so%20this%20reflects%20only%20peers%20tracked%20as%20online.%0A%0A%23%23%23%20%60mesh_now_get_peers%60%0A%0AGet%20a%20pointer%20to%20the%20peer%20table.%0A%0A%60%60%60c%0Amesh_peer_t*%20mesh_now_get_peers(void)%3B%0A%60%60%60%0A%0A**Returns%3A**%20Pointer%20to%20the%20internal%20%60mesh_peer_t%60%20array%20(max%20%60MAX_PEERS%60%20entries).%0A%0A%3A%3A%3A%20callout%20warning%20title%3A%22Thread%20Safety%22%0AThe%20returned%20pointer%20references%20internal%20state.%20Do%20not%20free%20it%2C%20and%20do%20not%20read%20it%20while%20another%20task%20is%20modifying%20the%20peer%20table.%20For%20application%20threads%20such%20as%20a%20UI%20streaming%20loop%2C%20use%20%60mesh_now_snapshot_peers()%60%20below%20instead.%0A%3A%3A%3A%20%2Fcallout%0A%0A%23%23%23%20%60mesh_now_snapshot_peers%60%0A%0AThread-safe%20copy%20of%20the%20peer%20table.%20Best%20used%20when%20the%20caller%20does%20not%20own%20the%20internal%20mutex%20(e.g.%20a%20UI%20thread%20serializing%20peers%20over%20a%20stream).%0A%0A%60%60%60c%0Aint%20mesh_now_snapshot_peers(mesh_peer_t%20*out%2C%20size_t%20max_out)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20---------%20%7C%20--------------%20%7C%20---------------------------------------%20%7C%0A%7C%20%60out%60%20%20%20%20%20%7C%20%60mesh_peer_t*%60%20%7C%20Destination%20buffer%20caller%20must%20allocate%20%7C%0A%7C%20%60max_out%60%20%7C%20%60size_t%60%20%20%20%20%20%20%20%7C%20Capacity%20of%20%60out%60%20(entries)%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%0A**Returns%3A**%20Number%20of%20entries%20written%2C%20at%20most%20%60max_out%60.%20Entries%20are%20a%20point-in-time%20copy%20taken%20under%20the%20mutex.%0A%0A%23%23%20Routing%0A%0A%23%23%23%20%60mesh_now_get_route%60%0A%0ACopy%20the%20route%20to%20a%20virtual%20peer%20into%20%60out%60%2C%20if%20one%20exists.%0A%0A%60%60%60c%0Abool%20mesh_now_get_route(const%20uint8_t%20*dest_mac%2C%20mesh_route_t%20*out)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20----------%20%7C%20----------------%20%7C%20-------------------------------%20%7C%0A%7C%20%60dest_mac%60%20%7C%20%60const%20uint8_t*%60%20%7C%206-byte%20MAC%20of%20the%20virtual%20peer%20%20%7C%0A%7C%20%60out%60%20%20%20%20%20%20%7C%20%60mesh_route_t*%60%20%20%7C%20Destination%20for%20the%20route%20entry%20%7C%0A%0A**Returns%3A**%20%60true%60%20if%20a%20route%20to%20%60dest_mac%60%20exists%20and%20was%20copied.%0A%0A%23%23%23%20%60mesh_now_get_route_count%60%0A%0ANumber%20of%20active%20route%20entries%20(routes%20to%20virtual%20peers).%0A%0A%60%60%60c%0Aint%20mesh_now_get_route_count(void)%3B%0A%60%60%60%0A%0A%23%23%23%20%60mesh_now_snapshot_routes%60%0A%0AThread-safe%20copy%20of%20the%20route%20table.%0A%0A%60%60%60c%0Aint%20mesh_now_snapshot_routes(mesh_route_t%20*out%2C%20size_t%20max_out)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20---------%20%7C%20---------------%20%7C%20---------------------------------------%20%7C%0A%7C%20%60out%60%20%20%20%20%20%7C%20%60mesh_route_t*%60%20%7C%20Destination%20buffer%20caller%20must%20allocate%20%7C%0A%7C%20%60max_out%60%20%7C%20%60size_t%60%20%20%20%20%20%20%20%20%7C%20Capacity%20of%20%60out%60%20(entries)%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%0A**Returns%3A**%20Number%20of%20entries%20written%2C%20at%20most%20%60max_out%60.%0A%0A%23%23%23%20%60mesh_now_pin_route%60%0A%0APin%20a%20fixed%20route%20to%20%60dest_mac%60%20via%20%60proxy_mac%60.%20Bypasses%20discovery%20and%20never%20expires.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_pin_route(const%20uint8_t%20*dest_mac%2C%20const%20uint8_t%20*proxy_mac)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%20%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20-----------%20%7C%20----------------%20%7C%20-----------------------------------%20%7C%0A%7C%20%60dest_mac%60%20%20%7C%20%60const%20uint8_t*%60%20%7C%206-byte%20MAC%20of%20the%20destination%20%20%20%20%20%20%20%7C%0A%7C%20%60proxy_mac%60%20%7C%20%60const%20uint8_t*%60%20%7C%206-byte%20MAC%20of%20the%20relaying%20next%20hop%20%7C%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success%2C%20%60ESP_ERR_INVALID_ARG%60%20if%20a%20parameter%20is%20NULL.%0A%0A%23%23%23%20%60mesh_now_unpin_route%60%0A%0ARemove%20a%20previously%20pinned%20route.%20Fails%20if%20none%20exists%20for%20%60dest_mac%60.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_unpin_route(const%20uint8_t%20*dest_mac)%3B%0A%60%60%60%0A%0A%23%23%23%20%60mesh_now_set_route_failure_callback%60%0A%0AInstall%20the%20handler%20fired%20when%20a%20route%20to%20a%20destination%20cannot%20be%20found.%0A%0A%60%60%60c%0Avoid%20mesh_now_set_route_failure_callback(mesh_now_route_failure_callback_t%20cb)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20---------%20%7C%20-----------------------------------%20%7C%20-----------------------------------------------------%20%7C%0A%7C%20%60cb%60%20%20%20%20%20%20%7C%20%60mesh_now_route_failure_callback_t%60%20%7C%20Function%20pointer%3A%20%60void%20(*)(const%20uint8_t%20*dest_mac)%60%20%7C%0A%0A%23%23%20Node%20Naming%0A%0A%23%23%23%20%60mesh_now_set_name%60%0A%0ASet%20the%20local%20node%20name%20(truncated%20to%20%60MESH_NOW_NODE_NAME_MAX%60%20%3D%2016%20chars).%20Announced%20in%20beacons.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_set_name(const%20char%20*name)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20---------%20%7C%20-------------%20%7C%20---------------------------%20%7C%0A%7C%20%60name%60%20%20%20%20%7C%20%60const%20char*%60%20%7C%20Null-terminated%20name%20string%20%7C%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success%2C%20%60ESP_ERR_INVALID_ARG%60%20if%20%60name%60%20is%20NULL.%0A%0A%23%23%23%20%60mesh_now_get_name%60%0A%0AReturn%20the%20current%20local%20node%20name%20(empty%20until%20%60mesh_now_set_name()%60).%0A%0A%60%60%60c%0Aconst%20char%20*mesh_now_get_name(void)%3B%0A%60%60%60%0A%0A%23%23%23%20%60mesh_now_announce_name%60%0A%0APush%20the%20current%20name%20out%20immediately%20with%20an%20extra%20beacon%20instead%20of%20waiting%20for%20the%20next%20interval.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_announce_name(void)%3B%0A%60%60%60%0A%0A%23%23%20Configuration%0A%0A%23%23%23%20%60mesh_now_set_receive_callback%60%0A%0ASet%20the%20callback%20function%20for%20received%20messages.%0A%0A%60%60%60c%0Avoid%20mesh_now_set_receive_callback(mesh_now_receive_callback_t%20callback)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20----------%20%7C%20-----------------------------%20%7C%20---------------------------------------------------%20%7C%0A%7C%20%60callback%60%20%7C%20%60mesh_now_receive_callback_t%60%20%7C%20Function%20pointer%3A%20%60void%20(*)(const%20mesh_message_t*)%60%20%7C%0A%0AIf%20no%20callback%20is%20set%2C%20messages%20are%20queued%20in%20the%20internal%20message%20queue%20(see%20%5BMessage%20Queue%5D(.%2Fmessage-queue)).%0A%0A%23%23%23%20%60mesh_now_set_group%60%0A%0ASet%20the%20local%20node&#039;s%20group%20membership.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_set_group(uint8_t%20group_id)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%20%7C%20Type%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20----------%20%7C%20---------%20%7C%20-------------------------------%20%7C%0A%7C%20%60group_id%60%20%7C%20%60uint8_t%60%20%7C%20Group%20identifier%20(0%20%3D%20no%20group)%20%7C%0A%0A**Returns%3A**%20Always%20%60ESP_OK%60.%0A%0A%23%23%23%20%60mesh_now_set_encryption_key%60%0A%0ASet%20the%20payload%20encryption%20key.%0A%0A%60%60%60c%0Aesp_err_t%20mesh_now_set_encryption_key(const%20uint8_t%20*key%2C%20size_t%20len)%3B%0A%60%60%60%0A%0A%7C%20Parameter%20%7C%20Type%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20---------%20%7C%20----------------%20%7C%20-------------------------------------%20%7C%0A%7C%20%60key%60%20%20%20%20%20%7C%20%60const%20uint8_t*%60%20%7C%20Encryption%20key%20bytes%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60len%60%20%20%20%20%20%7C%20%60size_t%60%20%20%20%20%20%20%20%20%20%7C%20Key%20length%20(must%20be%20exactly%2016%20bytes)%20%7C%0A%0A**Returns%3A**%20%60ESP_OK%60%20on%20success%2C%20%60ESP_ERR_INVALID_ARG%60%20if%20key%20is%20NULL%20or%20%60len%60%20is%20not%2016.%0A%0A%23%23%23%20%60mesh_now_is_encrypted%60%0A%0ATrue%20once%20encryption%20is%20configured%20(after%20%60mesh_now_set_encryption_key()%60).%0A%0A%60%60%60c%0Abool%20mesh_now_is_encrypted(void)%3B%0A%60%60%60%0A%0A%23%23%23%20%60mesh_now_peer_is_online%60%0A%0ATrue%20if%20a%20peer%20entry%20was%20contacted%20within%20the%20peer%20expiry%20window.%0A%0A%60%60%60c%0Abool%20mesh_now_peer_is_online(const%20mesh_peer_t%20*peer)%3B%0A%60%60%60%0A%0A%23%23%23%20%60mesh_now_get_group_id%60%0A%0ACurrent%20local%20group%20id%20(0%20%3D%20not%20in%20a%20group).%0A%0A%60%60%60c%0Auint8_t%20mesh_now_get_group_id(void)%3B%0A%60%60%60%0A%0A%23%23%20Types%0A%0A%23%23%23%20%60mesh_message_t%60%0A%0A%60%60%60c%0Atypedef%20struct%20%7B%0A%20%20%20%20uint8_t%20type%3B%0A%20%20%20%20uint8_t%20flags%3B%0A%20%20%20%20uint8_t%20group_id%3B%0A%20%20%20%20uint8_t%20hop_limit%3B%0A%20%20%20%20uint8_t%20hop_count%3B%0A%20%20%20%20uint32_t%20message_id%3B%0A%20%20%20%20uint32_t%20reply_to%3B%0A%20%20%20%20uint8_t%20sender_mac%5B6%5D%3B%0A%20%20%20%20uint8_t%20target_mac%5B6%5D%3B%0A%20%20%20%20uint32_t%20timestamp%3B%0A%20%20%20%20char%20message%5BMAX_MESH_MESSAGE_LEN%5D%3B%0A%20%20%20%20char%20node_name%5BMESH_NOW_NODE_NAME_MAX%20%2B%201%5D%3B%0A%20%20%20%20uint8_t%20neighbor_count%3B%0A%20%20%20%20uint8_t%20neighbor_macs%5BCONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS%5D%5B6%5D%3B%0A%20%20%20%20char%20neighbor_names%5BCONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS%5D%5BMESH_NOW_NODE_NAME_MAX%20%2B%201%5D%3B%0A%7D%20mesh_message_t%3B%0A%60%60%60%0A%0A%23%23%23%20%60mesh_peer_t%60%0A%0A%60%60%60c%0Atypedef%20struct%20%7B%0A%20%20%20%20uint8_t%20peer_addr%5B6%5D%3B%0A%20%20%20%20bool%20active%3B%0A%20%20%20%20int64_t%20last_seen%3B%0A%20%20%20%20char%20node_name%5BMESH_NOW_NODE_NAME_MAX%20%2B%201%5D%3B%0A%7D%20mesh_peer_t%3B%0A%60%60%60%0A%0A%23%23%23%20%60mesh_now_receive_callback_t%60%0A%0A%60%60%60c%0Atypedef%20void%20(*mesh_now_receive_callback_t)(const%20mesh_message_t%20*message)%3B%0A%60%60%60%0A%0A%23%23%20Constants%0A%0A%7C%20Constant%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Value%20%20%20%20%20%20%20%20%20%7C%20Description%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20------------------------%20%7C%20-------------%20%7C%20--------------------------------------------------------------%20%7C%0A%7C%20%60MAX_MESH_MESSAGE_LEN%60%20%20%20%7C%20128%20%20%20%20%20%20%20%20%20%20%20%7C%20Max%20payload%20length%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60DEFAULT_ROUTE_TTL%60%20%20%20%20%20%20%7C%203%20(default)%20%20%20%7C%20Default%20hop%20limit%3B%20maps%20to%20%60CONFIG_MESH_NOW_DEFAULT_ROUTE_TTL%60%20%7C%0A%7C%20%60MESH_NOW_WIRE_VERSION%60%20%20%7C%201%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Wire%20format%20version%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MESH_NOW_HEADER_LEN%60%20%20%20%20%7C%2032%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Wire%20header%20size%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MAX_PEERS%60%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%2020%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Max%20one-hop%20peer%20count%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_FLAG_REQUIRES_ACK%60%20%20%7C%20%600x01%60%20%20%20%20%20%20%20%20%7C%20ACK%20requested%20flag%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_FLAG_ENCRYPTED%60%20%20%20%20%20%7C%20%600x02%60%20%20%20%20%20%20%20%20%7C%20Encrypted%20payload%20flag%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_FLAG_HAS_NODE_NAME%60%20%7C%20%600x04%60%20%20%20%20%20%20%20%20%7C%20Beacon%20carries%20a%20name%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_BEACON%60%20%20%20%20%20%20%20%20%7C%200%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Discovery%20beacon%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_CHAT%60%20%20%20%20%20%20%20%20%20%20%7C%201%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Broadcast%20chat%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_DIRECT%60%20%20%20%20%20%20%20%20%7C%202%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Point-to-point%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_ACK%60%20%20%20%20%20%20%20%20%20%20%20%7C%203%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Acknowledgment%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_GROUP%60%20%20%20%20%20%20%20%20%20%7C%204%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Group%20message%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_PRESENCE%60%20%20%20%20%20%20%7C%205%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Status%20announcement%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_TYPING%60%20%20%20%20%20%20%20%20%7C%206%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Typing%20indicator%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_ROUTE_REQUEST%60%20%7C%207%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Route%20discovery%20flood%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_ROUTE_REPLY%60%20%20%20%7C%208%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Route%20discovery%20reply%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_ROUTE_ERROR%60%20%20%20%7C%209%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Broken%20next-hop%20announcement%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%0A%23%23%20Next%20Steps%0A%0A%3A%3A%3A%20grids%0A%3A%3A%3A%20grid%0A%3A%3A%3A%20button%20%22Message%20Queue%22%20.%2Fmessage-queue.md%20icon%3Alayers%0A%3A%3A%3A%20%2Fgrid%0A%0A%3A%3A%3A%20grid%0A%3A%3A%3A%20button%20%22Wire%20Format%22%20..%2Fprotocol%2Fwire-format.md%20icon%3Afile-code%0A%3A%3A%3A%20%2Fgrid%0A%0A%3A%3A%3A%20grid%0A%3A%3A%3A%20button%20%22Configuration%22%20..%2Fguide%2Fconfiguration.md%20icon%3Asettings%0A%3A%3A%3A%20%2Fgrid%0A%3A%3A%3A%20%2Fgrids%0A" style="display: none;"></div>
+                  
+                    <nav aria-label="breadcrumb" class="docmd-breadcrumbs">
+                      <ol>
+                        
+                        
+                          <li class="breadcrumb-item " >
+                            
+                              <span>API Reference</span>
+                            
+                            
+                              <span class="breadcrumb-separator">
+<svg class="lucide-icon icon-chevron-right " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-right"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m9 18 6-6-6-6" />
+</svg>
+</span>
+                            
+                          </li>
+                        
+                          <li class="breadcrumb-item active" aria-current=&quot;page&quot;>
+                            
+                              <span>Mesh NOW API</span>
+                            
+                            
+                          </li>
+                        
+                      </ol>
+                    </nav>
+                  
+
+                  
+                    <div class="docmd-copy-widgets">
+                      
+                        <button class="docmd-copy-btn docmd-copy-raw-btn" data-copied="Copied!" title="Copy Markdown" aria-label="Copy Markdown">
+                          <span class="docmd-btn-icon">
+<svg class="lucide-icon icon-copy " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-copy"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+</svg>
+</span>
+                        </button>
+                      
+                      
+                        <button class="docmd-copy-btn docmd-copy-context-btn" data-copied="Copied!" title="Copy Context">
+                          <span class="docmd-btn-icon">
+<svg class="lucide-icon icon-message-square " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-message-square"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
+</svg>
+</span>
+                          <span class="docmd-btn-text">Copy Context</span>
+                        </button>
+                      
+                    </div>
+                  
+                </div>
+                
+                <p>Full API reference for the Mesh-NOW library. All functions are declared in <code>mesh_now.h</code>.</p>
+<h2 id="initialization" class="docmd-heading"><a href="#initialization" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Initialization</h2>
+<h3 id="initialization-meshnowinit" class="docmd-heading"><a href="#initialization-meshnowinit" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_init</code></h3>
+<p>Initialize the ESP-NOW mesh networking subsystem. Registers callbacks, adds the broadcast peer, and starts the beacon and retransmit tasks.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_init</span>(<span class="hljs-keyword">void</span>);
+</code></pre>
+<p><strong>Returns:</strong> <code>ESP_OK</code> on success, appropriate <code>esp_err_t</code> on failure.</p>
+<p><strong>Side effects:</strong></p>
+<ul>
+<li>Initializes ESP-NOW</li>
+<li>Registers send and receive callbacks</li>
+<li>Adds the broadcast peer (<code>FF:FF:FF:FF:FF:FF</code>)</li>
+<li>Creates <code>beacon_task</code> pinned to core 0</li>
+<li>Creates <code>retransmit_task</code> pinned to core 0</li>
+</ul>
+<h3 id="initialization-meshnowdeinit" class="docmd-heading"><a href="#initialization-meshnowdeinit" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_deinit</code></h3>
+<p>Deinitialize the mesh. Stops tasks, removes peers, unregisters callbacks.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_deinit</span>(<span class="hljs-keyword">void</span>);
+</code></pre>
+<p><strong>Returns:</strong> <code>ESP_OK</code> on success.</p>
+<p><strong>Side effects:</strong></p>
+<ul>
+<li>Deletes beacon and retransmit tasks</li>
+<li>Removes the broadcast peer</li>
+<li>Unregisters ESP-NOW callbacks</li>
+<li>Clears the peer table</li>
+</ul>
+<h2 id="sending" class="docmd-heading"><a href="#sending" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Sending</h2>
+<h3 id="sending-meshnowsendbroadcast" class="docmd-heading"><a href="#sending-meshnowsendbroadcast" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_send_broadcast</code></h3>
+<p>Send a chat message to all nodes in range.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_send_broadcast</span>(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> <span class="hljs-operator">*</span>message);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>message</code></td>
+<td><code>const char*</code></td>
+<td>Null-terminated message string (truncated to 127 chars)</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> <code>ESP_OK</code> on success.</p>
+<p><strong>Message type:</strong> <code>MSG_TYPE_CHAT</code><br>
+<strong>ACK:</strong> No<br>
+<strong>Relay:</strong> Yes</p>
+<h3 id="sending-meshnowsendmessage" class="docmd-heading"><a href="#sending-meshnowsendmessage" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_send_message</code></h3>
+<p>Alias for <code>mesh_now_send_broadcast</code>.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_send_message</span>(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> <span class="hljs-operator">*</span>message);
+</code></pre>
+<h3 id="sending-meshnowsenddirect" class="docmd-heading"><a href="#sending-meshnowsenddirect" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_send_direct</code></h3>
+<p>Send a message to a specific peer. Acknowledged and retransmitted up to 3 times when the ACK does not arrive.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_send_direct</span>(<span class="hljs-keyword">const</span> uint8_t <span class="hljs-operator">*</span>target_mac, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> <span class="hljs-operator">*</span>message);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>target_mac</code></td>
+<td><code>const uint8_t*</code></td>
+<td>6-byte MAC address of the target</td>
+</tr>
+<tr>
+<td><code>message</code></td>
+<td><code>const char*</code></td>
+<td>Null-terminated message string</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> <code>ESP_OK</code> on success, <code>ESP_ERR_INVALID_ARG</code> if parameters are NULL.</p>
+<p><strong>Message type:</strong> <code>MSG_TYPE_DIRECT</code><br>
+<strong>ACK:</strong> Yes<br>
+<strong>Relay:</strong> Yes (route, or flood if no route is known)</p>
+<h3 id="sending-meshnowsendgroup" class="docmd-heading"><a href="#sending-meshnowsendgroup" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_send_group</code></h3>
+<p>Send a message to all nodes in a specific group.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_send_group</span>(uint8_t group_id, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> <span class="hljs-operator">*</span>message);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>group_id</code></td>
+<td><code>uint8_t</code></td>
+<td>Group identifier (0-255)</td>
+</tr>
+<tr>
+<td><code>message</code></td>
+<td><code>const char*</code></td>
+<td>Null-terminated message string</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> <code>ESP_OK</code> on success.</p>
+<p><strong>Message type:</strong> <code>MSG_TYPE_GROUP</code><br>
+<strong>ACK:</strong> No<br>
+<strong>Relay:</strong> Yes</p>
+<h3 id="sending-meshnowsendpresence" class="docmd-heading"><a href="#sending-meshnowsendpresence" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_send_presence</code></h3>
+<p>Broadcast a presence/status announcement.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_send_presence</span>(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> <span class="hljs-operator">*</span>status);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>status</code></td>
+<td><code>const char*</code></td>
+<td>Status string (e.g., “online”, “away”)</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> <code>ESP_OK</code> on success.</p>
+<p><strong>Message type:</strong> <code>MSG_TYPE_PRESENCE</code><br>
+<strong>ACK:</strong> No<br>
+<strong>Relay:</strong> Yes</p>
+<h3 id="sending-meshnowsendtyping" class="docmd-heading"><a href="#sending-meshnowsendtyping" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_send_typing</code></h3>
+<p>Send a typing indicator to a specific peer.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_send_typing</span>(<span class="hljs-keyword">const</span> uint8_t <span class="hljs-operator">*</span>target_mac, <span class="hljs-keyword">bool</span> typing);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>target_mac</code></td>
+<td><code>const uint8_t*</code></td>
+<td>6-byte MAC address of the target</td>
+</tr>
+<tr>
+<td><code>typing</code></td>
+<td><code>bool</code></td>
+<td><code>true</code> if typing, <code>false</code> if stopped</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> <code>ESP_OK</code> on success, <code>ESP_ERR_INVALID_ARG</code> if <code>target_mac</code> is NULL.</p>
+<p><strong>Message type:</strong> <code>MSG_TYPE_TYPING</code><br>
+<strong>ACK:</strong> No<br>
+<strong>Relay:</strong> Conditional (forwarded toward target like direct traffic)</p>
+<h2 id="peer-management" class="docmd-heading"><a href="#peer-management" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Peer Management</h2>
+<h3 id="peer-management-meshnowaddpeer" class="docmd-heading"><a href="#peer-management-meshnowaddpeer" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_add_peer</code></h3>
+<p>Add a peer to the mesh. Called automatically when receiving beacons and messages. Ignores the local MAC address.</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">void</span> <span class="hljs-title function_">mesh_now_add_peer</span>(<span class="hljs-keyword">const</span> uint8_t <span class="hljs-operator">*</span>mac);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mac</code></td>
+<td><code>const uint8_t*</code></td>
+<td>6-byte MAC address</td>
+</tr>
+</tbody>
+</table>
+</div><h3 id="peer-management-meshnowremovepeer" class="docmd-heading"><a href="#peer-management-meshnowremovepeer" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_remove_peer</code></h3>
+<p>Remove a peer from the mesh.</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">void</span> <span class="hljs-title function_">mesh_now_remove_peer</span>(<span class="hljs-keyword">const</span> uint8_t <span class="hljs-operator">*</span>mac);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mac</code></td>
+<td><code>const uint8_t*</code></td>
+<td>6-byte MAC address</td>
+</tr>
+</tbody>
+</table>
+</div><h3 id="peer-management-meshnowgetpeercount" class="docmd-heading"><a href="#peer-management-meshnowgetpeercount" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_get_peer_count</code></h3>
+<p>Get the number of active, non-expired peers.</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">int</span> <span class="hljs-title function_">mesh_now_get_peer_count</span>(<span class="hljs-keyword">void</span>);
+</code></pre>
+<p><strong>Returns:</strong> Current active peer count. Expired peers are compacted out of the table, so this reflects only peers tracked as online.</p>
+<h3 id="peer-management-meshnowgetpeers" class="docmd-heading"><a href="#peer-management-meshnowgetpeers" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_get_peers</code></h3>
+<p>Get a pointer to the peer table.</p>
+<pre class="hljs"><code class="language-c">mesh_peer_t<span class="hljs-operator">*</span> <span class="hljs-title function_">mesh_now_get_peers</span>(<span class="hljs-keyword">void</span>);
+</code></pre>
+<p><strong>Returns:</strong> Pointer to the internal <code>mesh_peer_t</code> array (max <code>MAX_PEERS</code> entries).</p>
+<div class="docmd-container callout callout-warning"><div class="callout-title">Thread Safety</div><div class="callout-content">
+<p>The returned pointer references internal state. Do not free it, and do not read it while another task is modifying the peer table. For application threads such as a UI streaming loop, use <code>mesh_now_snapshot_peers()</code> below instead.</p>
+</div></div>
+<h3 id="peer-management-meshnowsnapshotpeers" class="docmd-heading"><a href="#peer-management-meshnowsnapshotpeers" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_snapshot_peers</code></h3>
+<p>Thread-safe copy of the peer table. Best used when the caller does not own the internal mutex (e.g. a UI thread serializing peers over a stream).</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">int</span> <span class="hljs-title function_">mesh_now_snapshot_peers</span>(mesh_peer_t <span class="hljs-operator">*</span>out, size_t max_out);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>out</code></td>
+<td><code>mesh_peer_t*</code></td>
+<td>Destination buffer caller must allocate</td>
+</tr>
+<tr>
+<td><code>max_out</code></td>
+<td><code>size_t</code></td>
+<td>Capacity of <code>out</code> (entries)</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> Number of entries written, at most <code>max_out</code>. Entries are a point-in-time copy taken under the mutex.</p>
+<h2 id="routing" class="docmd-heading"><a href="#routing" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Routing</h2>
+<h3 id="routing-meshnowgetroute" class="docmd-heading"><a href="#routing-meshnowgetroute" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_get_route</code></h3>
+<p>Copy the route to a virtual peer into <code>out</code>, if one exists.</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">bool</span> <span class="hljs-title function_">mesh_now_get_route</span>(<span class="hljs-keyword">const</span> uint8_t <span class="hljs-operator">*</span>dest_mac, mesh_route_t <span class="hljs-operator">*</span>out);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dest_mac</code></td>
+<td><code>const uint8_t*</code></td>
+<td>6-byte MAC of the virtual peer</td>
+</tr>
+<tr>
+<td><code>out</code></td>
+<td><code>mesh_route_t*</code></td>
+<td>Destination for the route entry</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> <code>true</code> if a route to <code>dest_mac</code> exists and was copied.</p>
+<h3 id="routing-meshnowgetroutecount" class="docmd-heading"><a href="#routing-meshnowgetroutecount" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_get_route_count</code></h3>
+<p>Number of active route entries (routes to virtual peers).</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">int</span> <span class="hljs-title function_">mesh_now_get_route_count</span>(<span class="hljs-keyword">void</span>);
+</code></pre>
+<h3 id="routing-meshnowsnapshotroutes" class="docmd-heading"><a href="#routing-meshnowsnapshotroutes" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_snapshot_routes</code></h3>
+<p>Thread-safe copy of the route table.</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">int</span> <span class="hljs-title function_">mesh_now_snapshot_routes</span>(mesh_route_t <span class="hljs-operator">*</span>out, size_t max_out);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>out</code></td>
+<td><code>mesh_route_t*</code></td>
+<td>Destination buffer caller must allocate</td>
+</tr>
+<tr>
+<td><code>max_out</code></td>
+<td><code>size_t</code></td>
+<td>Capacity of <code>out</code> (entries)</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> Number of entries written, at most <code>max_out</code>.</p>
+<h3 id="routing-meshnowpinroute" class="docmd-heading"><a href="#routing-meshnowpinroute" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_pin_route</code></h3>
+<p>Pin a fixed route to <code>dest_mac</code> via <code>proxy_mac</code>. Bypasses discovery and never expires.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_pin_route</span>(<span class="hljs-keyword">const</span> uint8_t <span class="hljs-operator">*</span>dest_mac, <span class="hljs-keyword">const</span> uint8_t <span class="hljs-operator">*</span>proxy_mac);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dest_mac</code></td>
+<td><code>const uint8_t*</code></td>
+<td>6-byte MAC of the destination</td>
+</tr>
+<tr>
+<td><code>proxy_mac</code></td>
+<td><code>const uint8_t*</code></td>
+<td>6-byte MAC of the relaying next hop</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> <code>ESP_OK</code> on success, <code>ESP_ERR_INVALID_ARG</code> if a parameter is NULL.</p>
+<h3 id="routing-meshnowunpinroute" class="docmd-heading"><a href="#routing-meshnowunpinroute" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_unpin_route</code></h3>
+<p>Remove a previously pinned route. Fails if none exists for <code>dest_mac</code>.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_unpin_route</span>(<span class="hljs-keyword">const</span> uint8_t <span class="hljs-operator">*</span>dest_mac);
+</code></pre>
+<h3 id="routing-meshnowsetroutefailurecallback" class="docmd-heading"><a href="#routing-meshnowsetroutefailurecallback" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_set_route_failure_callback</code></h3>
+<p>Install the handler fired when a route to a destination cannot be found.</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">void</span> <span class="hljs-title function_">mesh_now_set_route_failure_callback</span>(mesh_now_route_failure_callback_t cb);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cb</code></td>
+<td><code>mesh_now_route_failure_callback_t</code></td>
+<td>Function pointer: <code>void (*)(const uint8_t *dest_mac)</code></td>
+</tr>
+</tbody>
+</table>
+</div><h2 id="node-naming" class="docmd-heading"><a href="#node-naming" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Node Naming</h2>
+<h3 id="node-naming-meshnowsetname" class="docmd-heading"><a href="#node-naming-meshnowsetname" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_set_name</code></h3>
+<p>Set the local node name (truncated to <code>MESH_NOW_NODE_NAME_MAX</code> = 16 chars). Announced in beacons.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_set_name</span>(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> <span class="hljs-operator">*</span>name);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><code>const char*</code></td>
+<td>Null-terminated name string</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> <code>ESP_OK</code> on success, <code>ESP_ERR_INVALID_ARG</code> if <code>name</code> is NULL.</p>
+<h3 id="node-naming-meshnowgetname" class="docmd-heading"><a href="#node-naming-meshnowgetname" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_get_name</code></h3>
+<p>Return the current local node name (empty until <code>mesh_now_set_name()</code>).</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> <span class="hljs-operator">*</span><span class="hljs-title function_">mesh_now_get_name</span>(<span class="hljs-keyword">void</span>);
+</code></pre>
+<h3 id="node-naming-meshnowannouncename" class="docmd-heading"><a href="#node-naming-meshnowannouncename" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_announce_name</code></h3>
+<p>Push the current name out immediately with an extra beacon instead of waiting for the next interval.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_announce_name</span>(<span class="hljs-keyword">void</span>);
+</code></pre>
+<h2 id="configuration" class="docmd-heading"><a href="#configuration" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Configuration</h2>
+<h3 id="configuration-meshnowsetreceivecallback" class="docmd-heading"><a href="#configuration-meshnowsetreceivecallback" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_set_receive_callback</code></h3>
+<p>Set the callback function for received messages.</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">void</span> <span class="hljs-title function_">mesh_now_set_receive_callback</span>(mesh_now_receive_callback_t callback);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>callback</code></td>
+<td><code>mesh_now_receive_callback_t</code></td>
+<td>Function pointer: <code>void (*)(const mesh_message_t*)</code></td>
+</tr>
+</tbody>
+</table>
+</div><p>If no callback is set, messages are queued in the internal message queue (see <a href="message-queue/">Message Queue</a>).</p>
+<h3 id="configuration-meshnowsetgroup" class="docmd-heading"><a href="#configuration-meshnowsetgroup" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_set_group</code></h3>
+<p>Set the local node’s group membership.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_set_group</span>(uint8_t group_id);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>group_id</code></td>
+<td><code>uint8_t</code></td>
+<td>Group identifier (0 = no group)</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> Always <code>ESP_OK</code>.</p>
+<h3 id="configuration-meshnowsetencryptionkey" class="docmd-heading"><a href="#configuration-meshnowsetencryptionkey" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_set_encryption_key</code></h3>
+<p>Set the payload encryption key.</p>
+<pre class="hljs"><code class="language-c">esp_err_t <span class="hljs-title function_">mesh_now_set_encryption_key</span>(<span class="hljs-keyword">const</span> uint8_t <span class="hljs-operator">*</span>key, size_t len);
+</code></pre>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>key</code></td>
+<td><code>const uint8_t*</code></td>
+<td>Encryption key bytes</td>
+</tr>
+<tr>
+<td><code>len</code></td>
+<td><code>size_t</code></td>
+<td>Key length (must be exactly 16 bytes)</td>
+</tr>
+</tbody>
+</table>
+</div><p><strong>Returns:</strong> <code>ESP_OK</code> on success, <code>ESP_ERR_INVALID_ARG</code> if key is NULL or <code>len</code> is not 16.</p>
+<h3 id="configuration-meshnowisencrypted" class="docmd-heading"><a href="#configuration-meshnowisencrypted" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_is_encrypted</code></h3>
+<p>True once encryption is configured (after <code>mesh_now_set_encryption_key()</code>).</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">bool</span> <span class="hljs-title function_">mesh_now_is_encrypted</span>(<span class="hljs-keyword">void</span>);
+</code></pre>
+<h3 id="configuration-meshnowpeerisonline" class="docmd-heading"><a href="#configuration-meshnowpeerisonline" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_peer_is_online</code></h3>
+<p>True if a peer entry was contacted within the peer expiry window.</p>
+<pre class="hljs"><code class="language-c"><span class="hljs-keyword">bool</span> <span class="hljs-title function_">mesh_now_peer_is_online</span>(<span class="hljs-keyword">const</span> mesh_peer_t <span class="hljs-operator">*</span>peer);
+</code></pre>
+<h3 id="configuration-meshnowgetgroupid" class="docmd-heading"><a href="#configuration-meshnowgetgroupid" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_get_group_id</code></h3>
+<p>Current local group id (0 = not in a group).</p>
+<pre class="hljs"><code class="language-c">uint8_t <span class="hljs-title function_">mesh_now_get_group_id</span>(<span class="hljs-keyword">void</span>);
+</code></pre>
+<h2 id="types" class="docmd-heading"><a href="#types" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Types</h2>
+<h3 id="types-meshmessaget" class="docmd-heading"><a href="#types-meshmessaget" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_message_t</code></h3>
+<pre class="hljs"><code class="language-c">typedef <span class="hljs-keyword">struct</span> {
+    uint8_t <span class="hljs-keyword">type</span>;
+    uint8_t flags;
+    uint8_t group_id;
+    uint8_t hop_limit;
+    uint8_t hop_count;
+    uint32_t message_id;
+    uint32_t reply_to;
+    uint8_t sender_mac[<span class="hljs-number">6</span>];
+    uint8_t target_mac[<span class="hljs-number">6</span>];
+    uint32_t timestamp;
+    <span class="hljs-keyword">char</span> message[MAX_MESH_MESSAGE_LEN];
+    <span class="hljs-keyword">char</span> node_name[MESH_NOW_NODE_NAME_MAX <span class="hljs-operator">+</span> <span class="hljs-number">1</span>];
+    uint8_t neighbor_count;
+    uint8_t neighbor_macs[CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS][<span class="hljs-number">6</span>];
+    <span class="hljs-keyword">char</span> neighbor_names[CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS][MESH_NOW_NODE_NAME_MAX <span class="hljs-operator">+</span> <span class="hljs-number">1</span>];
+} mesh_message_t;
+</code></pre>
+<h3 id="types-meshpeert" class="docmd-heading"><a href="#types-meshpeert" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_peer_t</code></h3>
+<pre class="hljs"><code class="language-c">typedef <span class="hljs-keyword">struct</span> {
+    uint8_t peer_addr[<span class="hljs-number">6</span>];
+    <span class="hljs-keyword">bool</span> active;
+    int64_t last_seen;
+    <span class="hljs-keyword">char</span> node_name[MESH_NOW_NODE_NAME_MAX <span class="hljs-operator">+</span> <span class="hljs-number">1</span>];
+} mesh_peer_t;
+</code></pre>
+<h3 id="types-meshnowreceivecallbackt" class="docmd-heading"><a href="#types-meshnowreceivecallbackt" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a><code>mesh_now_receive_callback_t</code></h3>
+<pre class="hljs"><code class="language-c">typedef <span class="hljs-keyword">void</span> (<span class="hljs-operator">*</span>mesh_now_receive_callback_t)(<span class="hljs-keyword">const</span> mesh_message_t <span class="hljs-operator">*</span>message);
+</code></pre>
+<h2 id="constants" class="docmd-heading"><a href="#constants" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Constants</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MAX_MESH_MESSAGE_LEN</code></td>
+<td>128</td>
+<td>Max payload length</td>
+</tr>
+<tr>
+<td><code>DEFAULT_ROUTE_TTL</code></td>
+<td>3 (default)</td>
+<td>Default hop limit; maps to <code>CONFIG_MESH_NOW_DEFAULT_ROUTE_TTL</code></td>
+</tr>
+<tr>
+<td><code>MESH_NOW_WIRE_VERSION</code></td>
+<td>1</td>
+<td>Wire format version</td>
+</tr>
+<tr>
+<td><code>MESH_NOW_HEADER_LEN</code></td>
+<td>32</td>
+<td>Wire header size</td>
+</tr>
+<tr>
+<td><code>MAX_PEERS</code></td>
+<td>20</td>
+<td>Max one-hop peer count</td>
+</tr>
+<tr>
+<td><code>MSG_FLAG_REQUIRES_ACK</code></td>
+<td><code>0x01</code></td>
+<td>ACK requested flag</td>
+</tr>
+<tr>
+<td><code>MSG_FLAG_ENCRYPTED</code></td>
+<td><code>0x02</code></td>
+<td>Encrypted payload flag</td>
+</tr>
+<tr>
+<td><code>MSG_FLAG_HAS_NODE_NAME</code></td>
+<td><code>0x04</code></td>
+<td>Beacon carries a name</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_BEACON</code></td>
+<td>0</td>
+<td>Discovery beacon</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_CHAT</code></td>
+<td>1</td>
+<td>Broadcast chat</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_DIRECT</code></td>
+<td>2</td>
+<td>Point-to-point</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_ACK</code></td>
+<td>3</td>
+<td>Acknowledgment</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_GROUP</code></td>
+<td>4</td>
+<td>Group message</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_PRESENCE</code></td>
+<td>5</td>
+<td>Status announcement</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_TYPING</code></td>
+<td>6</td>
+<td>Typing indicator</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_ROUTE_REQUEST</code></td>
+<td>7</td>
+<td>Route discovery flood</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_ROUTE_REPLY</code></td>
+<td>8</td>
+<td>Route discovery reply</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_ROUTE_ERROR</code></td>
+<td>9</td>
+<td>Broken next-hop announcement</td>
+</tr>
+</tbody>
+</table>
+</div><h2 id="next-steps" class="docmd-heading"><a href="#next-steps" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Next Steps</h2>
+<div class="docmd-container grids">
+<div class="docmd-container grid-item">
+<a href="message-queue/" class="docmd-button">
+<svg class="lucide-icon icon-layers button-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-layers"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+</svg>
+Message Queue</a></div>
+<div class="docmd-container grid-item">
+<a href="../protocol/wire-format/" class="docmd-button">
+<svg class="lucide-icon icon-file-code button-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-file-code"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 12.5 8 15l2 2.5" />
+  <path d="m14 12.5 2 2.5-2 2.5" />
+</svg>
+Wire Format</a></div>
+<div class="docmd-container grid-item">
+<a href="../guide/configuration/" class="docmd-button">
+<svg class="lucide-icon icon-settings button-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-settings"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+  <circle cx="12" cy="12" r="3" />
+</svg>
+Configuration</a></div>
+</div>
+
+                
+                  <div class="page-navigation">
+                    
+                      <a href="../guide/configuration/" class="prev-page">
+                        
+<svg class="lucide-icon icon-arrow-left page-nav-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-arrow-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m12 19-7-7 7-7" />
+  <path d="M19 12H5" />
+</svg>
+
+                        <span><small>Previous</small><strong>
+                            Configuration
+                          </strong></span>
+                      </a>
+                    
+                    
+                      <a href="../api/message-queue/" class="next-page">
+                        <span><small>Next</small>
+                          <strong>
+                            Message Queue
+                          </strong></span>
+                        
+<svg class="lucide-icon icon-arrow-right page-nav-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-arrow-right"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M5 12h14" />
+  <path d="m12 5 7 7-7 7" />
+</svg>
+
+                      </a>
+                    
+                  </div>
+                
+              </div>
+              
+              <div class="toc-sidebar">
+                
+
+
+  <div class="toc-container">
+    <h2 class="toc-title">On This Page<span class="mobile-view toc-menu-button float-right">
+<svg class="lucide-icon icon-chevron-down " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-down"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m6 9 6 6 6-6" />
+</svg>
+</span></h2>
+    <ul class="toc-list">
+      
+        <li class="toc-item toc-level-2">
+          <a href="#initialization" class="toc-link">Initialization</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#initialization-meshnowinit" class="toc-link">mesh_now_init</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#initialization-meshnowdeinit" class="toc-link">mesh_now_deinit</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#sending" class="toc-link">Sending</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#sending-meshnowsendbroadcast" class="toc-link">mesh_now_send_broadcast</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#sending-meshnowsendmessage" class="toc-link">mesh_now_send_message</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#sending-meshnowsenddirect" class="toc-link">mesh_now_send_direct</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#sending-meshnowsendgroup" class="toc-link">mesh_now_send_group</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#sending-meshnowsendpresence" class="toc-link">mesh_now_send_presence</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#sending-meshnowsendtyping" class="toc-link">mesh_now_send_typing</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#peer-management" class="toc-link">Peer Management</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#peer-management-meshnowaddpeer" class="toc-link">mesh_now_add_peer</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#peer-management-meshnowremovepeer" class="toc-link">mesh_now_remove_peer</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#peer-management-meshnowgetpeercount" class="toc-link">mesh_now_get_peer_count</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#peer-management-meshnowgetpeers" class="toc-link">mesh_now_get_peers</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#peer-management-meshnowsnapshotpeers" class="toc-link">mesh_now_snapshot_peers</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#routing" class="toc-link">Routing</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#routing-meshnowgetroute" class="toc-link">mesh_now_get_route</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#routing-meshnowgetroutecount" class="toc-link">mesh_now_get_route_count</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#routing-meshnowsnapshotroutes" class="toc-link">mesh_now_snapshot_routes</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#routing-meshnowpinroute" class="toc-link">mesh_now_pin_route</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#routing-meshnowunpinroute" class="toc-link">mesh_now_unpin_route</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#routing-meshnowsetroutefailurecallback" class="toc-link">mesh_now_set_route_failure_callback</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#node-naming" class="toc-link">Node Naming</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#node-naming-meshnowsetname" class="toc-link">mesh_now_set_name</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#node-naming-meshnowgetname" class="toc-link">mesh_now_get_name</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#node-naming-meshnowannouncename" class="toc-link">mesh_now_announce_name</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#configuration" class="toc-link">Configuration</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#configuration-meshnowsetreceivecallback" class="toc-link">mesh_now_set_receive_callback</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#configuration-meshnowsetgroup" class="toc-link">mesh_now_set_group</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#configuration-meshnowsetencryptionkey" class="toc-link">mesh_now_set_encryption_key</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#configuration-meshnowisencrypted" class="toc-link">mesh_now_is_encrypted</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#configuration-meshnowpeerisonline" class="toc-link">mesh_now_peer_is_online</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#configuration-meshnowgetgroupid" class="toc-link">mesh_now_get_group_id</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#types" class="toc-link">Types</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#types-meshmessaget" class="toc-link">mesh_message_t</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#types-meshpeert" class="toc-link">mesh_peer_t</a>
+        </li>
+      
+        <li class="toc-item toc-level-3">
+          <a href="#types-meshnowreceivecallbackt" class="toc-link">mesh_now_receive_callback_t</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#constants" class="toc-link">Constants</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#next-steps" class="toc-link">Next Steps</a>
+        </li>
+      
+    </ul>
+  </div>
+
+              </div>
+              
+            </div>
+            <div class="page-footer-actions">
+              
+              
+                <span class="git-last-updated" data-timestamp="1789347041000">
+                  <svg class="git-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span class="git-label">Last updated:</span>
+                  <span class="git-time" data-timestamp="1789347041000"></span>
+                  
+                  <div class="git-commit-tooltip" role="tooltip">
+                    <div class="git-tooltip-title">Recent commits</div>
+                    <ul class="git-commit-list">
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="NellowTCS">
+                            
+                              <img src="https://www.gravatar.com/avatar/baecf29c7bedbb00a8d5bd5984799c55?d=mp&amp;s=64" alt="NellowTCS">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="Docs">Docs</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">NellowTCS</span>
+                              <span class="git-commit-date" data-timestamp="1789347041000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="NellowTCS">
+                            
+                              <img src="https://www.gravatar.com/avatar/baecf29c7bedbb00a8d5bd5984799c55?d=mp&amp;s=64" alt="NellowTCS">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="Not-so-minor fixes">Not-so-minor fixes</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">NellowTCS</span>
+                              <span class="git-commit-date" data-timestamp="1789202603000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="NellowTCS">
+                            
+                              <img src="https://www.gravatar.com/avatar/baecf29c7bedbb00a8d5bd5984799c55?d=mp&amp;s=64" alt="NellowTCS">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="More TODOs">More TODOs</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">NellowTCS</span>
+                              <span class="git-commit-date" data-timestamp="1788481947000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="NellowTCS">
+                            
+                              <img src="https://www.gravatar.com/avatar/baecf29c7bedbb00a8d5bd5984799c55?d=mp&amp;s=64" alt="NellowTCS">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="Docs update and mutex hardening">Docs update and mutex hardening</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">NellowTCS</span>
+                              <span class="git-commit-date" data-timestamp="1788450761000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="NellowTCS">
+                            
+                              <img src="https://www.gravatar.com/avatar/baecf29c7bedbb00a8d5bd5984799c55?d=mp&amp;s=64" alt="NellowTCS">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="Docs and reorganization">Docs and reorganization</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">NellowTCS</span>
+                              <span class="git-commit-date" data-timestamp="1787273188000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                    </ul>
+                  </div>
+                  
+                </span>
+              
+              <span class="git-spacer"></span>
+              
+                <a href="https://github.com/NellowTCS/Mesh-NOW/edit/main/Docs/docs/Docs/docs/api/index.md" target="_blank" rel="noopener noreferrer" class="edit-link">
+                  
+<svg class="lucide-icon icon-pencil " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-pencil"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+  <path d="m15 5 4 4" />
+</svg>
+
+                  Edit this page
+                </a>
+              
+            </div>
+          </main>
+          
+
+
+<footer class="footer-complete">
+  <div class="footer-complete-top">
+      <div class="footer-brand">
+          
+            <span class="footer-title">Mesh-NOW</span>
+          
+          
+            <p class="footer-desc">Lightweight mesh networking protocol for ESP32 using ESP-NOW.</p>
+          
+        </div>
+        
+          <div class="footer-columns">
+            
+              <div class="footer-column">
+                <span class="footer-column-title">Resources</span>
+                <ul>
+                  
+                    <li><a href="getting-started/quickstart/" >Getting Started</a></li>
+                  
+                    <li><a href="../guide/message-format/" >Protocol Guide</a></li>
+                  
+                    <li><a href="../api/" >API Reference</a></li>
+                  
+                </ul>
+              </div>
+            
+              <div class="footer-column">
+                <span class="footer-column-title">Community</span>
+                <ul>
+                  
+                    <li><a href="https://github.com/NellowTCS/Mesh-NOW" >GitHub</a></li>
+                  
+                    <li><a href="https://github.com/NellowTCS/Mesh-NOW/issues" >Issues</a></li>
+                  
+                    <li><a href="https://github.com/NellowTCS/Mesh-NOW/discussions" >Discussions</a></li>
+                  
+                </ul>
+              </div>
+            
+              <div class="footer-column">
+                <span class="footer-column-title">Web</span>
+                <ul>
+                  
+                    <li><a href="https://NellowTCS.github.io/Mesh-NOW/index.html" >Demo</a></li>
+                  
+                    <li><a href="https://NellowTCS.github.io/Mesh-NOW/flasher.html" >Web Installer</a></li>
+                  
+                </ul>
+              </div>
+            
+          </div>
+        
+      </div>
+      <div class="footer-complete-bottom">
+        <div class="user-footer">Built with <a href="https://docmd.io">docmd</a>. <a href="https://github.com/NellowTCS/Mesh-NOW">View on GitHub</a>.</div>
+        
+          <div class="branding-footer">
+            Built with <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path><path d="M12 5 9.04 7.96a2.17 2.17 0 0 0 0 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 0 1 3.79 0l2.96 2.66"></path><path d="m18 15-2-2"></path><path d="m15 18-2-2"></path></svg> <a href="https://docmd.io" target="_blank" rel="noopener">docmd.</a>
+          </div>
+        
+      </div>
+  </footer>
+
+        </div>
+      </div>
+      
+      <script src="../assets/js/docmd-main.js?v=mu29oi7h"></script>
+      
+      <script src="../assets/js/docmd-git.js?v=mu29oi7h"></script>
+      <script src="../assets/js/docmd-image-lightbox.js?v=mu29oi7h" ></script>
+<script src="../assets/js/vendor/minisearch.js?v=mu29oi7h" ></script>
+<script src="../assets/js/docmd-search.js?v=mu29oi7h" ></script>
+<script src="../assets/js/docmd-git.js?v=mu29oi7h" ></script>
+<script src="../assets/js/docmd-ai.js?v=mu29oi7h" ></script>
+
+  <!-- Search Modal (Injected by @docmd/plugin-search) -->
+  <div id="docmd-search-modal" class="docmd-search-modal" style="display: none;" data-semantic="true" data-show-confidence="true" data-show-filters="true"
+       data-search-placeholder="Search documentation..."
+       data-search-no-results="No results found."
+       data-search-error="Failed to load search index."
+       data-search-offline="Search requires a web server. Open this site via http://localhost instead of file:// to enable search."
+       data-search-offline-build="Search is disabled because these docs were built with the --offline flag. Rebuild the site without the flag to enable search."
+       data-search-initial="Type to start searching..."
+       data-search-navigate="to navigate"
+       data-search-escape="to close">
+      <div class="docmd-search-box">
+          <div class="docmd-search-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon icon-search"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input type="text" id="docmd-search-input" placeholder="Search documentation..." autocomplete="off" spellcheck="false">
+              <button onclick="window.closeDocmdSearch()" class="docmd-search-close" aria-label="Close search">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon icon-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+              </button>
+          </div>
+          <div id="docmd-search-results" class="docmd-search-results"></div>
+          <div class="docmd-search-footer">
+              <span><kbd class="docmd-kbd">↑</kbd> <kbd class="docmd-kbd">↓</kbd> to navigate</span>
+              <span><kbd class="docmd-kbd">ESC</kbd> to close</span>
+          </div>
+      </div>
+  </div>
+
+    <script>
+      (function() {
+        var searchDebounceTimer;
+
+        document.addEventListener('click', function(e) {
+          var link = e.target.closest('a');
+          if (!link || !window.gtag) return;
+          
+          var url = link.href;
+          var hostname = window.location.hostname;
+          var isExternal = link.hostname && link.hostname !== hostname;
+          var isDownload = link.hasAttribute('download') || url.match(/\.(pdf|zip|tar|gz|exe|pkg)$/i);
+          
+          if (isExternal) {
+            gtag('event', 'click_external', { 'url': url, 'link_text': link.innerText.trim() });
+          } else if (isDownload) {
+            gtag('event', 'download', { 'file_name': url.split('/').pop(), 'url': url });
+          }
+
+          // TOC tracking
+          if (link.classList.contains('toc-link')) {
+            gtag('event', 'toc_click', { 'target_id': link.getAttribute('href'), 'title': link.innerText.trim() });
+          }
+
+          // Permalink tracking
+          if (link.classList.contains('heading-anchor')) {
+            gtag('event', 'permalink_click', { 'url': url });
+          }
+        });
+
+        
+        // Search Keyword Tracking
+        document.addEventListener('input', function(e) {
+          if (e.target.id === 'docmd-search-input' && window.gtag) {
+            var query = e.target.value.trim();
+            if (query.length < 3) return;
+            
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+              gtag('event', 'search', { 'search_term': query });
+            }, 1000);
+          }
+        });
+        
+      })();
+    </script>
+
+<script>window.__git_config={"repo":"https://github.com/NellowTCS/Mesh-NOW/edit/main/Docs/docs","branch":"main","editLink":true,"lastUpdated":true,"commitHistory":true,"maxCommits":5,"dateFormat":"relative"};window.__git_i18n={"lastUpdated":"Last updated","recentCommits":"Recent commits","viewCommitHistory":"View commit history","editOnGitHub":"Edit on GitHub","editOnGitLab":"Edit on GitLab","editOnBitbucket":"Edit on Bitbucket","editThisPage":"Edit this page","justNow":"just now","minutesAgo":"{n}m ago","hoursAgo":"{n}h ago","daysAgo":"{n}d ago"}</script>
+<div id="docmd-ai-root"></div><script>window.__docmd_ai_config={"endpoint":"","cloud":{},"captcha":true,"position":"bottom-center","siteTitle":"Mesh-NOW","siteBase":"/Mesh-NOW/","siteUrl":"https://NellowTCS.github.io/Mesh-NOW","versions":null,"i18n":null,"navigation":[{"title":"Home","path":"/","icon":"home"},{"title":"Getting Started","icon":"rocket","collapsible":false,"children":[{"title":"Quick Start","path":"/getting-started/quickstart/","icon":"play"},{"title":"Installation","path":"/getting-started/installation/","icon":"download"},{"title":"Core Concepts","path":"/getting-started/concepts/","icon":"book"}]},{"title":"Guide","icon":"book-open","collapsible":false,"children":[{"title":"Message Format","path":"/guide/message-format/","icon":"file-text"},{"title":"Peer Discovery","path":"/guide/peer-discovery/","icon":"search"},{"title":"Routing","path":"/guide/routing/","icon":"radio"},{"title":"Groups","path":"/guide/groups/","icon":"users"},{"title":"Encryption","path":"/guide/encryption/","icon":"lock"},{"title":"Security","path":"/guide/security/","icon":"shield"},{"title":"Reliability","path":"/guide/reliability/","icon":"refresh-cw"},{"title":"Configuration","path":"/guide/configuration/","icon":"settings"}]},{"title":"API Reference","icon":"code","collapsible":false,"children":[{"title":"Mesh NOW API","path":"/api/","icon":"box"},{"title":"Message Queue","path":"/api/message-queue/","icon":"layers"}]},{"title":"Protocol","icon":"file-code","collapsible":false,"children":[{"title":"Wire Format","path":"/protocol/wire-format/","icon":"hash"},{"title":"State Machine","path":"/protocol/state-machine/","icon":"cpu"}]},{"title":"GitHub","path":"https://github.com/NellowTCS/Mesh-NOW","icon":"github","external":true},{"title":"Demo","path":"https://NellowTCS.github.io/Mesh-NOW/index.html","icon":"monitor","external":true},{"title":"Web Flasher","path":"https://NellowTCS.github.io/Mesh-NOW/flasher.html","icon":"download","external":true}],"searchCapabilities":{"keyword":true,"semantic":true},"isWorkspace":false,"workspaceProjects":[],"contextLimit":5};</script>
+      
+      
+      
+  </body>
+</html>

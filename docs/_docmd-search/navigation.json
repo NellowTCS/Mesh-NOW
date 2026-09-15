@@ -1,0 +1,92 @@
+{
+  "tree": [
+    {
+      "title": "Api",
+      "path": "api",
+      "children": [
+        {
+          "title": "Index",
+          "path": "api/index.md"
+        },
+        {
+          "title": "Message Queue",
+          "path": "api/message-queue.md"
+        }
+      ]
+    },
+    {
+      "title": "Getting Started",
+      "path": "getting-started",
+      "children": [
+        {
+          "title": "Concepts",
+          "path": "getting-started/concepts.md"
+        },
+        {
+          "title": "Installation",
+          "path": "getting-started/installation.md"
+        },
+        {
+          "title": "Quickstart",
+          "path": "getting-started/quickstart.md"
+        }
+      ]
+    },
+    {
+      "title": "Guide",
+      "path": "guide",
+      "children": [
+        {
+          "title": "Configuration",
+          "path": "guide/configuration.md"
+        },
+        {
+          "title": "Encryption",
+          "path": "guide/encryption.md"
+        },
+        {
+          "title": "Groups",
+          "path": "guide/groups.md"
+        },
+        {
+          "title": "Message Format",
+          "path": "guide/message-format.md"
+        },
+        {
+          "title": "Peer Discovery",
+          "path": "guide/peer-discovery.md"
+        },
+        {
+          "title": "Reliability",
+          "path": "guide/reliability.md"
+        },
+        {
+          "title": "Routing",
+          "path": "guide/routing.md"
+        },
+        {
+          "title": "Security",
+          "path": "guide/security.md"
+        }
+      ]
+    },
+    {
+      "title": "Index",
+      "path": "index.md"
+    },
+    {
+      "title": "Protocol",
+      "path": "protocol",
+      "children": [
+        {
+          "title": "State Machine",
+          "path": "protocol/state-machine.md"
+        },
+        {
+          "title": "Wire Format",
+          "path": "protocol/wire-format.md"
+        }
+      ]
+    }
+  ]
+}

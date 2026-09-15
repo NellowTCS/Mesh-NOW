@@ -1,0 +1,1800 @@
+<!--
+  ---------------------------------------------------------------
+  docmd : the zero-config documentation engine.
+  @website https://docmd.io
+  [docmd-source] - Please do not remove this header.
+  ---------------------------------------------------------------
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="generator" content="docmd v0.9.5">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script>
+      var root = "../../";
+      if (root && !root.endsWith('/')) root += '/';
+      if (root === '') root = './';
+      window.DOCMD_ROOT = root;
+
+      window.DOCMD_SITE_ROOT = "/Mesh-NOW/";
+
+      window.DOCMD_APPEARANCE = "system";
+      window.DOCMD_VERSION_ROOT = "/";
+      window.DOCMD_BASE = "/Mesh-NOW/";
+      window.DOCMD_LOCALE = "";
+      window.DOCMD_DEFAULT_LOCALE = "";
+    </script>
+    <script>/**
+ * --------------------------------------------------------------------
+ * docmd : the zero-config documentation engine.
+ *
+ * @package     @docmd/core (and ecosystem)
+ * @website     https://docmd.io
+ * @repository  https://github.com/docmd-io/docmd
+ * @license     MIT
+ * @copyright   Copyright (c) 2025-present docmd.io
+ *
+ * [docmd-source] - Please do not remove this header.
+ * --------------------------------------------------------------------
+ */
+
+(function () {
+  try {
+    // 1. Determine Theme
+    //
+    // Resolve from three sources, in priority order:
+    //   1. localStorage explicit user choice (light / dark)
+    //   2. window.DOCMD_APPEARANCE  (current canonical name, set by EJS templates)
+    //   3. window.DOCMD_DEFAULT_MODE (legacy alias kept for pre-0.8.7 outputs)
+    //   4. 'light' as the final fallback
+    //
+    // Note: localStorage is only honoured when it holds an explicit
+    // 'light' or 'dark' value. A stored 'system' value (from a prior
+    // session where the user picked "follow system") must NOT win over
+    // a freshly resolved config value — the resolved value will itself
+    // be 'system' in that case and the OS preference check below takes
+    // over, so this is a no-op for the in-session behaviour but keeps
+    // any future storage migration simple.
+    var localValue = localStorage.getItem('docmd-theme');
+    var configValue = window.DOCMD_APPEARANCE
+      || window.DOCMD_DEFAULT_MODE
+      || 'light';
+    var theme = (localValue === 'light' || localValue === 'dark')
+      ? localValue
+      : configValue;
+
+    if (theme === 'system') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    // 2. Apply to Root
+    document.documentElement.setAttribute('data-theme', theme);
+
+    // 3. Highlight.js Toggle Strategy
+    var lightLink = document.getElementById('hljs-light');
+    var darkLink = document.getElementById('hljs-dark');
+
+    if (lightLink && darkLink) {
+      if (theme === 'dark') {
+        lightLink.disabled = true;
+        darkLink.disabled = false;
+      } else {
+        lightLink.disabled = false;
+        darkLink.disabled = true;
+      }
+    }
+
+    document.documentElement.style.visibility = "visible";
+  } catch (e) {
+    document.documentElement.style.visibility = "visible";
+    console.error('Theme init failed', e);
+  }
+})();</script>
+    <style>
+      html {
+        visibility: hidden;
+      }
+    </style>
+    <title>
+      Security : Mesh-NOW
+    </title>
+    
+    
+
+    <link id="site-favicon" rel="icon" href="../../assets/favicon.ico?v=mu29oi7h">
+    <link rel="stylesheet" href="../../assets/css/docmd-main.css?v=mu29oi7h">
+    
+    <link rel="stylesheet" href="../../assets/css/docmd-highlight-light.css?v=mu29oi7h" id="hljs-light" >
+    <link rel="stylesheet" href="../../assets/css/docmd-highlight-dark.css?v=mu29oi7h" id="hljs-dark" disabled>
+    
+    
+<meta name="description" content="What Mesh-NOW encryption protects and what it does not.">
+<link rel="canonical" href="https://NellowTCS.github.io/Mesh-NOW/guide/security/">
+<meta property="og:title" content="Security - Mesh-NOW">
+<meta property="og:description" content="What Mesh-NOW encryption protects and what it does not.">
+<meta property="og:url" content="https://NellowTCS.github.io/Mesh-NOW/guide/security/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Security - Mesh-NOW">
+<meta name="twitter:description" content="What Mesh-NOW encryption protects and what it does not.">
+
+
+
+
+<link rel="stylesheet" href="../../assets/css/docmd-theme-ruby.css?v=mu29oi7h" >
+<link rel="stylesheet" href="../../assets/css/docmd-git.css?v=mu29oi7h" >
+<link rel="stylesheet" href="../../assets/css/docmd-openapi.css?v=mu29oi7h" >
+<link rel="stylesheet" href="../../assets/css/docmd-ai.css?v=mu29oi7h" >
+
+    
+    
+  </head>
+  <body
+    class="sidebar-collapsible"
+    data-default-collapsed="false"
+    data-copy-code-enabled="true" data-spa-enabled="true" data-source-file="docs/guide/security.md">
+
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    
+    
+
+    
+    
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          
+<h1><a href="../../">
+                Mesh-NOW
+              </a></h1>
+          
+          <span class="mobile-view sidebar-menu-button float-right">
+            
+<svg class="lucide-icon icon-menu " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-menu"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M4 5h16" />
+  <path d="M4 12h16" />
+  <path d="M4 19h16" />
+</svg>
+
+          </span>
+        </div>
+        <div class="sidebar-top-group">
+          
+          
+          
+          
+        </div>
+        
+
+<nav class="sidebar-nav" aria-label="Main Navigation">
+  <ul>
+    
+      <li class="" >
+      
+        <a href="../../" class=" "
+          >
+           
+<svg class="lucide-icon icon-home " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-house"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+  <path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Home
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="expanded nav-group" >
+      
+        <span class="nav-label nav-group">
+           
+<svg class="lucide-icon icon-rocket " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-rocket"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09" />
+  <path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z" />
+  <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Getting Started
+          </span>
+          
+        </span>
+        
+
+        
+          <ul class="submenu">
+            
+      <li class="" >
+      
+        <a href="../../getting-started/quickstart/" class=" "
+          >
+           
+<svg class="lucide-icon icon-play " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-play"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Quick Start
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../getting-started/installation/" class=" "
+          >
+           
+<svg class="lucide-icon icon-download " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-download"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 15V3" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <path d="m7 10 5 5 5-5" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Installation
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../getting-started/concepts/" class=" "
+          >
+           
+<svg class="lucide-icon icon-book " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-book"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Core Concepts
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+          </ul>
+        
+      </li>
+    
+      <li class="active-parent expanded nav-group" >
+      
+        <span class="nav-label nav-group">
+           
+<svg class="lucide-icon icon-book-open " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-book-open"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 5v16" />
+  <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Guide
+          </span>
+          
+        </span>
+        
+
+        
+          <ul class="submenu">
+            
+      <li class="" >
+      
+        <a href="../../guide/message-format/" class=" "
+          >
+           
+<svg class="lucide-icon icon-file-text " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-file-text"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 9H8" />
+  <path d="M16 13H8" />
+  <path d="M16 17H8" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Message Format
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../guide/peer-discovery/" class=" "
+          >
+           
+<svg class="lucide-icon icon-search " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-search"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Peer Discovery
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../guide/routing/" class=" "
+          >
+           
+<svg class="lucide-icon icon-radio " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-radio"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M16.247 7.761a6 6 0 0 1 0 8.478" />
+  <path d="M19.075 4.933a10 10 0 0 1 0 14.134" />
+  <path d="M4.925 19.067a10 10 0 0 1 0-14.134" />
+  <path d="M7.753 16.239a6 6 0 0 1 0-8.478" />
+  <circle cx="12" cy="12" r="2" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Routing
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../guide/groups/" class=" "
+          >
+           
+<svg class="lucide-icon icon-users " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-users"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+  <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+  <circle cx="9" cy="7" r="4" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Groups
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../guide/encryption/" class=" "
+          >
+           
+<svg class="lucide-icon icon-lock " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-lock"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Encryption
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="active" >
+      
+        <a href="../../guide/security/" class="active "
+          >
+           
+<svg class="lucide-icon icon-shield " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-shield"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Security
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../guide/reliability/" class=" "
+          >
+           
+<svg class="lucide-icon icon-refresh-cw " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-refresh-cw"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+  <path d="M21 3v5h-5" />
+  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+  <path d="M8 16H3v5" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Reliability
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../guide/configuration/" class=" "
+          >
+           
+<svg class="lucide-icon icon-settings " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-settings"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+  <circle cx="12" cy="12" r="3" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Configuration
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+          </ul>
+        
+      </li>
+    
+      <li class="expanded nav-group" >
+      
+        <span class="nav-label nav-group">
+           
+<svg class="lucide-icon icon-code " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-code"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m16 18 6-6-6-6" />
+  <path d="m8 6-6 6 6 6" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            API Reference
+          </span>
+          
+        </span>
+        
+
+        
+          <ul class="submenu">
+            
+      <li class="" >
+      
+        <a href="../../api/" class=" "
+          >
+           
+<svg class="lucide-icon icon-box " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-box"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+  <path d="m3.3 7 8.7 5 8.7-5" />
+  <path d="M12 22V12" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Mesh NOW API
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../api/message-queue/" class=" "
+          >
+           
+<svg class="lucide-icon icon-layers " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-layers"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Message Queue
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+          </ul>
+        
+      </li>
+    
+      <li class="expanded nav-group" >
+      
+        <span class="nav-label nav-group">
+           
+<svg class="lucide-icon icon-file-code " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-file-code"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 12.5 8 15l2 2.5" />
+  <path d="m14 12.5 2 2.5-2 2.5" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Protocol
+          </span>
+          
+        </span>
+        
+
+        
+          <ul class="submenu">
+            
+      <li class="" >
+      
+        <a href="../../protocol/wire-format/" class=" "
+          >
+           
+<svg class="lucide-icon icon-hash " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-hash"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <line x1="4" x2="20" y1="9" y2="9" />
+  <line x1="4" x2="20" y1="15" y2="15" />
+  <line x1="10" x2="8" y1="3" y2="21" />
+  <line x1="16" x2="14" y1="3" y2="21" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Wire Format
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="../../protocol/state-machine/" class=" "
+          >
+           
+<svg class="lucide-icon icon-cpu " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-cpu"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 20v2" />
+  <path d="M12 2v2" />
+  <path d="M17 20v2" />
+  <path d="M17 2v2" />
+  <path d="M2 12h2" />
+  <path d="M2 17h2" />
+  <path d="M2 7h2" />
+  <path d="M20 12h2" />
+  <path d="M20 17h2" />
+  <path d="M20 7h2" />
+  <path d="M7 20v2" />
+  <path d="M7 2v2" />
+  <rect x="4" y="4" width="16" height="16" rx="2" />
+  <rect x="8" y="8" width="8" height="8" rx="1" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            State Machine
+            </span>
+          
+          
+        </a>
+        
+
+        
+      </li>
+    
+          </ul>
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="https://github.com/NellowTCS/Mesh-NOW" class=" "
+          target=&quot;_blank&quot; rel=&quot;noopener&quot;>
+           
+          
+          <span class="nav-item-title">
+            GitHub
+            </span>
+          
+           
+<svg class="lucide-icon icon-external-link nav-external-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-external-link"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 3h6v6" />
+  <path d="M10 14 21 3" />
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+</svg>
+
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="https://NellowTCS.github.io/Mesh-NOW/index.html" class=" "
+          target=&quot;_blank&quot; rel=&quot;noopener&quot;>
+           
+<svg class="lucide-icon icon-monitor " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-monitor"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="20" height="14" x="2" y="3" rx="2" />
+  <line x1="8" x2="16" y1="21" y2="21" />
+  <line x1="12" x2="12" y1="17" y2="21" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Demo
+            </span>
+          
+           
+<svg class="lucide-icon icon-external-link nav-external-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-external-link"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 3h6v6" />
+  <path d="M10 14 21 3" />
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+</svg>
+
+          
+        </a>
+        
+
+        
+      </li>
+    
+      <li class="" >
+      
+        <a href="https://NellowTCS.github.io/Mesh-NOW/flasher.html" class=" "
+          target=&quot;_blank&quot; rel=&quot;noopener&quot;>
+           
+<svg class="lucide-icon icon-download " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-download"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 15V3" />
+  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <path d="m7 10 5 5 5-5" />
+</svg>
+
+          
+          <span class="nav-item-title">
+            Web Flasher
+            </span>
+          
+           
+<svg class="lucide-icon icon-external-link nav-external-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-external-link"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M15 3h6v6" />
+  <path d="M10 14 21 3" />
+  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+</svg>
+
+          
+        </a>
+        
+
+        
+      </li>
+    
+  </ul>
+</nav>
+        <div class="sidebar-bottom-group mt-auto">
+          
+          
+          
+          
+        </div>
+      </aside>
+      
+      <div class="main-content-wrapper">
+        
+        
+        
+          <header class="page-header">
+            <div class="header-left">
+              
+                <button id="sidebar-toggle-button" class="sidebar-toggle-button"
+                  aria-label="Toggle Sidebar">
+                  
+<svg class="lucide-icon icon-chevron-left " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m15 18-6-6 6-6" />
+</svg>
+
+                </button>
+              
+              <div class="header-titles-wrapper">
+                <span class="header-title">
+                  Security
+                </span>
+              </div>
+            </div>
+            <div class="header-right">
+              
+                
+
+
+<div class="docmd-options-menu">
+    
+    <button class="docmd-search-trigger" aria-label="Search">
+        
+<svg class="lucide-icon icon-search " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-search"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m21 21-4.34-4.34" />
+  <circle cx="11" cy="11" r="8" />
+</svg>
+
+        <span class="search-label">Search</span>
+        <span class="search-keys"><kbd class="docmd-kbd">⌘</kbd><kbd class="docmd-kbd">K</kbd></span>
+    </button>
+    
+
+    
+
+    
+
+    
+    <button class="theme-toggle-button" aria-label="Toggle theme">
+        
+<svg class="lucide-icon icon-sun icon-sun" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-sun"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <circle cx="12" cy="12" r="4" />
+  <path d="M12 2v2" />
+  <path d="M12 20v2" />
+  <path d="m4.93 4.93 1.41 1.41" />
+  <path d="m17.66 17.66 1.41 1.41" />
+  <path d="M2 12h2" />
+  <path d="M20 12h2" />
+  <path d="m6.34 17.66-1.41 1.41" />
+  <path d="m19.07 4.93-1.41 1.41" />
+</svg>
+ 
+<svg class="lucide-icon icon-moon icon-moon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-moon"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
+</svg>
+
+    </button>
+    
+
+    
+</div>
+
+              
+            </div>
+          </header>
+        
+        <div class="content-theme-cover">
+          <main class="content-area" id="main-content">
+            <div class="content-layout">
+              <div class="main-content">
+                <div class="docmd-breadcrumbs-row">
+                  <div id="docmd-raw-markdown" data-content="---%0Atitle%3A%20%22Security%22%0Adescription%3A%20%22What%20Mesh-NOW%20encryption%20protects%20and%20what%20it%20does%20not.%22%0A---%0A%0AMesh-NOW%20encrypts%20the%20payload%20of%20data%20messages%20with%20AES-128-GCM%20once%20you%20set%20a%20key%20via%20%60mesh_now_set_encryption_key()%60.%20Control%20frames%20and%20every%20frame%20header%20stay%20in%20the%20clear.%20Encryption%20covers%20message%20content%20only%3B%20metadata%2C%20topology%2C%20and%20control%20traffic%20stay%20public.%0A%0A%23%23%20What%20gets%20encrypted%0A%0A%7C%20Frame%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Encrypted%20payload%20%20%20%20%20%20%7C%20Because%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20------------------------%20%7C%20----------------------%20%7C%20-----------------------------------------%20%7C%0A%7C%20%60MSG_TYPE_CHAT%60%20%20%20%20%20%20%20%20%20%20%7C%20Yes%2C%20when%20a%20key%20is%20set%20%7C%20User%20content%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_DIRECT%60%20%20%20%20%20%20%20%20%7C%20Yes%2C%20when%20a%20key%20is%20set%20%7C%20User%20content%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_GROUP%60%20%20%20%20%20%20%20%20%20%7C%20Yes%2C%20when%20a%20key%20is%20set%20%7C%20User%20content%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_PRESENCE%60%20%20%20%20%20%20%7C%20Yes%2C%20when%20a%20key%20is%20set%20%7C%20Status%20content%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_TYPING%60%20%20%20%20%20%20%20%20%7C%20Yes%2C%20when%20a%20key%20is%20set%20%7C%20Status%20content%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_BEACON%60%20%20%20%20%20%20%20%20%7C%20Never%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Peer%20discovery%20must%20work%20without%20the%20key%20%20%7C%0A%7C%20%60MSG_TYPE_ACK%60%20%20%20%20%20%20%20%20%20%20%20%7C%20Never%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Delivery%20confirmation%20is%20routing%20metadata%20%7C%0A%7C%20%60MSG_TYPE_ROUTE_REQUEST%60%20%7C%20Never%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Routing%20must%20work%20without%20the%20key%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_ROUTE_REPLY%60%20%20%20%7C%20Never%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Routing%20must%20work%20without%20the%20key%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60MSG_TYPE_ROUTE_ERROR%60%20%20%20%7C%20Never%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Routing%20must%20work%20without%20the%20key%20%20%20%20%20%20%20%20%20%7C%0A%0ATwo%20functions%20define%20the%20split%3A%20%60mesh_now_is_control_type()%60%20identifies%20the%20control%20frames%2C%20and%20%60mesh_now_prepare_wire()%60%20encrypts%20everything%20else.%20A%20control%20frame%20is%20never%20encrypted%2C%20with%20or%20without%20a%20key.%20The%2032-byte%20header%20is%20plaintext%20for%20every%20frame%20type.%0A%0A%60%60%60mermaid%0Aflowchart%20LR%0A%20%20%20%20P%5B%22Every%20frame%3A%2032-byte%20plaintext%20header%22%5D%20--%3E%20Ctrl%0A%20%20%20%20P%20--%3E%20Data%0A%0A%20%20%20%20subgraph%20Ctrl%5B%22Control%20plane%3A%20never%20encrypted%22%5D%0A%20%20%20%20%20%20%20%20B%5BBEACON%5D%0A%20%20%20%20%20%20%20%20K%5BACK%5D%0A%20%20%20%20%20%20%20%20R%5BROUTE_REQUEST%20%2F%20REPLY%20%2F%20ERROR%5D%0A%20%20%20%20end%0A%0A%20%20%20%20subgraph%20Data%5B%22Data%20plane%3A%20encrypted%20when%20a%20key%20is%20set%22%5D%0A%20%20%20%20%20%20%20%20C%5BCHAT%5D%0A%20%20%20%20%20%20%20%20D%5BDIRECT%5D%0A%20%20%20%20%20%20%20%20G%5BGROUP%5D%0A%20%20%20%20%20%20%20%20S%5BPRESENCE%5D%0A%20%20%20%20%20%20%20%20T%5BTYPING%5D%0A%20%20%20%20end%0A%60%60%60%0A%0A%23%23%20Threat%20model%0A%0A-%20The%20attacker%20can%20hear%20the%20radio%3A%20ESP-NOW%20does%20not%20encrypt%20on%20its%20own.%20Frames%20are%20readable%20bytes%20on%20the%20channel%2C%20the%20wire%20format%20is%20public%2C%20and%20AP%20WiFi%20encryption%20does%20not%20apply.%20A%20second%20ESP32%20in%20range%2C%20or%20any%20monitor-capable%20radio%2C%20is%20enough%20to%20capture%20frames.%0A-%20The%20attacker%20does%20not%20have%20the%20key%3A%20If%20it%20leaks%2C%20none%20of%20the%20guarantees%20below%20hold.%0A%0A%23%23%20What%20encryption%20does%0A%0A-%20Confidentiality%3A%20Payloads%20are%20unreadable%20without%20the%20key.%0A-%20Integrity%3A%20The%20GCM%20tag%20authenticates%20the%20ciphertext%20plus%20the%20AAD%3A%20%60msg_type%60%2C%20%60sender_mac%60%2C%20%60target_mac%60%2C%20%60group_id%60%2C%20%60timestamp%60.%20A%20modified%20frame%20fails%20authentication%20at%20the%20receiver%20and%20is%20dropped.%20Rewriting%20%60target_mac%60%20to%20re-route%20a%20frame%20fails%20the%20same%20way.%20%60message_id%60%20is%20bound%20through%20the%20nonce%2C%20not%20the%20AAD.%0A-%20Sender%20authenticity%3A%20%60sender_mac%60%20is%20authenticated%20for%20encrypted%20frames.%20Without%20the%20key%2C%20a%20data%20message%20cannot%20claim%20to%20come%20from%20a%20specific%20node.%0A%0A%23%23%20What%20stays%20visible%0A%0AFrames%20have%20no%20padding.%20An%20observer%20in%20radio%20range%20reads%20this%20about%20every%20frame%3A%0A%0A%7C%20Header%20field%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20What%20it%20reveals%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20---------------------------%20%7C%20-------------------------------------------------------------------%20%7C%0A%7C%20%60flags%60%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20That%20a%20frame%20is%20encrypted%20(%60MSG_FLAG_ENCRYPTED%60%20bit%20is%20visible)%20%20%20%20%20%7C%0A%7C%20%60sender_mac%60%20%2F%20%60target_mac%60%20%7C%20Who%20talks%20to%20whom%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60msg_type%60%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20The%20kind%20of%20traffic%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60group_id%60%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Group%20membership%20of%20a%20frame%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60hop_limit%60%20%2F%20%60hop_count%60%20%20%20%7C%20Network%20diameter%20and%20the%20path%20a%20frame%20takes%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60message_id%60%20%2F%20%60reply_to%60%20%20%20%7C%20Message%20volume%3B%20which%20ACK%20answers%20which%20message%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20%60timestamp%60%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20Traffic%20timing%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%7C%20Frame%20length%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20A%20proxy%20for%20payload%20length%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%0A%0AConsequences%3A%0A%0A-%20Traffic%20analysis%3A%20Addresses%2C%20types%2C%20sizes%2C%20and%20timing%20are%20visible%20on%20every%20frame.%20Encryption%20does%20not%20hide%20that%20a%20direct%20message%20moved%20from%20A%20to%20B%2C%20or%20how%20long%20it%20was.%0A-%20Topology%3A%20A%20beacon%20carries%20the%20node%20name%20and%20a%20zone%20announce%20of%20up%20to%20%60CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS%60%20peers%2C%20names%20included.%20A%20receiver%20at%20any%20link%20enumerates%20nodes%20and%20maps%20multi-hop%20topology.%0A-%20ACK%20spoofing%3A%20ACKs%20are%20unauthenticated%20and%20matched%20on%20%60reply_to%60%20only.%20A%20forged%20ACK%20frees%20the%20sender&#039;s%20pending%20slot%2C%20so%20retransmission%20for%20that%20message%20stops.%20The%20intended%20receiver%20is%20unaffected%3B%20the%20attack%20suppresses%20retries.%0A-%20Forged%20control%20frames%3A%20A%20forged%20beacon%20injects%20peers%20and%20phantom%20routes.%20A%20forged%20%60ROUTE_REPLY%60%20can%20pull%20traffic%20toward%20the%20attacker.%20Discovery%20and%20routing%20degrade%20as%20long%20as%20the%20control%20plane%20is%20keyless.%0A-%20Replay%3A%20The%20seen-message%20buffer%20holds%20%60CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS%60%20(default%20128)%20IDs%20in%20RAM%20and%20survives%20a%20single%20boot.%20A%20captured%20frame%20replayed%20after%20a%20reboot%2C%20or%20after%20its%20ID%20ages%20out%2C%20still%20decrypts%20and%20delivers.%20The%20nonce%20guarantees%20uniqueness%2C%20not%20freshness.%0A-%20Key%20recovery%3A%20The%20key%20is%20one%20static%2016%20bytes%20in%20RAM.%20Cloning%20the%20firmware%2C%20reading%20provisioning%20flash%2C%20or%20capturing%20the%20device%20recovers%20it%2C%20and%20everything%20that%20node%20handled%20becomes%20readable.%20No%20forward%20secrecy%2C%20no%20per-node%20keys%2C%20no%20rotation.%20One%20compromise%20opens%20the%20whole%20mesh.%0A-%20Jamming%3A%20ESP-NOW%20is%20unauthenticated%20802.11.%20Enough%20transmit%20power%20takes%20the%20channel%20down%20for%20everyone.%20No%20link-layer%20countermeasure%20exists.%0A%0A%23%23%20Why%20the%20control%20plane%20is%20unencrypted%0A%0A-%20Keyless%20operation%20must%20work%3A%20A%20node%20boots%20with%20no%20key%2C%20since%20one%20is%20set%20later%20or%20never.%20It%20still%20has%20to%20discover%20the%20mesh%2C%20be%20discovered%2C%20and%20relay%20for%20others.%0A-%20No%20payload%20to%20protect%3A%20Relays%20route%20on%20%60target_mac%60%20and%20the%20hop%20fields%2C%20which%20are%20already%20in%20the%20header.%20An%20ACK%20means%20%60reply_to%60%20plus%20its%20target%2C%20both%20already%20public.%0A-%20Routing%20depends%20on%20open%20frames%3A%20Zone%20announces%20and%20the%20route%20frames%20are%20consumed%20by%20every%20relay.%20Any%20node%20routes%20for%20the%20mesh%20without%20holding%20the%20key.%0A%0A%3A%3A%3A%20callout%20warning%20title%3A%22When%20the%20open%20control%20plane%20is%20not%20acceptable%22%0AMesh-NOW%20does%20not%20hide%20node%20names%2C%20topology%2C%20or%20delivery%20patterns.%20The%20data%20plane%20protects%20content%20only.%20Full%20traffic%20concealment%20needs%20a%20different%20link%20layer%20or%20a%20closed%20physical%20deployment.%0A%3A%3A%3A%20%2Fcallout%0A%0A%23%23%20Key%20management%0A%0A-%20Size%3A%2016%20bytes%20exactly.%20Use%20a%20random%20128-bit%20key%2C%20not%20a%20passphrase.%0A-%20Distribution%3A%20Out%20of%20band%3A%20pre-provisioned%20firmware%2C%20physical%20provisioning%2C%20or%20an%20encrypted%20side%20channel.%20The%20mesh%20has%20no%20secure%20channel%20until%20a%20key%20exists.%0A-%20Storage%3A%20The%20library%20holds%20the%20key%20in%20RAM.%20If%20the%20app%20also%20persists%20it%20(NVS%2C%20NVS%20encryption%2C%20embedded%20image)%2C%20that%20storage%20is%20readable%20from%20a%20captured%20device.%0A-%20Scope%3A%20One%20key%20for%20the%20whole%20mesh.%20Any%20node%20with%20it%20decrypts%20everything%20and%20can%20forge%20frames%20under%20any%20node&#039;s%20identity.%0A-%20Rotation%3A%20Manual%2C%20all%20nodes%20at%20once.%20After%20a%20compromise%2C%20treat%20pre-rotation%20captures%20as%20readable.%0A%0AEncryption%20protects%20message%20content%20and%20data-frame%20integrity%20against%20an%20attacker%20without%20the%20key.%20Metadata%2C%20topology%2C%20control%20traffic%2C%20and%20the%20key%20itself%20are%20outside%20that%20scope.%0A%0A%23%23%20Next%20Steps%0A%0A%3A%3A%3A%20grids%0A%3A%3A%3A%20grid%0A%3A%3A%3A%20button%20%22Encryption%22%20.%2Fencryption.md%20icon%3Alock%0A%3A%3A%3A%20%2Fgrid%0A%0A%3A%3A%3A%20grid%0A%3A%3A%3A%20button%20%22Wire%20Format%22%20..%2Fprotocol%2Fwire-format.md%20icon%3Afile-code%0A%3A%3A%3A%20%2Fgrid%0A%0A%3A%3A%3A%20grid%0A%3A%3A%3A%20button%20%22Reliability%22%20.%2Freliability.md%20icon%3Arefresh-cw%0A%3A%3A%3A%20%2Fgrid%0A%3A%3A%3A%20%2Fgrids%0A" style="display: none;"></div>
+                  
+                    <nav aria-label="breadcrumb" class="docmd-breadcrumbs">
+                      <ol>
+                        
+                        
+                          <li class="breadcrumb-item " >
+                            
+                              <span>Guide</span>
+                            
+                            
+                              <span class="breadcrumb-separator">
+<svg class="lucide-icon icon-chevron-right " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-right"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m9 18 6-6-6-6" />
+</svg>
+</span>
+                            
+                          </li>
+                        
+                          <li class="breadcrumb-item active" aria-current=&quot;page&quot;>
+                            
+                              <span>Security</span>
+                            
+                            
+                          </li>
+                        
+                      </ol>
+                    </nav>
+                  
+
+                  
+                    <div class="docmd-copy-widgets">
+                      
+                        <button class="docmd-copy-btn docmd-copy-raw-btn" data-copied="Copied!" title="Copy Markdown" aria-label="Copy Markdown">
+                          <span class="docmd-btn-icon">
+<svg class="lucide-icon icon-copy " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-copy"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+</svg>
+</span>
+                        </button>
+                      
+                      
+                        <button class="docmd-copy-btn docmd-copy-context-btn" data-copied="Copied!" title="Copy Context">
+                          <span class="docmd-btn-icon">
+<svg class="lucide-icon icon-message-square " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-message-square"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
+</svg>
+</span>
+                          <span class="docmd-btn-text">Copy Context</span>
+                        </button>
+                      
+                    </div>
+                  
+                </div>
+                
+                <p>Mesh-NOW encrypts the payload of data messages with AES-128-GCM once you set a key via <code>mesh_now_set_encryption_key()</code>. Control frames and every frame header stay in the clear. Encryption covers message content only; metadata, topology, and control traffic stay public.</p>
+<h2 id="what-gets-encrypted" class="docmd-heading"><a href="#what-gets-encrypted" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>What gets encrypted</h2>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Frame</th>
+<th>Encrypted payload</th>
+<th>Because</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MSG_TYPE_CHAT</code></td>
+<td>Yes, when a key is set</td>
+<td>User content</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_DIRECT</code></td>
+<td>Yes, when a key is set</td>
+<td>User content</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_GROUP</code></td>
+<td>Yes, when a key is set</td>
+<td>User content</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_PRESENCE</code></td>
+<td>Yes, when a key is set</td>
+<td>Status content</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_TYPING</code></td>
+<td>Yes, when a key is set</td>
+<td>Status content</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_BEACON</code></td>
+<td>Never</td>
+<td>Peer discovery must work without the key</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_ACK</code></td>
+<td>Never</td>
+<td>Delivery confirmation is routing metadata</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_ROUTE_REQUEST</code></td>
+<td>Never</td>
+<td>Routing must work without the key</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_ROUTE_REPLY</code></td>
+<td>Never</td>
+<td>Routing must work without the key</td>
+</tr>
+<tr>
+<td><code>MSG_TYPE_ROUTE_ERROR</code></td>
+<td>Never</td>
+<td>Routing must work without the key</td>
+</tr>
+</tbody>
+</table>
+</div><p>Two functions define the split: <code>mesh_now_is_control_type()</code> identifies the control frames, and <code>mesh_now_prepare_wire()</code> encrypts everything else. A control frame is never encrypted, with or without a key. The 32-byte header is plaintext for every frame type.</p>
+<div class="mermaid">flowchart LR
+    P[&quot;Every frame: 32-byte plaintext header&quot;] --&gt; Ctrl
+    P --&gt; Data
+
+    subgraph Ctrl[&quot;Control plane: never encrypted&quot;]
+        B[BEACON]
+        K[ACK]
+        R[ROUTE_REQUEST / REPLY / ERROR]
+    end
+
+    subgraph Data[&quot;Data plane: encrypted when a key is set&quot;]
+        C[CHAT]
+        D[DIRECT]
+        G[GROUP]
+        S[PRESENCE]
+        T[TYPING]
+    end
+</div>
+<h2 id="threat-model" class="docmd-heading"><a href="#threat-model" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Threat model</h2>
+<ul>
+<li>The attacker can hear the radio: ESP-NOW does not encrypt on its own. Frames are readable bytes on the channel, the wire format is public, and AP WiFi encryption does not apply. A second ESP32 in range, or any monitor-capable radio, is enough to capture frames.</li>
+<li>The attacker does not have the key: If it leaks, none of the guarantees below hold.</li>
+</ul>
+<h2 id="what-encryption-does" class="docmd-heading"><a href="#what-encryption-does" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>What encryption does</h2>
+<ul>
+<li>Confidentiality: Payloads are unreadable without the key.</li>
+<li>Integrity: The GCM tag authenticates the ciphertext plus the AAD: <code>msg_type</code>, <code>sender_mac</code>, <code>target_mac</code>, <code>group_id</code>, <code>timestamp</code>. A modified frame fails authentication at the receiver and is dropped. Rewriting <code>target_mac</code> to re-route a frame fails the same way. <code>message_id</code> is bound through the nonce, not the AAD.</li>
+<li>Sender authenticity: <code>sender_mac</code> is authenticated for encrypted frames. Without the key, a data message cannot claim to come from a specific node.</li>
+</ul>
+<h2 id="what-stays-visible" class="docmd-heading"><a href="#what-stays-visible" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>What stays visible</h2>
+<p>Frames have no padding. An observer in radio range reads this about every frame:</p>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>Header field</th>
+<th>What it reveals</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>flags</code></td>
+<td>That a frame is encrypted (<code>MSG_FLAG_ENCRYPTED</code> bit is visible)</td>
+</tr>
+<tr>
+<td><code>sender_mac</code> / <code>target_mac</code></td>
+<td>Who talks to whom</td>
+</tr>
+<tr>
+<td><code>msg_type</code></td>
+<td>The kind of traffic</td>
+</tr>
+<tr>
+<td><code>group_id</code></td>
+<td>Group membership of a frame</td>
+</tr>
+<tr>
+<td><code>hop_limit</code> / <code>hop_count</code></td>
+<td>Network diameter and the path a frame takes</td>
+</tr>
+<tr>
+<td><code>message_id</code> / <code>reply_to</code></td>
+<td>Message volume; which ACK answers which message</td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td>Traffic timing</td>
+</tr>
+<tr>
+<td>Frame length</td>
+<td>A proxy for payload length</td>
+</tr>
+</tbody>
+</table>
+</div><p>Consequences:</p>
+<ul>
+<li>Traffic analysis: Addresses, types, sizes, and timing are visible on every frame. Encryption does not hide that a direct message moved from A to B, or how long it was.</li>
+<li>Topology: A beacon carries the node name and a zone announce of up to <code>CONFIG_MESH_NOW_MAX_BEACON_NEIGHBORS</code> peers, names included. A receiver at any link enumerates nodes and maps multi-hop topology.</li>
+<li>ACK spoofing: ACKs are unauthenticated and matched on <code>reply_to</code> only. A forged ACK frees the sender’s pending slot, so retransmission for that message stops. The intended receiver is unaffected; the attack suppresses retries.</li>
+<li>Forged control frames: A forged beacon injects peers and phantom routes. A forged <code>ROUTE_REPLY</code> can pull traffic toward the attacker. Discovery and routing degrade as long as the control plane is keyless.</li>
+<li>Replay: The seen-message buffer holds <code>CONFIG_MESH_NOW_MAX_SEEN_MESSAGE_IDS</code> (default 128) IDs in RAM and survives a single boot. A captured frame replayed after a reboot, or after its ID ages out, still decrypts and delivers. The nonce guarantees uniqueness, not freshness.</li>
+<li>Key recovery: The key is one static 16 bytes in RAM. Cloning the firmware, reading provisioning flash, or capturing the device recovers it, and everything that node handled becomes readable. No forward secrecy, no per-node keys, no rotation. One compromise opens the whole mesh.</li>
+<li>Jamming: ESP-NOW is unauthenticated 802.11. Enough transmit power takes the channel down for everyone. No link-layer countermeasure exists.</li>
+</ul>
+<h2 id="why-the-control-plane-is-unencrypted" class="docmd-heading"><a href="#why-the-control-plane-is-unencrypted" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Why the control plane is unencrypted</h2>
+<ul>
+<li>Keyless operation must work: A node boots with no key, since one is set later or never. It still has to discover the mesh, be discovered, and relay for others.</li>
+<li>No payload to protect: Relays route on <code>target_mac</code> and the hop fields, which are already in the header. An ACK means <code>reply_to</code> plus its target, both already public.</li>
+<li>Routing depends on open frames: Zone announces and the route frames are consumed by every relay. Any node routes for the mesh without holding the key.</li>
+</ul>
+<div class="docmd-container callout callout-warning"><div class="callout-title">When the open control plane is not acceptable</div><div class="callout-content">
+<p>Mesh-NOW does not hide node names, topology, or delivery patterns. The data plane protects content only. Full traffic concealment needs a different link layer or a closed physical deployment.</p>
+</div></div>
+<h2 id="key-management" class="docmd-heading"><a href="#key-management" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Key management</h2>
+<ul>
+<li>Size: 16 bytes exactly. Use a random 128-bit key, not a passphrase.</li>
+<li>Distribution: Out of band: pre-provisioned firmware, physical provisioning, or an encrypted side channel. The mesh has no secure channel until a key exists.</li>
+<li>Storage: The library holds the key in RAM. If the app also persists it (NVS, NVS encryption, embedded image), that storage is readable from a captured device.</li>
+<li>Scope: One key for the whole mesh. Any node with it decrypts everything and can forge frames under any node’s identity.</li>
+<li>Rotation: Manual, all nodes at once. After a compromise, treat pre-rotation captures as readable.</li>
+</ul>
+<p>Encryption protects message content and data-frame integrity against an attacker without the key. Metadata, topology, control traffic, and the key itself are outside that scope.</p>
+<h2 id="next-steps" class="docmd-heading"><a href="#next-steps" class="heading-anchor" aria-label="Permalink to this section"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link2-icon lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2m6 0h2a5 5 0 1 1 0 10h-2m-7-5h8"/></svg></a>Next Steps</h2>
+<div class="docmd-container grids">
+<div class="docmd-container grid-item">
+<a href="../encryption/" class="docmd-button">
+<svg class="lucide-icon icon-lock button-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-lock"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+</svg>
+Encryption</a></div>
+<div class="docmd-container grid-item">
+<a href="../../protocol/wire-format/" class="docmd-button">
+<svg class="lucide-icon icon-file-code button-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-file-code"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+  <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+  <path d="M10 12.5 8 15l2 2.5" />
+  <path d="m14 12.5 2 2.5-2 2.5" />
+</svg>
+Wire Format</a></div>
+<div class="docmd-container grid-item">
+<a href="../reliability/" class="docmd-button">
+<svg class="lucide-icon icon-refresh-cw button-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-refresh-cw"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+  <path d="M21 3v5h-5" />
+  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+  <path d="M8 16H3v5" />
+</svg>
+Reliability</a></div>
+</div>
+
+                
+                  <div class="page-navigation">
+                    
+                      <a href="../../guide/encryption/" class="prev-page">
+                        
+<svg class="lucide-icon icon-arrow-left page-nav-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-arrow-left"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m12 19-7-7 7-7" />
+  <path d="M19 12H5" />
+</svg>
+
+                        <span><small>Previous</small><strong>
+                            Encryption
+                          </strong></span>
+                      </a>
+                    
+                    
+                      <a href="../../guide/reliability/" class="next-page">
+                        <span><small>Next</small>
+                          <strong>
+                            Reliability
+                          </strong></span>
+                        
+<svg class="lucide-icon icon-arrow-right page-nav-icon" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-arrow-right"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M5 12h14" />
+  <path d="m12 5 7 7-7 7" />
+</svg>
+
+                      </a>
+                    
+                  </div>
+                
+              </div>
+              
+              <div class="toc-sidebar">
+                
+
+
+  <div class="toc-container">
+    <h2 class="toc-title">On This Page<span class="mobile-view toc-menu-button float-right">
+<svg class="lucide-icon icon-chevron-down " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-chevron-down"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="m6 9 6 6 6-6" />
+</svg>
+</span></h2>
+    <ul class="toc-list">
+      
+        <li class="toc-item toc-level-2">
+          <a href="#what-gets-encrypted" class="toc-link">What gets encrypted</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#threat-model" class="toc-link">Threat model</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#what-encryption-does" class="toc-link">What encryption does</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#what-stays-visible" class="toc-link">What stays visible</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#why-the-control-plane-is-unencrypted" class="toc-link">Why the control plane is unencrypted</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#key-management" class="toc-link">Key management</a>
+        </li>
+      
+        <li class="toc-item toc-level-2">
+          <a href="#next-steps" class="toc-link">Next Steps</a>
+        </li>
+      
+    </ul>
+  </div>
+
+              </div>
+              
+            </div>
+            <div class="page-footer-actions">
+              
+              
+                <span class="git-last-updated" data-timestamp="1789347041000">
+                  <svg class="git-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span class="git-label">Last updated:</span>
+                  <span class="git-time" data-timestamp="1789347041000"></span>
+                  
+                  <div class="git-commit-tooltip" role="tooltip">
+                    <div class="git-tooltip-title">Recent commits</div>
+                    <ul class="git-commit-list">
+                      
+                        <li class="git-commit-item">
+                          <div class="git-commit-avatar" title="NellowTCS">
+                            
+                              <img src="https://www.gravatar.com/avatar/baecf29c7bedbb00a8d5bd5984799c55?d=mp&amp;s=64" alt="NellowTCS">
+                            
+                          </div>
+                          <div class="git-commit-details">
+                            <div class="git-commit-message" title="Docs">Docs</div>
+                            <div class="git-commit-meta">
+                              <span class="git-commit-author">NellowTCS</span>
+                              <span class="git-commit-date" data-timestamp="1789347041000"></span>
+                            </div>
+                          </div>
+                        </li>
+                      
+                    </ul>
+                  </div>
+                  
+                </span>
+              
+              <span class="git-spacer"></span>
+              
+                <a href="https://github.com/NellowTCS/Mesh-NOW/edit/main/Docs/docs/Docs/docs/guide/security.md" target="_blank" rel="noopener noreferrer" class="edit-link">
+                  
+<svg class="lucide-icon icon-pencil " width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"
+  class="lucide lucide-pencil"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+  <path d="m15 5 4 4" />
+</svg>
+
+                  Edit this page
+                </a>
+              
+            </div>
+          </main>
+          
+
+
+<footer class="footer-complete">
+  <div class="footer-complete-top">
+      <div class="footer-brand">
+          
+            <span class="footer-title">Mesh-NOW</span>
+          
+          
+            <p class="footer-desc">Lightweight mesh networking protocol for ESP32 using ESP-NOW.</p>
+          
+        </div>
+        
+          <div class="footer-columns">
+            
+              <div class="footer-column">
+                <span class="footer-column-title">Resources</span>
+                <ul>
+                  
+                    <li><a href="getting-started/quickstart/" >Getting Started</a></li>
+                  
+                    <li><a href="../../guide/message-format/" >Protocol Guide</a></li>
+                  
+                    <li><a href="../../api/" >API Reference</a></li>
+                  
+                </ul>
+              </div>
+            
+              <div class="footer-column">
+                <span class="footer-column-title">Community</span>
+                <ul>
+                  
+                    <li><a href="https://github.com/NellowTCS/Mesh-NOW" >GitHub</a></li>
+                  
+                    <li><a href="https://github.com/NellowTCS/Mesh-NOW/issues" >Issues</a></li>
+                  
+                    <li><a href="https://github.com/NellowTCS/Mesh-NOW/discussions" >Discussions</a></li>
+                  
+                </ul>
+              </div>
+            
+              <div class="footer-column">
+                <span class="footer-column-title">Web</span>
+                <ul>
+                  
+                    <li><a href="https://NellowTCS.github.io/Mesh-NOW/index.html" >Demo</a></li>
+                  
+                    <li><a href="https://NellowTCS.github.io/Mesh-NOW/flasher.html" >Web Installer</a></li>
+                  
+                </ul>
+              </div>
+            
+          </div>
+        
+      </div>
+      <div class="footer-complete-bottom">
+        <div class="user-footer">Built with <a href="https://docmd.io">docmd</a>. <a href="https://github.com/NellowTCS/Mesh-NOW">View on GitHub</a>.</div>
+        
+          <div class="branding-footer">
+            Built with <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path><path d="M12 5 9.04 7.96a2.17 2.17 0 0 0 0 3.08c.82.82 2.13.85 3 .07l2.07-1.9a2.82 2.82 0 0 1 3.79 0l2.96 2.66"></path><path d="m18 15-2-2"></path><path d="m15 18-2-2"></path></svg> <a href="https://docmd.io" target="_blank" rel="noopener">docmd.</a>
+          </div>
+        
+      </div>
+  </footer>
+
+        </div>
+      </div>
+      
+      <script src="../../assets/js/docmd-main.js?v=mu29oi7h"></script>
+      
+      <script src="../../assets/js/docmd-git.js?v=mu29oi7h"></script>
+      <script src="../../assets/js/docmd-image-lightbox.js?v=mu29oi7h" ></script>
+<script src="../../assets/js/vendor/minisearch.js?v=mu29oi7h" ></script>
+<script src="../../assets/js/docmd-search.js?v=mu29oi7h" ></script>
+<script src="../../assets/js/init-mermaid.js?v=mu29oi7h" ></script>
+<script src="../../assets/js/docmd-git.js?v=mu29oi7h" ></script>
+<script src="../../assets/js/docmd-ai.js?v=mu29oi7h" ></script>
+
+  <!-- Search Modal (Injected by @docmd/plugin-search) -->
+  <div id="docmd-search-modal" class="docmd-search-modal" style="display: none;" data-semantic="true" data-show-confidence="true" data-show-filters="true"
+       data-search-placeholder="Search documentation..."
+       data-search-no-results="No results found."
+       data-search-error="Failed to load search index."
+       data-search-offline="Search requires a web server. Open this site via http://localhost instead of file:// to enable search."
+       data-search-offline-build="Search is disabled because these docs were built with the --offline flag. Rebuild the site without the flag to enable search."
+       data-search-initial="Type to start searching..."
+       data-search-navigate="to navigate"
+       data-search-escape="to close">
+      <div class="docmd-search-box">
+          <div class="docmd-search-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon icon-search"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input type="text" id="docmd-search-input" placeholder="Search documentation..." autocomplete="off" spellcheck="false">
+              <button onclick="window.closeDocmdSearch()" class="docmd-search-close" aria-label="Close search">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon icon-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+              </button>
+          </div>
+          <div id="docmd-search-results" class="docmd-search-results"></div>
+          <div class="docmd-search-footer">
+              <span><kbd class="docmd-kbd">↑</kbd> <kbd class="docmd-kbd">↓</kbd> to navigate</span>
+              <span><kbd class="docmd-kbd">ESC</kbd> to close</span>
+          </div>
+      </div>
+  </div>
+
+    <script>
+      (function() {
+        var searchDebounceTimer;
+
+        document.addEventListener('click', function(e) {
+          var link = e.target.closest('a');
+          if (!link || !window.gtag) return;
+          
+          var url = link.href;
+          var hostname = window.location.hostname;
+          var isExternal = link.hostname && link.hostname !== hostname;
+          var isDownload = link.hasAttribute('download') || url.match(/\.(pdf|zip|tar|gz|exe|pkg)$/i);
+          
+          if (isExternal) {
+            gtag('event', 'click_external', { 'url': url, 'link_text': link.innerText.trim() });
+          } else if (isDownload) {
+            gtag('event', 'download', { 'file_name': url.split('/').pop(), 'url': url });
+          }
+
+          // TOC tracking
+          if (link.classList.contains('toc-link')) {
+            gtag('event', 'toc_click', { 'target_id': link.getAttribute('href'), 'title': link.innerText.trim() });
+          }
+
+          // Permalink tracking
+          if (link.classList.contains('heading-anchor')) {
+            gtag('event', 'permalink_click', { 'url': url });
+          }
+        });
+
+        
+        // Search Keyword Tracking
+        document.addEventListener('input', function(e) {
+          if (e.target.id === 'docmd-search-input' && window.gtag) {
+            var query = e.target.value.trim();
+            if (query.length < 3) return;
+            
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+              gtag('event', 'search', { 'search_term': query });
+            }, 1000);
+          }
+        });
+        
+      })();
+    </script>
+
+<script>window.__git_config={"repo":"https://github.com/NellowTCS/Mesh-NOW/edit/main/Docs/docs","branch":"main","editLink":true,"lastUpdated":true,"commitHistory":true,"maxCommits":5,"dateFormat":"relative"};window.__git_i18n={"lastUpdated":"Last updated","recentCommits":"Recent commits","viewCommitHistory":"View commit history","editOnGitHub":"Edit on GitHub","editOnGitLab":"Edit on GitLab","editOnBitbucket":"Edit on Bitbucket","editThisPage":"Edit this page","justNow":"just now","minutesAgo":"{n}m ago","hoursAgo":"{n}h ago","daysAgo":"{n}d ago"}</script>
+<div id="docmd-ai-root"></div><script>window.__docmd_ai_config={"endpoint":"","cloud":{},"captcha":true,"position":"bottom-center","siteTitle":"Mesh-NOW","siteBase":"/Mesh-NOW/","siteUrl":"https://NellowTCS.github.io/Mesh-NOW","versions":null,"i18n":null,"navigation":[{"title":"Home","path":"/","icon":"home"},{"title":"Getting Started","icon":"rocket","collapsible":false,"children":[{"title":"Quick Start","path":"/getting-started/quickstart/","icon":"play"},{"title":"Installation","path":"/getting-started/installation/","icon":"download"},{"title":"Core Concepts","path":"/getting-started/concepts/","icon":"book"}]},{"title":"Guide","icon":"book-open","collapsible":false,"children":[{"title":"Message Format","path":"/guide/message-format/","icon":"file-text"},{"title":"Peer Discovery","path":"/guide/peer-discovery/","icon":"search"},{"title":"Routing","path":"/guide/routing/","icon":"radio"},{"title":"Groups","path":"/guide/groups/","icon":"users"},{"title":"Encryption","path":"/guide/encryption/","icon":"lock"},{"title":"Security","path":"/guide/security/","icon":"shield"},{"title":"Reliability","path":"/guide/reliability/","icon":"refresh-cw"},{"title":"Configuration","path":"/guide/configuration/","icon":"settings"}]},{"title":"API Reference","icon":"code","collapsible":false,"children":[{"title":"Mesh NOW API","path":"/api/","icon":"box"},{"title":"Message Queue","path":"/api/message-queue/","icon":"layers"}]},{"title":"Protocol","icon":"file-code","collapsible":false,"children":[{"title":"Wire Format","path":"/protocol/wire-format/","icon":"hash"},{"title":"State Machine","path":"/protocol/state-machine/","icon":"cpu"}]},{"title":"GitHub","path":"https://github.com/NellowTCS/Mesh-NOW","icon":"github","external":true},{"title":"Demo","path":"https://NellowTCS.github.io/Mesh-NOW/index.html","icon":"monitor","external":true},{"title":"Web Flasher","path":"https://NellowTCS.github.io/Mesh-NOW/flasher.html","icon":"download","external":true}],"searchCapabilities":{"keyword":true,"semantic":true},"isWorkspace":false,"workspaceProjects":[],"contextLimit":5};</script>
+      
+      
+      
+  </body>
+</html>

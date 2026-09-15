@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "model": "Xenova/all-MiniLM-L6-v2",
+  "dimensions": 384,
+  "status": "complete",
+  "totalFiles": 16,
+  "indexedFiles": 16,
+  "totalChunks": 183,
+  "batchCount": 1,
+  "files": {
+    "api/index.md": {
+      "mtime": 1789451814922.4395,
+      "size": 14544,
+      "batches": []
+    },
+    "api/message-queue.md": {
+      "mtime": 1789451814922.5872,
+      "size": 4208,
+      "batches": []
+    },
+    "getting-started/concepts.md": {
+      "mtime": 1789451814922.5872,
+      "size": 2932,
+      "batches": []
+    },
+    "getting-started/installation.md": {
+      "mtime": 1789451814922.7017,
+      "size": 2781,
+      "batches": []
+    },
+    "getting-started/quickstart.md": {
+      "mtime": 1789451814922.7017,
+      "size": 2151,
+      "batches": []
+    },
+    "guide/configuration.md": {
+      "mtime": 1789451814922.7017,
+      "size": 7215,
+      "batches": []
+    },
+    "guide/encryption.md": {
+      "mtime": 1789451814922.8616,
+      "size": 3653,
+      "batches": []
+    },
+    "guide/groups.md": {
+      "mtime": 1789451814922.8616,
+      "size": 2232,
+      "batches": []
+    },
+    "guide/message-format.md": {
+      "mtime": 1789451814922.8616,
+      "size": 6670,
+      "batches": []
+    },
+    "guide/peer-discovery.md": {
+      "mtime": 1789451814922.8616,
+      "size": 4372,
+      "batches": []
+    },
+    "guide/reliability.md": {
+      "mtime": 1789451814922.8616,
+      "size": 5826,
+      "batches": []
+    },
+    "guide/routing.md": {
+      "mtime": 1789451814922.8616,
+      "size": 3911,
+      "batches": []
+    },
+    "guide/security.md": {
+      "mtime": 1789451814922.8616,
+      "size": 7688,
+      "batches": []
+    },
+    "index.md": {
+      "mtime": 1789451814922.8616,
+      "size": 3244,
+      "batches": []
+    },
+    "protocol/state-machine.md": {
+      "mtime": 1789451814922.8616,
+      "size": 5308,
+      "batches": []
+    },
+    "protocol/wire-format.md": {
+      "mtime": 1789451814923.3499,
+      "size": 6066,
+      "batches": []
+    }
+  }
+}
