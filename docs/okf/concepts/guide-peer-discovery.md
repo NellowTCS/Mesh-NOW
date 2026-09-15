@@ -7,7 +7,7 @@ path: /guide/peer-discovery/
 updated: 2026-09-15
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-15T06:11:24.836Z"
+  generated_at: "2026-09-15T13:12:31.886Z"
 ---
 ---
 title: "Peer Discovery"
