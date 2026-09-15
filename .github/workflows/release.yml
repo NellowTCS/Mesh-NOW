@@ -122,7 +122,7 @@ jobs:
           path: release/
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.build-release.outputs.version }}
           name: Mesh-NOW ${{ needs.build-release.outputs.version }}
