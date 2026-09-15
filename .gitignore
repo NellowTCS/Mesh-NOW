@@ -28,6 +28,7 @@ sdkconfig.old
 *.map
 *.csv
 dependencies.lock
+Firmware/managed_components/
 
 # Generated frontend headers
 Firmware/main/*_html.h

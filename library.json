@@ -37,8 +37,6 @@
         "srcFilter": [
             "+<Build/src/>"
         ],
-        "includeDir": [
-            "Build/include"
-        ]
+        "includeDir": "Build/include"
     }
 }
