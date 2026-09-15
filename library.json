@@ -35,8 +35,12 @@
     },
     "build": {
         "srcFilter": [
-            "+<Build/src/>"
+            "+<Build/src/>",
+            "+<Build/vendor/mpack/mpack/src/mpack/*.c>"
         ],
-        "includeDir": "Build/include"
+        "includeDir": "Build/include",
+        "flags": [
+            "-IBuild/vendor/mpack/mpack/src/mpack"
+        ]
     }
 }

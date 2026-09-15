@@ -35,6 +35,8 @@ def run_command(cmd, cwd=None):
         return False
     if result.returncode != 0:
         print(f"Command failed: {cmd}", file=sys.stderr)
+        if result.stdout.strip():
+            print(result.stdout, file=sys.stderr, end="")
         if result.stderr.strip():
             print(result.stderr, file=sys.stderr, end="")
         return False

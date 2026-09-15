@@ -1,7 +1,16 @@
 #include "../core/mesh_now_internal.h"
 #include <esp_log.h>
-#include <mbedtls/gcm.h>
 #include <aes/esp_aes_gcm.h>
+
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(6, 0, 0)
+#include <mbedtls/gcm.h>
+#include <mbedtls/cipher.h>
+#else
+// mbedTLS 4.x moved cipher.h and gcm.h to private headers.
+#define CIPHER_ID_AES 1
+#define GCM_ENCRYPT   1
+#endif
+
 #include <string.h>
 
 #define TAG "MESH_NOW"
@@ -30,15 +39,25 @@ esp_err_t mesh_now_aes_gcm_encrypt(const uint8_t *plaintext, size_t pt_len,
     esp_gcm_context ctx;
     esp_aes_gcm_init(&ctx);
 
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(6, 0, 0)
     int ret = esp_aes_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES, key, 128);
+#else
+    int ret = esp_aes_gcm_setkey(&ctx, CIPHER_ID_AES, key, 128);
+#endif
     if (ret != 0) {
         esp_aes_gcm_free(&ctx);
         return ESP_FAIL;
     }
 
-    ret = esp_aes_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, pt_len, nonce,
-                                    AES_GCM_NONCE_LEN, aad, aad_len, plaintext,
-                                    ciphertext, AES_GCM_TAG_LEN, tag);
+    ret = esp_aes_gcm_crypt_and_tag(&ctx,
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(6, 0, 0)
+                                    MBEDTLS_GCM_ENCRYPT,
+#else
+                                    GCM_ENCRYPT,
+#endif
+                                    pt_len, nonce, AES_GCM_NONCE_LEN, aad,
+                                    aad_len, plaintext, ciphertext,
+                                    AES_GCM_TAG_LEN, tag);
     esp_aes_gcm_free(&ctx);
     return (ret == 0) ? ESP_OK : ESP_FAIL;
 }
@@ -53,7 +72,11 @@ esp_err_t mesh_now_aes_gcm_decrypt(const uint8_t *ciphertext, size_t ct_len,
     esp_gcm_context ctx;
     esp_aes_gcm_init(&ctx);
 
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(6, 0, 0)
     int ret = esp_aes_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES, key, 128);
+#else
+    int ret = esp_aes_gcm_setkey(&ctx, CIPHER_ID_AES, key, 128);
+#endif
     if (ret != 0) {
         esp_aes_gcm_free(&ctx);
         return ESP_FAIL;
