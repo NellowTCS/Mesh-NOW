@@ -20,8 +20,8 @@ env:
   IDF_VERSION: "v5.5.1"
 
 jobs:
-  build-frontend-check:
-    name: Build Demo Frontend
+  build-check:
+    name: Build Demo and Docs
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
