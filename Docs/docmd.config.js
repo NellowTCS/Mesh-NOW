@@ -141,7 +141,7 @@ export default {
   footer: "Built with [docmd](https://docmd.io). [View on GitHub](https://github.com/NellowTCS/Mesh-NOW).",
   editLink: {
     enabled: true,
-    baseUrl: "https://github.com/NellowTCS/Mesh-NOW/edit/main/Docs/docs",
+    baseUrl: "https://github.com/NellowTCS/Mesh-NOW/edit/main/",
     text: "Edit this page",
   },
 };
