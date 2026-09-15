@@ -86,11 +86,13 @@ def flash_target(target_name, target_path, port):
             cmd = f"{sys.executable} flash.py {target_name} {port}"
         else:
             print("Using manual flash command")
+            bl_offset = "0x1000" if target_name == "esp32" else "0x0"
             cmd = (
                 f"esptool.py --chip {target_name} --port {port} --baud 460800 "
                 "--before default_reset --after hard_reset write_flash "
                 "--flash_mode dio --flash_freq 40m --flash_size detect "
-                "0x0 bootloader.bin 0x8000 partition-table.bin 0x10000 mesh-now.bin"
+                f"{bl_offset} bootloader.bin "
+                "0x8000 partition-table.bin 0x10000 mesh-now.bin"
             )
 
         success, _ = run_command(cmd)

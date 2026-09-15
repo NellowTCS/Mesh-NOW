@@ -27,6 +27,10 @@ def run_command(cmd, cwd=None):
     return True, result.stdout
 
 
+def bootloader_offset(target):
+    return "0x1000" if target == "esp32" else "0x0"
+
+
 def check_firmware_files():
     """Check that the required firmware binaries exist in the current directory."""
     required_files = ["mesh-now.bin", "bootloader.bin", "partition-table.bin"]
@@ -73,7 +77,8 @@ def flash_firmware(target, port):
         f"esptool.py --chip {target} --port {port} --baud 460800 "
         "--before default_reset --after hard_reset write_flash "
         "--flash_mode dio --flash_freq 40m --flash_size detect "
-        "0x0 bootloader.bin 0x8000 partition-table.bin 0x10000 mesh-now.bin"
+        f"{bootloader_offset(target)} bootloader.bin "
+        "0x8000 partition-table.bin 0x10000 mesh-now.bin"
     )
 
     success, _ = run_command(flash_cmd)

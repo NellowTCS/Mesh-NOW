@@ -141,6 +141,10 @@ jobs:
               if not target_dir.is_dir():
                   continue
 
+              # Ughhh... classic ESP32 loads its first-stage bootloader from 0x1000;
+              # newer chips (S2/S3/C3/C6) use 0x0.
+              bootloader_offset = 0x1000 if target == "esp32" else 0x0
+
               dst = root / "firmware" / version / target
               dst.mkdir(parents=True, exist_ok=True)
 
@@ -156,7 +160,7 @@ jobs:
                       {
                           "chipFamily": chip_family.get(target, target),
                           "parts": [
-                              {"path": "bootloader.bin", "offset": 0},
+                              {"path": "bootloader.bin", "offset": bootloader_offset},
                               {"path": "partition-table.bin", "offset": 0x8000},
                               {"path": "mesh-now.bin", "offset": 0x10000},
                           ],
