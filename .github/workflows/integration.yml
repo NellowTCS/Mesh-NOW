@@ -1,6 +1,20 @@
 name: Integration Tests
 
 on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'Build/**'
+      - 'Firmware/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'Build/**'
+      - 'Firmware/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
   schedule:
     - cron: '0 6 * * *'  # Daily at 6 AM UTC
   workflow_dispatch:

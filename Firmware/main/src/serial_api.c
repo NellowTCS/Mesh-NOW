@@ -7,7 +7,11 @@
 #include <driver/usb_serial_jtag.h>
 #else
 #include <driver/uart.h>
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
 #include <soc/gpio_num.h>
+#else
+#include <driver/gpio.h>
+#endif
 #endif
 #include <esp_idf_version.h>
 #include <esp_log.h>
