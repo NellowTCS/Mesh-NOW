@@ -1,4 +1,4 @@
-version: "1.0.0"
+version: "1.0.1"
 description: "Lightweight mesh networking protocol library for ESP32 using ESP-NOW"
 url: "https://github.com/NellowTCS/Mesh-NOW"
 repository: "https://github.com/NellowTCS/Mesh-NOW.git"

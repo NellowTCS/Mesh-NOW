@@ -23,7 +23,7 @@
 
 #define TAG "SERIAL_API"
 
-#define RX_BUF_SIZE            128
+#define RX_BUF_SIZE            256
 #define LINE_BUF_SIZE          1024
 #define PEERS_PUSH_INTERVAL_MS 3000
 #define ENCRYPTION_KEY_MAX     32
