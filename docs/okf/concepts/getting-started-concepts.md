@@ -7,7 +7,7 @@ path: /getting-started/concepts/
 updated: 2026-09-15
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-15T13:25:00.606Z"
+  generated_at: "2026-09-15T16:28:11.944Z"
 ---
 ---
 title: "Core Concepts"
