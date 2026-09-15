@@ -100,6 +100,9 @@ async function loadVersions(): Promise<void> {
             return;
         }
 
+        const devVersions = data.versions
+            .filter((v) => v.startsWith('dev-'))
+            .sort((a, b) => b.localeCompare(a));
         const releaseVersions = data.versions
             .filter((v) => !v.startsWith('dev-'))
             .sort((a, b) => {
@@ -115,30 +118,37 @@ async function loadVersions(): Promise<void> {
                 return b.localeCompare(a);
             });
 
-        const versionsToShow = releaseVersions.slice(
+        const releasesToShow = releaseVersions.slice(
             0,
             NUMBER_OF_VERSIONS_SHOWN
         );
 
-        if (versionsToShow.length === 0) {
+        if (releasesToShow.length === 0 && devVersions.length === 0) {
             versionSelect.innerHTML =
-                '<option value="">No release versions available</option>';
-            statusDiv.textContent = 'No release versions found';
+                '<option value="">No versions available</option>';
+            statusDiv.textContent = 'No firmware versions found';
             return;
         }
 
-        const firstVersion = versionsToShow[0];
-        if (firstVersion)
-            latestVersionText.textContent = `The latest firmware is ${firstVersion}`;
+        const firstRelease = releasesToShow[0];
+        if (firstRelease)
+            latestVersionText.textContent = `The latest firmware is ${firstRelease}`;
 
-        versionsToShow.forEach((version) => {
+        releasesToShow.forEach((version) => {
             const option = document.createElement('option');
             option.value = version;
             option.textContent = version;
             versionSelect.appendChild(option);
         });
 
-        versionSelect.value = versionsToShow[0] ?? '';
+        devVersions.forEach((version) => {
+            const option = document.createElement('option');
+            option.value = version;
+            option.textContent = version;
+            versionSelect.appendChild(option);
+        });
+
+        versionSelect.value = firstRelease ?? devVersions[0] ?? '';
         await updateStatus();
     } catch (error) {
         console.error('Failed to load versions:', error);
