@@ -24,11 +24,11 @@ def check_idf_setup():
     return idf_path
 
 
-def run_command(cmd, cwd=None):
+def run_command(cmd, cwd=None, env=None):
     """Run a shell command and return whether it succeeded."""
     try:
         result = subprocess.run(
-            cmd, shell=True, cwd=cwd, capture_output=True, text=True
+            cmd, shell=True, cwd=cwd, env=env, capture_output=True, text=True
         )
     except OSError as e:
         print(f"Error running command: {e}", file=sys.stderr)
@@ -48,18 +48,28 @@ def get_targets():
 
 def build_target(target):
     """Build for a target and copy the artifacts to Firmware/builds/<target>/."""
+    # espressif/esp-idf-ci-action exports IDF_TARGET for the first target
+    env = os.environ.copy()
+    env["IDF_TARGET"] = target
+
     build_dir = FIRMWARE_DIR / "build"
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
+    for sdkconfig in FIRMWARE_DIR.glob("sdkconfig*"):
+        if sdkconfig.name.startswith("sdkconfig.defaults"):
+            continue
+        if sdkconfig.is_file():
+            sdkconfig.unlink()
+
     # Setting the target picks up sdkconfig.defaults.{target} automatically.
     print(f"Setting target to {target}...")
-    if not run_command(f"idf.py set-target {target}"):
+    if not run_command(f"idf.py set-target {target}", env=env):
         print(f"Failed to set target {target}", file=sys.stderr)
         return False
 
     print(f"Building for {target}...")
-    if not run_command("idf.py build"):
+    if not run_command("idf.py build", env=env):
         print(f"Build failed for {target}", file=sys.stderr)
         return False
 

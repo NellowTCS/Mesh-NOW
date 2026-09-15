@@ -4,8 +4,11 @@ on:
   release:
     types: [published]
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "Demo/**"
   workflow_dispatch:
 
 permissions:
@@ -14,17 +17,45 @@ permissions:
   id-token: write
 
 env:
-  IDF_VERSION: 'v5.5.1'
+  IDF_VERSION: "v5.5.1"
 
 jobs:
+  build-frontend-check:
+    name: Build Demo Frontend
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: Demo/package-lock.json
+
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+        working-directory: Demo
+      - name: Build docs
+        run: |
+          npm ci
+          npm run build
+        working-directory: Docs
+
   build-and-deploy:
     name: Build and Deploy Static Site
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.release.tag_name || github.sha }}
           fetch-depth: 0
           submodules: recursive
 
@@ -34,10 +65,8 @@ jobs:
           RELEASE_TAG="${{ github.event.release.tag_name }}"
           if [ -n "$RELEASE_TAG" ]; then
             VERSION="$RELEASE_TAG"
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            VERSION="${{ github.ref_name }}"
           else
-            VERSION="dev-$(date +%Y%m%d-%H%M%S)"
+            VERSION="dev-$(date -u +%Y%m%d-%H%M%S)"
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Release version: $VERSION"
@@ -45,8 +74,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: Demo/package-lock.json
 
       - name: Build frontend
@@ -63,8 +92,8 @@ jobs:
       - name: Set up Node.js for Docs
         uses: actions/setup-node@v7
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: Docs/package-lock.json
 
       - name: Build docs site
