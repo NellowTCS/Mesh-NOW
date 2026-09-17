@@ -1,13 +1,13 @@
 {
   "name": "Mesh-NOW",
-  "version": "dev-20260915-223639",
+  "version": "dev-20260917-051627",
   "builds": [
     {
-      "chipFamily": "ESP32-S3",
+      "chipFamily": "ESP32",
       "parts": [
         {
           "path": "bootloader.bin",
-          "offset": 0
+          "offset": 4096
         },
         {
           "path": "partition-table.bin",
