@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://NellowTCS.github.io/Mesh-NOW/sitemap.xml
+Sitemap: https://nellowtcs.me/Mesh-NOW/docs/sitemap.xml

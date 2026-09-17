@@ -2,12 +2,12 @@
 type: api
 title: "Message Queue"
 description: "FreeRTOS-based message queue for received messages."
-source: "https://NellowTCS.github.io/Mesh-NOW/api/message-queue/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/api/message-queue/"
 path: /api/message-queue/
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.309Z"
+  generated_at: "2026-09-17T05:23:50.211Z"
 ---
 ---
 title: "Message Queue"

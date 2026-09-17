@@ -2,12 +2,12 @@
 type: concept
 title: "Message Format"
 description: "The mesh_message_t structure, message types, flags, and fields."
-source: "https://NellowTCS.github.io/Mesh-NOW/guide/message-format/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/guide/message-format/"
 path: /guide/message-format/
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.311Z"
+  generated_at: "2026-09-17T05:23:50.214Z"
 ---
 ---
 title: "Message Format"

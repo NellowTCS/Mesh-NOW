@@ -2,12 +2,12 @@
 type: concept
 title: Routing
 description: "Multi-hop message relay, TTL, and duplicate detection."
-source: "https://NellowTCS.github.io/Mesh-NOW/guide/routing/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/guide/routing/"
 path: /guide/routing/
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.312Z"
+  generated_at: "2026-09-17T05:23:50.215Z"
 ---
 ---
 title: "Routing"

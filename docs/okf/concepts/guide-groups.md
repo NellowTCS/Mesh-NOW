@@ -2,12 +2,12 @@
 type: concept
 title: Groups
 description: "Group messaging with configurable group IDs."
-source: "https://NellowTCS.github.io/Mesh-NOW/guide/groups/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/guide/groups/"
 path: /guide/groups/
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.311Z"
+  generated_at: "2026-09-17T05:23:50.213Z"
 ---
 ---
 title: "Groups"

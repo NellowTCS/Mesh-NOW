@@ -2,12 +2,12 @@
 type: concept
 title: "Wire Format"
 description: "Binary frame layout, field sizes, byte order, and encoding specification."
-source: "https://NellowTCS.github.io/Mesh-NOW/protocol/wire-format/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/protocol/wire-format/"
 path: /protocol/wire-format/
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.313Z"
+  generated_at: "2026-09-17T05:23:50.216Z"
 ---
 ---
 title: "Wire Format"

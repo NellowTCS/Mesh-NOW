@@ -4,97 +4,97 @@
   "pages": [
     {
       "title": "Mesh NOW API",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/api/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/api/",
       "description": "Complete C API reference for the mesh_now library.",
       "priority": "medium"
     },
     {
       "title": "Message Queue",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/api/message-queue/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/api/message-queue/",
       "description": "FreeRTOS-based message queue for received messages.",
       "priority": "medium"
     },
     {
       "title": "Core Concepts",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/getting-started/concepts/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/getting-started/concepts/",
       "description": "Architecture, node roles, and how Mesh-NOW works.",
       "priority": "medium"
     },
     {
       "title": "Installation",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/getting-started/installation/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/getting-started/installation/",
       "description": "Set up ESP-IDF and integrate the Mesh-NOW library into your project.",
       "priority": "medium"
     },
     {
       "title": "Quick Start",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/getting-started/quickstart/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/getting-started/quickstart/",
       "description": "Get a mesh node running in under 10 minutes.",
       "priority": "medium"
     },
     {
       "title": "Configuration",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/guide/configuration/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/configuration/",
       "description": "All compile-time constants, tuning knobs, and runtime settings.",
       "priority": "medium"
     },
     {
       "title": "Encryption",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/guide/encryption/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/encryption/",
       "description": "AES-128-GCM payload encryption with per-message nonces.",
       "priority": "medium"
     },
     {
       "title": "Groups",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/guide/groups/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/groups/",
       "description": "Group messaging with configurable group IDs.",
       "priority": "medium"
     },
     {
       "title": "Message Format",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/guide/message-format/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/message-format/",
       "description": "The mesh_message_t structure, message types, flags, and fields.",
       "priority": "medium"
     },
     {
       "title": "Peer Discovery",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/guide/peer-discovery/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/peer-discovery/",
       "description": "How nodes find each other using beacons and maintain the peer table.",
       "priority": "medium"
     },
     {
       "title": "Reliability",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/guide/reliability/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/reliability/",
       "description": "ACK mechanism, retransmission, and pending message management.",
       "priority": "medium"
     },
     {
       "title": "Routing",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/guide/routing/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/routing/",
       "description": "Multi-hop message relay, TTL, and duplicate detection.",
       "priority": "medium"
     },
     {
       "title": "Security",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/guide/security/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/security/",
       "description": "What Mesh-NOW encryption protects and what it does not.",
       "priority": "medium"
     },
     {
       "title": "Mesh-NOW",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/",
       "description": "Lightweight mesh networking protocol for ESP32 using ESP-NOW.",
       "priority": "high"
     },
     {
       "title": "State Machine",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/protocol/state-machine/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/protocol/state-machine/",
       "description": "Node lifecycle, message states, and peer states with Mermaid diagrams.",
       "priority": "medium"
     },
     {
       "title": "Wire Format",
-      "url": "https://NellowTCS.github.io/Mesh-NOW/protocol/wire-format/",
+      "url": "https://nellowtcs.me/Mesh-NOW/docs/protocol/wire-format/",
       "description": "Binary frame layout, field sizes, byte order, and encoding specification.",
       "priority": "medium"
     }

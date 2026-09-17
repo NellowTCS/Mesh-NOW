@@ -2,12 +2,12 @@
 type: api
 title: "Mesh NOW API"
 description: "Complete C API reference for the mesh_now library."
-source: "https://NellowTCS.github.io/Mesh-NOW/api/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/api/"
 path: /api/
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.309Z"
+  generated_at: "2026-09-17T05:23:50.210Z"
 ---
 ---
 title: "Mesh NOW API"

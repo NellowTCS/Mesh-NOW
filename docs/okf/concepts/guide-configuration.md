@@ -2,12 +2,12 @@
 type: concept
 title: Configuration
 description: "All compile-time constants, tuning knobs, and runtime settings."
-source: "https://NellowTCS.github.io/Mesh-NOW/guide/configuration/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/guide/configuration/"
 path: /guide/configuration/
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.310Z"
+  generated_at: "2026-09-17T05:23:50.213Z"
 ---
 ---
 title: "Configuration"

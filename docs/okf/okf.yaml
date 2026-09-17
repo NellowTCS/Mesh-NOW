@@ -3,9 +3,9 @@ bundle:
   name: mesh-now
   title: Mesh-NOW
   description: ""
-  url: "https://NellowTCS.github.io/Mesh-NOW"
+  url: "https://nellowtcs.me/Mesh-NOW/docs"
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.313Z"
+  generated_at: "2026-09-17T05:23:50.216Z"
   default_type: concept
 stats:
   concepts: 16

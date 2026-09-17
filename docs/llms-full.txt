@@ -4,7 +4,7 @@
 
 ---
 
-## [Mesh NOW API](https://NellowTCS.github.io/Mesh-NOW/api/)
+## [Mesh NOW API](https://nellowtcs.me/Mesh-NOW/docs/api/)
 
 ---
 title: "Mesh NOW API"
@@ -477,7 +477,7 @@ typedef void (*mesh_now_receive_callback_t)(const mesh_message_t *message);
 
 ---
 
-## [Message Queue](https://NellowTCS.github.io/Mesh-NOW/api/message-queue/)
+## [Message Queue](https://nellowtcs.me/Mesh-NOW/docs/api/message-queue/)
 
 ---
 title: "Message Queue"
@@ -643,7 +643,7 @@ If you set a receive callback, messages go directly to it and are not enqueued. 
 
 ---
 
-## [Core Concepts](https://NellowTCS.github.io/Mesh-NOW/getting-started/concepts/)
+## [Core Concepts](https://nellowtcs.me/Mesh-NOW/docs/getting-started/concepts/)
 
 ---
 title: "Core Concepts"
@@ -742,7 +742,7 @@ Both tasks run on core 0. If your application leans hard on core 0, bump the pri
 
 ---
 
-## [Installation](https://NellowTCS.github.io/Mesh-NOW/getting-started/installation/)
+## [Installation](https://nellowtcs.me/Mesh-NOW/docs/getting-started/installation/)
 
 ---
 title: "Installation"
@@ -860,7 +860,7 @@ The header exposes all public types, constants, and function declarations. It ca
 
 ---
 
-## [Quick Start](https://NellowTCS.github.io/Mesh-NOW/getting-started/quickstart/)
+## [Quick Start](https://nellowtcs.me/Mesh-NOW/docs/getting-started/quickstart/)
 
 ---
 title: "Quick Start"
@@ -964,7 +964,7 @@ sequenceDiagram
 
 ---
 
-## [Configuration](https://NellowTCS.github.io/Mesh-NOW/guide/configuration/)
+## [Configuration](https://nellowtcs.me/Mesh-NOW/docs/guide/configuration/)
 
 ---
 title: "Configuration"
@@ -1114,7 +1114,7 @@ Each ESP32 variant has optimized sdkconfig defaults in the chat app example:
 
 ---
 
-## [Encryption](https://NellowTCS.github.io/Mesh-NOW/guide/encryption/)
+## [Encryption](https://nellowtcs.me/Mesh-NOW/docs/guide/encryption/)
 
 ---
 title: "Encryption"
@@ -1204,7 +1204,7 @@ Message IDs come from a counter seeded once from `esp_random()`, so they are unp
 
 ---
 
-## [Groups](https://NellowTCS.github.io/Mesh-NOW/guide/groups/)
+## [Groups](https://nellowtcs.me/Mesh-NOW/docs/guide/groups/)
 
 ---
 title: "Groups"
@@ -1293,7 +1293,7 @@ All nodes relay group messages even when they are not in the group. Group filter
 
 ---
 
-## [Message Format](https://NellowTCS.github.io/Mesh-NOW/guide/message-format/)
+## [Message Format](https://nellowtcs.me/Mesh-NOW/docs/guide/message-format/)
 
 ---
 title: "Message Format"
@@ -1432,7 +1432,7 @@ The library assigns `message_id` itself from a counter seeded once with `esp_ran
 
 ---
 
-## [Peer Discovery](https://NellowTCS.github.io/Mesh-NOW/guide/peer-discovery/)
+## [Peer Discovery](https://nellowtcs.me/Mesh-NOW/docs/guide/peer-discovery/)
 
 ---
 title: "Peer Discovery"
@@ -1562,7 +1562,7 @@ Peers are also discovered (and added) when receiving any of these message types:
 
 ---
 
-## [Reliability](https://NellowTCS.github.io/Mesh-NOW/guide/reliability/)
+## [Reliability](https://nellowtcs.me/Mesh-NOW/docs/guide/reliability/)
 
 ---
 title: "Reliability"
@@ -1742,7 +1742,7 @@ if (mesh_msg.type == MSG_TYPE_ACK) {
 
 ---
 
-## [Routing](https://NellowTCS.github.io/Mesh-NOW/guide/routing/)
+## [Routing](https://nellowtcs.me/Mesh-NOW/docs/guide/routing/)
 
 ---
 title: "Routing"
@@ -1855,7 +1855,7 @@ These are two different mechanisms:
 
 ---
 
-## [Security](https://NellowTCS.github.io/Mesh-NOW/guide/security/)
+## [Security](https://nellowtcs.me/Mesh-NOW/docs/guide/security/)
 
 ---
 title: "Security"
@@ -1976,7 +1976,7 @@ Encryption protects message content and data-frame integrity against an attacker
 
 ---
 
-## [Mesh-NOW](https://NellowTCS.github.io/Mesh-NOW/)
+## [Mesh-NOW](https://nellowtcs.me/Mesh-NOW/docs/)
 
 ---
 title: "Mesh-NOW"
@@ -1994,7 +1994,7 @@ Serverless mesh networking for ESP32. Device-to-device communication over ESP-NO
 ::: tag "Mesh Network"
 
 ::: button "Quick Start" ./getting-started/quickstart.md icon:play
-::: button "GitHub" external:<https://github.com/NellowTCS/Mesh-NOW> icon:github
+::: button "GitHub" external:https://github.com/NellowTCS/Mesh-NOW icon:github
 
 == side
 
@@ -2099,7 +2099,7 @@ flowchart LR
 
 ---
 
-## [State Machine](https://NellowTCS.github.io/Mesh-NOW/protocol/state-machine/)
+## [State Machine](https://nellowtcs.me/Mesh-NOW/docs/protocol/state-machine/)
 
 ---
 title: "State Machine"
@@ -2251,7 +2251,7 @@ flowchart TB
 
 ---
 
-## [Wire Format](https://NellowTCS.github.io/Mesh-NOW/protocol/wire-format/)
+## [Wire Format](https://nellowtcs.me/Mesh-NOW/docs/protocol/wire-format/)
 
 ---
 title: "Wire Format"

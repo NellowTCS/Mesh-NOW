@@ -2,12 +2,12 @@
 type: concept
 title: "Quick Start"
 description: "Get a mesh node running in under 10 minutes."
-source: "https://NellowTCS.github.io/Mesh-NOW/getting-started/quickstart/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/getting-started/quickstart/"
 path: /getting-started/quickstart/
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.310Z"
+  generated_at: "2026-09-17T05:23:50.212Z"
 ---
 ---
 title: "Quick Start"

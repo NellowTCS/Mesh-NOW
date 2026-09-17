@@ -1,82 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/api/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/api/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/api/message-queue/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/api/message-queue/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/getting-started/concepts/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/getting-started/concepts/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/getting-started/installation/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/getting-started/installation/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/getting-started/quickstart/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/getting-started/quickstart/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/guide/configuration/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/guide/configuration/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/guide/encryption/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/guide/encryption/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/guide/groups/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/guide/groups/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/guide/message-format/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/guide/message-format/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/guide/peer-discovery/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/guide/peer-discovery/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/guide/reliability/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/guide/reliability/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/guide/routing/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/guide/routing/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/guide/security/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/guide/security/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/</loc>
     <changefreq>weekly</changefreq>
     <priority>1</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/protocol/state-machine/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/protocol/state-machine/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://NellowTCS.github.io/Mesh-NOW/protocol/wire-format/</loc>
+    <loc>https://nellowtcs.me/Mesh-NOW/docs/protocol/wire-format/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

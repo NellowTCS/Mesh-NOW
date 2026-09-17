@@ -2,12 +2,12 @@
 type: concept
 title: "Core Concepts"
 description: "Architecture, node roles, and how Mesh-NOW works."
-source: "https://NellowTCS.github.io/Mesh-NOW/getting-started/concepts/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/getting-started/concepts/"
 path: /getting-started/concepts/
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.310Z"
+  generated_at: "2026-09-17T05:23:50.212Z"
 ---
 ---
 title: "Core Concepts"

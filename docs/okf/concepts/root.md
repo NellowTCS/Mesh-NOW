@@ -2,12 +2,12 @@
 type: concept
 title: Mesh-NOW
 description: "Lightweight mesh networking protocol for ESP32 using ESP-NOW."
-source: "https://NellowTCS.github.io/Mesh-NOW/"
+source: "https://nellowtcs.me/Mesh-NOW/docs/"
 path: /
 updated: 2026-09-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T05:14:50.312Z"
+  generated_at: "2026-09-17T05:23:50.215Z"
 ---
 ---
 title: "Mesh-NOW"
@@ -25,7 +25,7 @@ Serverless mesh networking for ESP32. Device-to-device communication over ESP-NO
 ::: tag "Mesh Network"
 
 ::: button "Quick Start" ./getting-started/quickstart.md icon:play
-::: button "GitHub" external:<https://github.com/NellowTCS/Mesh-NOW> icon:github
+::: button "GitHub" external:https://github.com/NellowTCS/Mesh-NOW icon:github
 
 == side
 
