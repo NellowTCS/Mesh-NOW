@@ -1,6 +1,6 @@
 {
     "name": "mesh_now",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Lightweight mesh networking protocol library for ESP32 using ESP-NOW",
     "keywords": [
         "esp32",
