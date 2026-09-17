@@ -14,7 +14,7 @@ Serverless mesh networking for ESP32. Device-to-device communication over ESP-NO
 ::: tag "Mesh Network"
 
 ::: button "Quick Start" ./getting-started/quickstart.md icon:play
-::: button "GitHub" external:<https://github.com/NellowTCS/Mesh-NOW> icon:github
+::: button "GitHub" external:https://github.com/NellowTCS/Mesh-NOW icon:github
 
 == side
 

@@ -1,6 +1,6 @@
 export default {
   title: "Mesh-NOW",
-  url: "https://NellowTCS.github.io/Mesh-NOW",
+  url: "https://nellowtcs.me/Mesh-NOW/docs",
   logo: { alt: "Mesh-NOW", href: "./" },
   favicon: "",
   theme: {
