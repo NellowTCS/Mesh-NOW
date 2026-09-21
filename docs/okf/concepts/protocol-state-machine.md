@@ -4,10 +4,10 @@ title: "State Machine"
 description: "Node lifecycle, message states, and peer states with Mermaid diagrams."
 source: "https://nellowtcs.me/Mesh-NOW/docs/protocol/state-machine/"
 path: /protocol/state-machine/
-updated: 2026-09-17
+updated: 2026-09-21
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T16:10:59.694Z"
+  generated_at: "2026-09-21T15:38:55.756Z"
 ---
 ---
 title: "State Machine"

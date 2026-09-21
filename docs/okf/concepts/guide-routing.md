@@ -4,10 +4,10 @@ title: Routing
 description: "Multi-hop message relay, TTL, and duplicate detection."
 source: "https://nellowtcs.me/Mesh-NOW/docs/guide/routing/"
 path: /guide/routing/
-updated: 2026-09-17
+updated: 2026-09-21
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T16:10:59.693Z"
+  generated_at: "2026-09-21T15:38:55.754Z"
 ---
 ---
 title: "Routing"

@@ -4,10 +4,10 @@ title: "Message Format"
 description: "The mesh_message_t structure, message types, flags, and fields."
 source: "https://nellowtcs.me/Mesh-NOW/docs/guide/message-format/"
 path: /guide/message-format/
-updated: 2026-09-17
+updated: 2026-09-21
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-17T16:10:59.692Z"
+  generated_at: "2026-09-21T15:38:55.753Z"
 ---
 ---
 title: "Message Format"
