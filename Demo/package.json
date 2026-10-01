@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "eruda": "^3.4.3",
-    "esptool-js": "^0.6.1",
+    "esptool-js": "^0.7.0",
     "spark-md5": "^3.0.2",
     "web-serial-polyfill": "^1.0.15"
   },
