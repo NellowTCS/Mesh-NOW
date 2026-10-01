@@ -4,10 +4,10 @@ title: Configuration
 description: "All compile-time constants, tuning knobs, and runtime settings."
 source: "https://nellowtcs.me/Mesh-NOW/docs/guide/configuration/"
 path: /guide/configuration/
-updated: 2026-09-21
+updated: 2026-10-01
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-09-21T15:40:41.888Z"
+  generated_at: "2026-10-01T22:38:15.904Z"
 ---
 ---
 title: "Configuration"
