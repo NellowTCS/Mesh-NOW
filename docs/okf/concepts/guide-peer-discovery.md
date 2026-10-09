@@ -4,10 +4,10 @@ title: "Peer Discovery"
 description: "How nodes find each other using beacons and maintain the peer table."
 source: "https://nellowtcs.me/Mesh-NOW/docs/guide/peer-discovery/"
 path: /guide/peer-discovery/
-updated: 2026-10-01
+updated: 2026-10-09
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-01T22:40:09.727Z"
+  generated_at: "2026-10-09T11:23:12.803Z"
 ---
 ---
 title: "Peer Discovery"
