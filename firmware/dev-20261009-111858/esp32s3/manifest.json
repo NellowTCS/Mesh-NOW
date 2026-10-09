@@ -1,6 +1,6 @@
 {
   "name": "Mesh-NOW",
-  "version": "dev-20261009-111711",
+  "version": "dev-20261009-111858",
   "builds": [
     {
       "chipFamily": "ESP32-S3",
