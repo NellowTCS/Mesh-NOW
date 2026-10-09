@@ -7,7 +7,7 @@ path: /guide/message-format/
 updated: 2026-10-09
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-09T11:25:07.294Z"
+  generated_at: "2026-10-09T11:25:15.894Z"
 ---
 ---
 title: "Message Format"
