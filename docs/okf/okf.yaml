@@ -1,11 +1,11 @@
-okf_version: 0.9.6
+okf_version: 0.9.7
 bundle:
   name: mesh-now
   title: Mesh-NOW
   description: ""
   url: "https://nellowtcs.me/Mesh-NOW/docs"
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-09T11:25:15.898Z"
+  generated_at: "2026-10-09T11:25:43.394Z"
   default_type: concept
 stats:
   concepts: 16
