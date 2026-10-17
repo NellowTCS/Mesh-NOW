@@ -4,10 +4,10 @@ title: "Wire Format"
 description: "Binary frame layout, field sizes, byte order, and encoding specification."
 source: "https://nellowtcs.me/Mesh-NOW/docs/protocol/wire-format/"
 path: /protocol/wire-format/
-updated: 2026-10-16
+updated: 2026-10-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-16T07:15:21.869Z"
+  generated_at: "2026-10-17T06:03:41.261Z"
 ---
 ---
 title: "Wire Format"

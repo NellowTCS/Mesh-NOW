@@ -4,10 +4,10 @@ title: "Core Concepts"
 description: "Architecture, node roles, and how Mesh-NOW works."
 source: "https://nellowtcs.me/Mesh-NOW/docs/getting-started/concepts/"
 path: /getting-started/concepts/
-updated: 2026-10-16
+updated: 2026-10-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-16T07:15:21.861Z"
+  generated_at: "2026-10-17T06:03:41.253Z"
 ---
 ---
 title: "Core Concepts"
