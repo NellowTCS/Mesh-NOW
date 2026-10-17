@@ -7,7 +7,7 @@ path: /guide/groups/
 updated: 2026-10-17
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-17T06:03:41.256Z"
+  generated_at: "2026-10-17T06:03:45.861Z"
 ---
 ---
 title: "Groups"
