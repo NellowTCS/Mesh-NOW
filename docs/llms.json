@@ -6,96 +6,112 @@
       "title": "Mesh NOW API",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/api/",
       "description": "Complete C API reference for the mesh_now library.",
+      "section": "API",
       "priority": "medium"
     },
     {
       "title": "Message Queue",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/api/message-queue/",
       "description": "FreeRTOS-based message queue for received messages.",
+      "section": "API",
       "priority": "medium"
     },
     {
       "title": "Core Concepts",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/getting-started/concepts/",
       "description": "Architecture, node roles, and how Mesh-NOW works.",
+      "section": "Getting Started",
       "priority": "medium"
     },
     {
       "title": "Installation",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/getting-started/installation/",
       "description": "Set up ESP-IDF and integrate the Mesh-NOW library into your project.",
+      "section": "Getting Started",
       "priority": "medium"
     },
     {
       "title": "Quick Start",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/getting-started/quickstart/",
       "description": "Get a mesh node running in under 10 minutes.",
+      "section": "Getting Started",
       "priority": "medium"
     },
     {
       "title": "Configuration",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/configuration/",
       "description": "All compile-time constants, tuning knobs, and runtime settings.",
+      "section": "Guide",
       "priority": "medium"
     },
     {
       "title": "Encryption",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/encryption/",
       "description": "AES-128-GCM payload encryption with per-message nonces.",
+      "section": "Guide",
       "priority": "medium"
     },
     {
       "title": "Groups",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/groups/",
       "description": "Group messaging with configurable group IDs.",
+      "section": "Guide",
       "priority": "medium"
     },
     {
       "title": "Message Format",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/message-format/",
       "description": "The mesh_message_t structure, message types, flags, and fields.",
+      "section": "Guide",
       "priority": "medium"
     },
     {
       "title": "Peer Discovery",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/peer-discovery/",
       "description": "How nodes find each other using beacons and maintain the peer table.",
+      "section": "Guide",
       "priority": "medium"
     },
     {
       "title": "Reliability",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/reliability/",
       "description": "ACK mechanism, retransmission, and pending message management.",
+      "section": "Guide",
       "priority": "medium"
     },
     {
       "title": "Routing",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/routing/",
       "description": "Multi-hop message relay, TTL, and duplicate detection.",
+      "section": "Guide",
       "priority": "medium"
     },
     {
       "title": "Security",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/guide/security/",
       "description": "What Mesh-NOW encryption protects and what it does not.",
+      "section": "Guide",
       "priority": "medium"
     },
     {
       "title": "Mesh-NOW",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/",
       "description": "Lightweight mesh networking protocol for ESP32 using ESP-NOW.",
+      "section": null,
       "priority": "high"
     },
     {
       "title": "State Machine",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/protocol/state-machine/",
       "description": "Node lifecycle, message states, and peer states with Mermaid diagrams.",
+      "section": "Protocol",
       "priority": "medium"
     },
     {
       "title": "Wire Format",
       "url": "https://nellowtcs.me/Mesh-NOW/docs/protocol/wire-format/",
       "description": "Binary frame layout, field sizes, byte order, and encoding specification.",
+      "section": "Protocol",
       "priority": "medium"
     }
   ]

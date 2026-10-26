@@ -4,10 +4,10 @@ title: Installation
 description: "Set up ESP-IDF and integrate the Mesh-NOW library into your project."
 source: "https://nellowtcs.me/Mesh-NOW/docs/getting-started/installation/"
 path: /getting-started/installation/
-updated: 2026-10-22
+updated: 2026-10-26
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-22T18:23:07.985Z"
+  generated_at: "2026-10-26T18:51:02.700Z"
 ---
 ---
 title: "Installation"

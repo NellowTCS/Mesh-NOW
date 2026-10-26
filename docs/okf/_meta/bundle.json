@@ -1,12 +1,12 @@
 {
-  "okf_version": "0.9.7",
+  "okf_version": "0.9.8",
   "bundle": {
     "name": "mesh-now",
     "title": "Mesh-NOW",
     "description": "",
     "url": "https://nellowtcs.me/Mesh-NOW/docs",
     "generated_by": "@docmd/plugin-okf",
-    "generated_at": "2026-10-22T18:23:07.990Z",
+    "generated_at": "2026-10-26T18:51:02.705Z",
     "default_type": "concept"
   },
   "stats": {

@@ -4,7 +4,7 @@
 
 ---
 
-## [Mesh NOW API](https://nellowtcs.me/Mesh-NOW/docs/api/)
+## [Mesh NOW API](https://nellowtcs.me/Mesh-NOW/docs/api/) (API)
 
 ---
 title: "Mesh NOW API"
@@ -477,7 +477,7 @@ typedef void (*mesh_now_receive_callback_t)(const mesh_message_t *message);
 
 ---
 
-## [Message Queue](https://nellowtcs.me/Mesh-NOW/docs/api/message-queue/)
+## [Message Queue](https://nellowtcs.me/Mesh-NOW/docs/api/message-queue/) (API)
 
 ---
 title: "Message Queue"
@@ -643,7 +643,7 @@ If you set a receive callback, messages go directly to it and are not enqueued. 
 
 ---
 
-## [Core Concepts](https://nellowtcs.me/Mesh-NOW/docs/getting-started/concepts/)
+## [Core Concepts](https://nellowtcs.me/Mesh-NOW/docs/getting-started/concepts/) (Getting Started)
 
 ---
 title: "Core Concepts"
@@ -742,7 +742,7 @@ Both tasks run on core 0. If your application leans hard on core 0, bump the pri
 
 ---
 
-## [Installation](https://nellowtcs.me/Mesh-NOW/docs/getting-started/installation/)
+## [Installation](https://nellowtcs.me/Mesh-NOW/docs/getting-started/installation/) (Getting Started)
 
 ---
 title: "Installation"
@@ -860,7 +860,7 @@ The header exposes all public types, constants, and function declarations. It ca
 
 ---
 
-## [Quick Start](https://nellowtcs.me/Mesh-NOW/docs/getting-started/quickstart/)
+## [Quick Start](https://nellowtcs.me/Mesh-NOW/docs/getting-started/quickstart/) (Getting Started)
 
 ---
 title: "Quick Start"
@@ -964,7 +964,7 @@ sequenceDiagram
 
 ---
 
-## [Configuration](https://nellowtcs.me/Mesh-NOW/docs/guide/configuration/)
+## [Configuration](https://nellowtcs.me/Mesh-NOW/docs/guide/configuration/) (Guide)
 
 ---
 title: "Configuration"
@@ -1114,7 +1114,7 @@ Each ESP32 variant has optimized sdkconfig defaults in the chat app example:
 
 ---
 
-## [Encryption](https://nellowtcs.me/Mesh-NOW/docs/guide/encryption/)
+## [Encryption](https://nellowtcs.me/Mesh-NOW/docs/guide/encryption/) (Guide)
 
 ---
 title: "Encryption"
@@ -1204,7 +1204,7 @@ Message IDs come from a counter seeded once from `esp_random()`, so they are unp
 
 ---
 
-## [Groups](https://nellowtcs.me/Mesh-NOW/docs/guide/groups/)
+## [Groups](https://nellowtcs.me/Mesh-NOW/docs/guide/groups/) (Guide)
 
 ---
 title: "Groups"
@@ -1293,7 +1293,7 @@ All nodes relay group messages even when they are not in the group. Group filter
 
 ---
 
-## [Message Format](https://nellowtcs.me/Mesh-NOW/docs/guide/message-format/)
+## [Message Format](https://nellowtcs.me/Mesh-NOW/docs/guide/message-format/) (Guide)
 
 ---
 title: "Message Format"
@@ -1432,7 +1432,7 @@ The library assigns `message_id` itself from a counter seeded once with `esp_ran
 
 ---
 
-## [Peer Discovery](https://nellowtcs.me/Mesh-NOW/docs/guide/peer-discovery/)
+## [Peer Discovery](https://nellowtcs.me/Mesh-NOW/docs/guide/peer-discovery/) (Guide)
 
 ---
 title: "Peer Discovery"
@@ -1562,7 +1562,7 @@ Peers are also discovered (and added) when receiving any of these message types:
 
 ---
 
-## [Reliability](https://nellowtcs.me/Mesh-NOW/docs/guide/reliability/)
+## [Reliability](https://nellowtcs.me/Mesh-NOW/docs/guide/reliability/) (Guide)
 
 ---
 title: "Reliability"
@@ -1742,7 +1742,7 @@ if (mesh_msg.type == MSG_TYPE_ACK) {
 
 ---
 
-## [Routing](https://nellowtcs.me/Mesh-NOW/docs/guide/routing/)
+## [Routing](https://nellowtcs.me/Mesh-NOW/docs/guide/routing/) (Guide)
 
 ---
 title: "Routing"
@@ -1855,7 +1855,7 @@ These are two different mechanisms:
 
 ---
 
-## [Security](https://nellowtcs.me/Mesh-NOW/docs/guide/security/)
+## [Security](https://nellowtcs.me/Mesh-NOW/docs/guide/security/) (Guide)
 
 ---
 title: "Security"
@@ -2099,7 +2099,7 @@ flowchart LR
 
 ---
 
-## [State Machine](https://nellowtcs.me/Mesh-NOW/docs/protocol/state-machine/)
+## [State Machine](https://nellowtcs.me/Mesh-NOW/docs/protocol/state-machine/) (Protocol)
 
 ---
 title: "State Machine"
@@ -2251,7 +2251,7 @@ flowchart TB
 
 ---
 
-## [Wire Format](https://nellowtcs.me/Mesh-NOW/docs/protocol/wire-format/)
+## [Wire Format](https://nellowtcs.me/Mesh-NOW/docs/protocol/wire-format/) (Protocol)
 
 ---
 title: "Wire Format"
