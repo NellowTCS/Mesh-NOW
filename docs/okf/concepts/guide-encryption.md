@@ -4,10 +4,10 @@ title: Encryption
 description: "AES-128-GCM payload encryption with per-message nonces."
 source: "https://nellowtcs.me/Mesh-NOW/docs/guide/encryption/"
 path: /guide/encryption/
-updated: 2026-10-26
+updated: 2026-10-31
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-26T18:51:51.777Z"
+  generated_at: "2026-10-31T09:17:51.016Z"
 ---
 ---
 title: "Encryption"

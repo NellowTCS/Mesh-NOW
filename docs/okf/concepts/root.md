@@ -4,10 +4,10 @@ title: Mesh-NOW
 description: "Lightweight mesh networking protocol for ESP32 using ESP-NOW."
 source: "https://nellowtcs.me/Mesh-NOW/docs/"
 path: /
-updated: 2026-10-26
+updated: 2026-10-31
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-26T18:51:51.779Z"
+  generated_at: "2026-10-31T09:17:51.018Z"
 ---
 ---
 title: "Mesh-NOW"
