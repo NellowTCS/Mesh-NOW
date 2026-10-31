@@ -19,7 +19,7 @@
     "@types/web": "^0.0.359",
     "prettier": "^3.9.10",
     "typescript": "^7.0.2",
-    "vite": "^8.3.4"
+    "vite": "^8.3.5"
   },
   "dependencies": {
     "eruda": "^3.4.3",
