@@ -4,10 +4,10 @@ title: "Quick Start"
 description: "Get a mesh node running in under 10 minutes."
 source: "https://nellowtcs.me/Mesh-NOW/docs/getting-started/quickstart/"
 path: /getting-started/quickstart/
-updated: 2026-10-31
+updated: 2026-11-08
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-31T09:41:38.548Z"
+  generated_at: "2026-11-08T10:26:02.774Z"
 ---
 ---
 title: "Quick Start"

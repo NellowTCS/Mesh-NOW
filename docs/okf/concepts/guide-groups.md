@@ -4,10 +4,10 @@ title: Groups
 description: "Group messaging with configurable group IDs."
 source: "https://nellowtcs.me/Mesh-NOW/docs/guide/groups/"
 path: /guide/groups/
-updated: 2026-10-31
+updated: 2026-11-08
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-10-31T09:41:38.549Z"
+  generated_at: "2026-11-08T10:26:02.775Z"
 ---
 ---
 title: "Groups"
