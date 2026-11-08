@@ -242,15 +242,13 @@ esp_err_t mesh_now_init(void)
     // Create all fixed-block pools from the heap
     esp_err_t err;
 
-    err = mesh_now_pool_create(&peer_pool, sizeof(mesh_peer_t),
-                               MAX_PEERS);
+    err = mesh_now_pool_create(&peer_pool, sizeof(mesh_peer_t), MAX_PEERS);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to create peer pool");
         return err;
     }
 
-    err = mesh_now_pool_create(&route_pool, sizeof(mesh_route_t),
-                               MAX_ROUTES);
+    err = mesh_now_pool_create(&route_pool, sizeof(mesh_route_t), MAX_ROUTES);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to create route pool");
         mesh_now_pool_destroy(&peer_pool);

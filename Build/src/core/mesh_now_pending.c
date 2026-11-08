@@ -74,7 +74,8 @@ void mesh_now_release_pending(uint32_t message_id)
     pending_message_t *p = find_pending_locked(message_id);
     if (p != NULL) {
         mesh_now_pool_free(&pending_pool, p);
-        p->active = false; // pool_free overwrites the first bytes (incl. active)
+        p->active =
+            false; // pool_free overwrites the first bytes (incl. active)
     }
     xSemaphoreGive(state_mutex);
 }

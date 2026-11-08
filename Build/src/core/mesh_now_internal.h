@@ -97,8 +97,8 @@ extern mesh_now_pool_t pending_pool;
 extern mesh_now_pool_t seen_id_pool;
 
 // Active-entry counts, mirrored from pool.used_count for callers that want an
-// int. Note that these are only accurate when entries are freed from their pool on
-// removal/expiry (which every table does!)
+// int. Note that these are only accurate when entries are freed from their pool
+// on removal/expiry (which every table does!)
 extern int peer_count;
 extern int route_count;
 extern int route_request_count;

@@ -15,8 +15,7 @@ void mesh_now_retransmit_task_fn(void *pvParameters)
         int64_t now_ms = esp_timer_get_time() / 1000;
 
         // Phase 1: buffered DMs awaiting a discovered route.
-        pending_message_t *pendings =
-            (pending_message_t *)pending_pool.blocks;
+        pending_message_t *pendings = (pending_message_t *)pending_pool.blocks;
         for (size_t i = 0; i < pending_pool.block_count; ++i) {
             bool active = false;
             bool route_wait = false;
@@ -26,8 +25,7 @@ void mesh_now_retransmit_task_fn(void *pvParameters)
             active = pendings[i].active;
             route_wait = pendings[i].route_wait;
             if (active && route_wait) {
-                memcpy(remote_dest, pendings[i].remote_dest,
-                       ESP_NOW_ETH_ALEN);
+                memcpy(remote_dest, pendings[i].remote_dest, ESP_NOW_ETH_ALEN);
                 last_send_ms = pendings[i].last_send_time_ms;
             }
             xSemaphoreGive(state_mutex);
@@ -40,11 +38,11 @@ void mesh_now_retransmit_task_fn(void *pvParameters)
                 continue;
             }
 
-            int attempts = mesh_now_route_request_attempts(
-                (const uint8_t *)remote_dest);
+            int attempts =
+                mesh_now_route_request_attempts((const uint8_t *)remote_dest);
             if (attempts <= MAX_ROUTE_REQ_RETRIES) {
-                esp_err_t rc = mesh_now_request_route(
-                    (const uint8_t *)remote_dest);
+                esp_err_t rc =
+                    mesh_now_request_route((const uint8_t *)remote_dest);
                 if (rc != ESP_OK) {
                     ESP_LOGW(TAG, "Route request failed: %s",
                              esp_err_to_name(rc));

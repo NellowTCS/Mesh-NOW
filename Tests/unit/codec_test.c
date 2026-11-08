@@ -128,8 +128,10 @@ static void beacon_neighbors_round_trip(void)
     beacon.neighbor_count = 2;
     memcpy(beacon.neighbor_macs[0], neigh1, ESP_NOW_ETH_ALEN);
     memcpy(beacon.neighbor_macs[1], neigh2, ESP_NOW_ETH_ALEN);
-    strncpy(beacon.neighbor_names[0], "north", sizeof(beacon.neighbor_names[0]));
-    strncpy(beacon.neighbor_names[1], "south", sizeof(beacon.neighbor_names[1]));
+    strncpy(beacon.neighbor_names[0], "north",
+            sizeof(beacon.neighbor_names[0]));
+    strncpy(beacon.neighbor_names[1], "south",
+            sizeof(beacon.neighbor_names[1]));
 
     uint8_t buf[256];
     size_t len = mesh_now_encode(&beacon, buf, sizeof(buf));
@@ -170,7 +172,7 @@ static void type_classification(void)
 static void encrypted_flag_round_trip(void)
 {
     mocks_for_codec_tests();
-    uint8_t key[AES_GCM_KEY_LEN] = {1, 2, 3, 4, 5, 6, 7, 8,
+    uint8_t key[AES_GCM_KEY_LEN] = {1, 2,  3,  4,  5,  6,  7,  8,
                                     9, 10, 11, 12, 13, 14, 15, 16};
     CHECK(mesh_now_set_encryption_key(key, sizeof(key)) == ESP_OK);
 

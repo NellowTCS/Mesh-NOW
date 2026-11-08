@@ -11,11 +11,11 @@ typedef struct mesh_now_pool mesh_now_pool_t;
  * Fixed-block memory pool
  */
 struct mesh_now_pool {
-    uint8_t *blocks;        // backing array: block_count * block_size bytes
-    uint32_t free_head;     // index of first free block, MESH_NOW_POOL_NONE if none
-    size_t block_size;      // bytes per block (>= 4)
-    size_t block_count;     // total blocks
-    size_t used_count;      // blocks currently handed out
+    uint8_t *blocks;    // backing array: block_count * block_size bytes
+    uint32_t free_head; // index of first free block, MESH_NOW_POOL_NONE if none
+    size_t block_size;  // bytes per block (>= 4)
+    size_t block_count; // total blocks
+    size_t used_count;  // blocks currently handed out
 };
 
 /**
@@ -26,8 +26,7 @@ struct mesh_now_pool {
  * @param block_count number of blocks
  * @return ESP_OK, or ESP_ERR_NO_MEM if the backing allocation fails
  */
-esp_err_t mesh_now_pool_create(mesh_now_pool_t *out_pool,
-                               size_t block_size,
+esp_err_t mesh_now_pool_create(mesh_now_pool_t *out_pool, size_t block_size,
                                size_t block_count);
 
 /**

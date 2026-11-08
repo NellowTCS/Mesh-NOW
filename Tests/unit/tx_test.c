@@ -52,7 +52,9 @@ static void send_frame_small_frame_ok(void)
     CHECK(mesh_now_send_frame(&msg, dest, false) == ESP_OK);
     CHECK(g_send.called);
     CHECK(macs_equal(g_send.dest, dest));
-    CHECK(g_send.len == MESH_NOW_HEADER_LEN + mesh_now_encode(&msg, g_send.data, sizeof(g_send.data)));
+    CHECK(g_send.len ==
+          MESH_NOW_HEADER_LEN +
+              mesh_now_encode(&msg, g_send.data, sizeof(g_send.data)));
 }
 
 static void send_frame_drops_oversized(void)

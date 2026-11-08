@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-esp_err_t mesh_now_pool_create(mesh_now_pool_t *out_pool,
-                               size_t block_size,
+esp_err_t mesh_now_pool_create(mesh_now_pool_t *out_pool, size_t block_size,
                                size_t block_count)
 {
     if (out_pool == NULL || block_size < 4 || block_count == 0) {
@@ -19,12 +18,13 @@ esp_err_t mesh_now_pool_create(mesh_now_pool_t *out_pool,
     // Zero every block so unallocated slots read as inactive (active=false)
     memset(blocks, 0, bytes);
 
-    // Build an intrusive free list (ik it sounds weird, 
-    // trust me it's cooler than you think)
+    // Build an intrusive free list: the first 4 bytes of each free block hold
+    // the index of the next free block, chaining every block together with the
+    // head at block 0 and the tail at MESH_NOW_POOL_NONE.
     for (size_t i = 0; i < block_count; i++) {
         uint8_t *blk = blocks + i * block_size;
-        uint32_t next = (i + 1 < block_count) ? (uint32_t)(i + 1)
-                                              : MESH_NOW_POOL_NONE;
+        uint32_t next =
+            (i + 1 < block_count) ? (uint32_t)(i + 1) : MESH_NOW_POOL_NONE;
         memcpy(blk, &next, sizeof(next));
     }
 
@@ -68,8 +68,7 @@ void mesh_now_pool_free(mesh_now_pool_t *pool, void *ptr)
     }
     uint8_t *blk = (uint8_t *)ptr;
     ptrdiff_t off = blk - pool->blocks;
-    if (off < 0 ||
-        (size_t)off >= pool->block_count * pool->block_size ||
+    if (off < 0 || (size_t)off >= pool->block_count * pool->block_size ||
         (off % (ptrdiff_t)pool->block_size) != 0) {
         return; // pointer does not belong to this pool
     }

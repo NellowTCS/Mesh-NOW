@@ -167,7 +167,8 @@ static void clear_route_request(const uint8_t *dest_mac)
     route_request_t *req = find_route_request_locked(dest_mac);
     if (req != NULL) {
         mesh_now_pool_free(&route_request_pool, req);
-        req->active = false; // pool_free overwrites the first bytes (incl. active)
+        req->active =
+            false; // pool_free overwrites the first bytes (incl. active)
         route_request_count--;
     }
     xSemaphoreGive(state_mutex);

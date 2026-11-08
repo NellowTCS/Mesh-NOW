@@ -40,8 +40,8 @@ int64_t g_now_us = 0;
 uint32_t g_random_state = 0x12345678u;
 uint8_t g_local_mac[ESP_NOW_ETH_ALEN] = {0xdc, 0xfe, 0x01, 0x02, 0x03, 0x04};
 
-const uint8_t g_broadcast_ff[ESP_NOW_ETH_ALEN] = {0xff, 0xff, 0xff, 0xff,
-                                                  0xff, 0xff};
+const uint8_t g_broadcast_ff[ESP_NOW_ETH_ALEN] = {0xff, 0xff, 0xff,
+                                                  0xff, 0xff, 0xff};
 
 // FreeRTOS mocks
 
@@ -188,9 +188,7 @@ int64_t esp_timer_get_time(void)
 
 //  mesh-now coverage shims
 
-void mesh_now_register_callbacks(void)
-{
-}
+void mesh_now_register_callbacks(void) {}
 
 esp_err_t message_queue_init(void)
 {
@@ -240,8 +238,8 @@ void mesh_now_build_nonce(uint32_t message_id, const uint8_t *sender_mac,
     for (size_t i = 0; i < AES_GCM_NONCE_LEN && i < sizeof(message_id); i++) {
         nonce[i] = (uint8_t)(message_id >> (8 * i));
     }
-    for (size_t i = 0; i < (AES_GCM_NONCE_LEN - sizeof(message_id)) &&
-                    i < ESP_NOW_ETH_ALEN;
+    for (size_t i = 0;
+         i < (AES_GCM_NONCE_LEN - sizeof(message_id)) && i < ESP_NOW_ETH_ALEN;
          i++) {
         nonce[sizeof(message_id) + i] = sender_mac[i];
     }
@@ -337,8 +335,7 @@ void test_reset_all(void)
                          MAX_ROUTE_REQUESTS);
     mesh_now_pool_create(&pending_pool, sizeof(pending_message_t),
                          MAX_PENDING_MESSAGES);
-    mesh_now_pool_create(&seen_id_pool, sizeof(uint32_t),
-                         MAX_SEEN_MESSAGE_IDS);
+    mesh_now_pool_create(&seen_id_pool, sizeof(uint32_t), MAX_SEEN_MESSAGE_IDS);
 
     peer_count = 0;
     route_count = 0;

@@ -5,7 +5,7 @@
 
 #define TAG "MESH_NOW"
 
-// Find a peer block by MAC (regardless of active state)  
+// Find a peer block by MAC (regardless of active state)
 // Returns the block pointer or NULL
 // Caller must hold state_mutex
 static mesh_peer_t *find_peer_locked(const uint8_t *mac)
@@ -97,8 +97,7 @@ void mesh_now_remove_peer(const uint8_t *mac)
     if (p != NULL && p->active) {
         esp_err_t rc = esp_now_del_peer(mac);
         if (rc != ESP_OK && rc != ESP_ERR_ESPNOW_NOT_FOUND) {
-            ESP_LOGW(TAG, "esp_now_del_peer failed: %s",
-                     esp_err_to_name(rc));
+            ESP_LOGW(TAG, "esp_now_del_peer failed: %s", esp_err_to_name(rc));
         }
 
         p->active = false;
