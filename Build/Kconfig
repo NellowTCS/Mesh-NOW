@@ -140,7 +140,7 @@ menu "Mesh-NOW"
         default 384
         range 128 512
         help
-            Working buffer for encoding/decoding ESP-NOW frames on the stack.  
+            Working buffer for encoding/decoding ESP-NOW frames on the stack.
             Larger values waste RAM in every pending-message slot.
 
 endmenu

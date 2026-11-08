@@ -41,7 +41,8 @@ void *mesh_now_pool_alloc(mesh_now_pool_t *pool);
 
 /**
  * Return a block to the pool. Must be a pointer previously handed out by
- * mesh_now_pool_alloc() on this same pool otherwise... undefined behavior
+ * mesh_now_pool_alloc() on this same pool. Double-free is a no-op, as it should
+ * be ;/
  */
 void mesh_now_pool_free(mesh_now_pool_t *pool, void *ptr);
 

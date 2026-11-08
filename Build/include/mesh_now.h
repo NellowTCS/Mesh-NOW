@@ -85,6 +85,7 @@ typedef struct {
 
 // A one-hop neighbor, discovered via ESP-NOW beacons.
 typedef struct {
+    uint32_t _pool_reserved;
     uint8_t peer_addr[ESP_NOW_ETH_ALEN];
     bool active;
     int64_t last_seen;
@@ -93,6 +94,7 @@ typedef struct {
 
 // Route to a virtual peer: reachable via next_hop, not a direct neighbor.
 typedef struct {
+    uint32_t _pool_reserved;
     uint8_t dest_mac[ESP_NOW_ETH_ALEN];
     uint8_t next_hop[ESP_NOW_ETH_ALEN];
     uint8_t hop_count;

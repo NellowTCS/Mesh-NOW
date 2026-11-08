@@ -43,6 +43,7 @@
 
 // A pending outbound message awaiting ACK (or a route for a buffered DM).
 typedef struct {
+    uint32_t _pool_reserved;
     uint32_t message_id;
     uint8_t flags;
     uint8_t wire_buf[PENDING_WIRE_BUF];
@@ -57,6 +58,7 @@ typedef struct {
 
 // Dedup cache for forwarded control frames (RREQ/RREP/RERR).
 typedef struct {
+    uint32_t _pool_reserved;
     bool active;
     uint8_t origin_mac[ESP_NOW_ETH_ALEN];
     uint32_t message_id;
@@ -65,6 +67,7 @@ typedef struct {
 
 // A single in-flight route discovery for one destination.
 typedef struct {
+    uint32_t _pool_reserved;
     uint8_t dest_mac[ESP_NOW_ETH_ALEN];
     uint32_t rreq_seq;
     uint32_t last_dest_seq;
@@ -97,8 +100,8 @@ extern mesh_now_pool_t pending_pool;
 extern mesh_now_pool_t seen_id_pool;
 
 // Active-entry counts, mirrored from pool.used_count for callers that want an
-// int. Note that these are only accurate when entries are freed from their pool
-// on removal/expiry (which every table does!)
+// int. These are only accurate when entries are freed from their pool on
+// removal or expiry.
 extern int peer_count;
 extern int route_count;
 extern int route_request_count;

@@ -73,6 +73,19 @@ void mesh_now_pool_free(mesh_now_pool_t *pool, void *ptr)
         return; // pointer does not belong to this pool
     }
     uint32_t idx = (uint32_t)(off / pool->block_size);
+
+    // Double-free guard
+    uint32_t walk = pool->free_head;
+    while (walk != MESH_NOW_POOL_NONE) {
+        if (walk == idx) {
+            return;
+        }
+        uint8_t *wblk = pool->blocks + walk * pool->block_size;
+        uint32_t next;
+        memcpy(&next, wblk, sizeof(next));
+        walk = next;
+    }
+
     memcpy(blk, &pool->free_head, sizeof(pool->free_head));
     pool->free_head = idx;
     pool->used_count--;
