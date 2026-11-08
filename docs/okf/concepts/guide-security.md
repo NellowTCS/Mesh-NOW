@@ -7,7 +7,7 @@ path: /guide/security/
 updated: 2026-11-08
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-11-08T11:13:17.566Z"
+  generated_at: "2026-11-08T11:56:32.301Z"
 ---
 ---
 title: "Security"
