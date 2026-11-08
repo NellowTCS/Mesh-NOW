@@ -7,7 +7,7 @@ path: /protocol/state-machine/
 updated: 2026-11-08
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-11-08T10:27:48.584Z"
+  generated_at: "2026-11-08T11:13:17.567Z"
 ---
 ---
 title: "State Machine"
