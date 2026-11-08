@@ -7,7 +7,7 @@ path: /guide/routing/
 updated: 2026-11-08
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-11-08T10:27:13.983Z"
+  generated_at: "2026-11-08T10:27:48.583Z"
 ---
 ---
 title: "Routing"
