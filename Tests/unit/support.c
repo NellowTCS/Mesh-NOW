@@ -321,15 +321,28 @@ void test_reset_all(void)
     g_local_mac[4] = 0x03;
     g_local_mac[5] = 0x04;
 
+    // clean state, just in case
+    mesh_now_pool_destroy(&peer_pool);
+    mesh_now_pool_destroy(&route_pool);
+    mesh_now_pool_destroy(&rreq_cache_pool);
+    mesh_now_pool_destroy(&route_request_pool);
+    mesh_now_pool_destroy(&pending_pool);
+    mesh_now_pool_destroy(&seen_id_pool);
+
+    mesh_now_pool_create(&peer_pool, sizeof(mesh_peer_t), MAX_PEERS);
+    mesh_now_pool_create(&route_pool, sizeof(mesh_route_t), MAX_ROUTES);
+    mesh_now_pool_create(&rreq_cache_pool, sizeof(rreq_cache_entry_t),
+                         MAX_RREQ_CACHE);
+    mesh_now_pool_create(&route_request_pool, sizeof(route_request_t),
+                         MAX_ROUTE_REQUESTS);
+    mesh_now_pool_create(&pending_pool, sizeof(pending_message_t),
+                         MAX_PENDING_MESSAGES);
+    mesh_now_pool_create(&seen_id_pool, sizeof(uint32_t),
+                         MAX_SEEN_MESSAGE_IDS);
+
     peer_count = 0;
-    memset(peers, 0, sizeof(peers));
     route_count = 0;
-    memset(routes, 0, sizeof(routes));
-    memset(rreq_cache, 0, sizeof(rreq_cache));
-    memset(route_requests, 0, sizeof(route_requests));
-    memset(pending_messages, 0, sizeof(pending_messages));
-    seen_message_count = 0;
-    memset(seen_message_ids, 0, sizeof(seen_message_ids));
+    route_request_count = 0;
     next_message_id = 0;
     local_group_id = 0;
     local_node_name[0] = '\0';

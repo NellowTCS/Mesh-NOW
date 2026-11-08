@@ -3,6 +3,7 @@
 
 #include "mesh_now.h"
 #include "message_queue.h"
+#include "mesh_now_pool.h"
 #include "mesh_now_config.h"
 #include <esp_now.h>
 #include <esp_timer.h>
@@ -37,17 +38,18 @@
 #define AES_GCM_TAG_LEN       16
 #define AES_GCM_NONCE_LEN     12
 #define AES_GCM_KEY_LEN       16
-#define WIRE_BUF_SIZE         384
+#define WIRE_BUF_SIZE         CONFIG_MESH_NOW_WIRE_BUF_SIZE
+#define PENDING_WIRE_BUF      ESP_NOW_MAX_DATA_LEN
 
 // A pending outbound message awaiting ACK (or a route for a buffered DM).
 typedef struct {
-    bool active;
     uint32_t message_id;
     uint8_t flags;
-    uint8_t wire_buf[WIRE_BUF_SIZE];
+    uint8_t wire_buf[PENDING_WIRE_BUF];
     size_t wire_len;
     uint8_t dest_mac[ESP_NOW_ETH_ALEN];
     uint8_t remote_dest[ESP_NOW_ETH_ALEN];
+    bool active;
     bool route_wait;
     int retries;
     int64_t last_send_time_ms;
@@ -63,12 +65,12 @@ typedef struct {
 
 // A single in-flight route discovery for one destination.
 typedef struct {
-    bool active;
     uint8_t dest_mac[ESP_NOW_ETH_ALEN];
     uint32_t rreq_seq;
     uint32_t last_dest_seq;
     uint8_t attempts;
     int64_t expires_us;
+    bool active;
 } route_request_t;
 
 // Parsed form of the fixed 32-byte wire header. Serialization lives in
@@ -86,14 +88,21 @@ typedef struct {
     uint8_t target_mac[ESP_NOW_ETH_ALEN];
 } mesh_wire_header_t;
 
-// Shared glue-table state. The ordering/allocation is an implementation
-// detail owned by mesh_now.c; the net layer only reads it under the mutex.
-extern mesh_peer_t peers[MAX_PEERS];
+// Shared glue-table state.
+extern mesh_now_pool_t peer_pool;
+extern mesh_now_pool_t route_pool;
+extern mesh_now_pool_t rreq_cache_pool;
+extern mesh_now_pool_t route_request_pool;
+extern mesh_now_pool_t pending_pool;
+extern mesh_now_pool_t seen_id_pool;
+
+// Active-entry counts, mirrored from pool.used_count for callers that want an
+// int. Note that these are only accurate when entries are freed from their pool on
+// removal/expiry (which every table does!)
 extern int peer_count;
-extern mesh_route_t routes[MAX_ROUTES];
 extern int route_count;
-extern rreq_cache_entry_t rreq_cache[MAX_RREQ_CACHE];
-extern route_request_t route_requests[MAX_ROUTE_REQUESTS];
+extern int route_request_count;
+
 extern uint8_t broadcast_mac[ESP_NOW_ETH_ALEN];
 extern TaskHandle_t beacon_task_handle;
 extern TaskHandle_t retransmit_task_handle;
@@ -105,39 +114,8 @@ extern size_t encryption_key_len;
 extern uint32_t next_message_id;
 extern uint8_t local_group_id;
 extern char local_node_name[MESH_NOW_NODE_NAME_MAX + 1];
-extern pending_message_t pending_messages[MAX_PENDING_MESSAGES];
-extern uint32_t seen_message_ids[MAX_SEEN_MESSAGE_IDS];
-extern int seen_message_count;
 extern SemaphoreHandle_t state_mutex;
 extern int64_t time_offset_us;
-
-// Compact the active entries of a fixed-size table to the front, preserving
-// order, and shrink *count. One implementation for every glue table (peers,
-// routes, routes with pinned exemption, route requests), so the removal
-// arithmetic cannot drift between callers. Returns the number removed.
-static inline size_t mesh_now_compact_entries(void *base, size_t *count,
-                                              size_t elem_size,
-                                              const bool *active)
-{
-    uint8_t *entries = (uint8_t *)base;
-    size_t n = *count;
-    size_t write = 0;
-
-    for (size_t i = 0; i < n; i++) {
-        if (!active[i]) {
-            continue;
-        }
-        if (write != i) {
-            memmove(entries + write * elem_size, entries + i * elem_size,
-                    elem_size);
-        }
-        write++;
-    }
-
-    size_t removed = n - write;
-    *count = write;
-    return removed;
-}
 
 // mpack payload (de)serialization.
 bool mesh_now_decode(const uint8_t *data, size_t len, mesh_message_t *msg);
@@ -203,8 +181,13 @@ void mesh_now_mark_message_seen(uint32_t message_id);
 int mesh_now_add_pending(const uint8_t *dest_mac, const uint8_t *remote_dest,
                          const uint8_t *wire, size_t wire_len,
                          uint32_t message_id, uint8_t flags, bool route_wait);
+// Find a pending block by message ID. Returns 0 if found, -1 otherwise.
 int mesh_now_find_pending(uint32_t message_id);
-void mesh_now_release_pending(int index);
+// Find a pending block by message ID. Returns the block pointer or NULL
+// Caller must hold state_mutex!
+pending_message_t *mesh_now_find_pending_locked(uint32_t message_id);
+// Release a pending block by message ID (frees it back to the pool).
+void mesh_now_release_pending(uint32_t message_id);
 void mesh_now_flush_route_wait(const uint8_t *target);
 
 // codec: wire framing.

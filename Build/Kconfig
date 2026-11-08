@@ -127,4 +127,20 @@ menu "Mesh-NOW"
             two-hop nodes learn virtual-peer routes and names. A larger value
             costs beacon airtime.
 
+    config MESH_NOW_MAX_PEERS
+        int "Maximum physical ESP-NOW peers"
+        default 20
+        range 1 40
+        help
+            Cap on the one-hop ESP-NOW peer table. Backed by a dynamic pool
+            instead of a static array, so only configured entries consume RAM.
+
+    config MESH_NOW_WIRE_BUF_SIZE
+        int "Wire frame buffer size (bytes)"
+        default 384
+        range 128 512
+        help
+            Working buffer for encoding/decoding ESP-NOW frames on the stack.  
+            Larger values waste RAM in every pending-message slot.
+
 endmenu

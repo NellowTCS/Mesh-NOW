@@ -19,8 +19,9 @@ static void add_records_and_registers(void)
     CHECK(g_add_peer_calls == 1);
     CHECK(mesh_now_peer_is_direct(p1));
     CHECK(!mesh_now_peer_is_direct(p2));
-    CHECK(peers[0].active);
-    CHECK(peers[0].last_seen == g_now_us);
+    mesh_peer_t *peer_blocks = (mesh_peer_t *)peer_pool.blocks;
+    CHECK(peer_blocks[0].active);
+    CHECK(peer_blocks[0].last_seen == g_now_us);
 }
 
 static void self_mac_is_never_a_peer(void)
@@ -35,14 +36,15 @@ static void duplicate_reactivate_skips_re_register(void)
 {
     mocks_for_peer_tests();
     mesh_now_add_peer(p1);
-    peers[0].active = false; // peer expired earlier
+    mesh_peer_t *peer_blocks = (mesh_peer_t *)peer_pool.blocks;
+    peer_blocks[0].active = false; // peer expired earlier
     g_now_us += 5000;
 
     g_is_peer_exist = true; // still registered with ESP-NOW
     mesh_now_add_peer(p1);
     CHECK(mesh_now_get_peer_count() == 1);
-    CHECK(peers[0].active);
-    CHECK(peers[0].last_seen == g_now_us);
+    CHECK(peer_blocks[0].active);
+    CHECK(peer_blocks[0].last_seen == g_now_us);
     CHECK(g_add_peer_calls == 1); // no second esp_now_add_peer
 }
 
@@ -78,8 +80,10 @@ static void remove_drops_entry_and_keeps_order(void)
 
     mesh_now_remove_peer(p2);
     CHECK(mesh_now_get_peer_count() == 2);
-    CHECK(macs_equal(peers[0].peer_addr, p1));
-    CHECK(macs_equal(peers[1].peer_addr, p3));
+    mesh_peer_t snap[2];
+    CHECK(mesh_now_snapshot_peers(snap, 2) == 2);
+    CHECK(macs_equal(snap[0].peer_addr, p1));
+    CHECK(macs_equal(snap[1].peer_addr, p3));
     CHECK(macs_equal(g_last_del_peer, p2));
     CHECK(g_del_peer_calls == 1);
     CHECK(!mesh_now_peer_is_direct(p2));

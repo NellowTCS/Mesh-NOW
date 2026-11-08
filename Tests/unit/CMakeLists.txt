@@ -17,6 +17,7 @@ target_include_directories(mesh_now_mocks INTERFACE
 set(MESH_SRCS
     "${MESH_NOW_TOP}/Build/src/core/mesh_now.c"
     "${MESH_NOW_TOP}/Build/src/core/mesh_now_pending.c"
+    "${MESH_NOW_TOP}/Build/src/core/mesh_now_pool.c"
     "${MESH_NOW_TOP}/Build/src/net/mesh_now_peer.c"
     "${MESH_NOW_TOP}/Build/src/net/mesh_now_route.c"
     "${MESH_NOW_TOP}/Build/src/net/mesh_now_tx.c"

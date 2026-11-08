@@ -22,7 +22,9 @@ static uint8_t fill_zone_announce(mesh_message_t *beacon)
     uint8_t candidate_count = 0;
 
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    for (int i = 0; i < peer_count && candidate_count < MAX_BEACON_NEIGHBORS;
+    mesh_peer_t *peers = (mesh_peer_t *)peer_pool.blocks;
+    for (size_t i = 0;
+         i < peer_pool.block_count && candidate_count < MAX_BEACON_NEIGHBORS;
          i++) {
         if (!peers[i].active) {
             continue;

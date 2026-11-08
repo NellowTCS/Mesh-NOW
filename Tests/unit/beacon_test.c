@@ -5,12 +5,13 @@
 
 static void register_dense_peers(void)
 {
+    mesh_peer_t *peer_blocks = (mesh_peer_t *)peer_pool.blocks;
     for (int i = 0; i < MAX_BEACON_NEIGHBORS; i++) {
         uint8_t mac[6];
         fill_mac(mac, 0x7000 + i);
         mesh_now_add_peer(mac);
-        strncpy(peers[i].node_name, NAME_16, MESH_NOW_NODE_NAME_MAX);
-        peers[i].node_name[MESH_NOW_NODE_NAME_MAX] = '\0';
+        strncpy(peer_blocks[i].node_name, NAME_16, MESH_NOW_NODE_NAME_MAX);
+        peer_blocks[i].node_name[MESH_NOW_NODE_NAME_MAX] = '\0';
     }
     CHECK(mesh_now_get_peer_count() == MAX_BEACON_NEIGHBORS);
 }

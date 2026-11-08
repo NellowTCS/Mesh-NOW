@@ -1,6 +1,7 @@
 idf_component_register(SRCS
                        "src/core/mesh_now.c"
                        "src/core/mesh_now_pending.c"
+                       "src/core/mesh_now_pool.c"
                        "src/crypto/mesh_now_crypto.c"
                        "src/codec/mesh_now_codec.c"
                        "src/net/mesh_now_peer.c"

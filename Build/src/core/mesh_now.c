@@ -1,4 +1,5 @@
 #include "mesh_now_internal.h"
+#include "mesh_now_pool.h"
 #include "message_queue.h"
 #include <esp_log.h>
 #include <esp_now.h>
@@ -9,12 +10,16 @@
 
 #define TAG "MESH_NOW"
 
-mesh_peer_t peers[MAX_PEERS];
+mesh_now_pool_t peer_pool;
+mesh_now_pool_t route_pool;
+mesh_now_pool_t rreq_cache_pool;
+mesh_now_pool_t route_request_pool;
+mesh_now_pool_t pending_pool;
+mesh_now_pool_t seen_id_pool;
+
 int peer_count = 0;
-mesh_route_t routes[MAX_ROUTES];
 int route_count = 0;
-rreq_cache_entry_t rreq_cache[MAX_RREQ_CACHE];
-route_request_t route_requests[MAX_ROUTE_REQUESTS];
+int route_request_count = 0;
 uint8_t broadcast_mac[ESP_NOW_ETH_ALEN] = BROADCAST_MAC;
 TaskHandle_t beacon_task_handle = NULL;
 TaskHandle_t retransmit_task_handle = NULL;
@@ -26,9 +31,6 @@ size_t encryption_key_len = 0;
 uint32_t next_message_id = 0;
 uint8_t local_group_id = 0;
 char local_node_name[MESH_NOW_NODE_NAME_MAX + 1] = {0};
-pending_message_t pending_messages[MAX_PENDING_MESSAGES];
-uint32_t seen_message_ids[MAX_SEEN_MESSAGE_IDS];
-int seen_message_count = 0;
 SemaphoreHandle_t state_mutex = NULL;
 int64_t time_offset_us = 0;
 
@@ -46,8 +48,9 @@ uint32_t mesh_now_generate_message_id(void)
 bool mesh_now_is_message_seen(uint32_t message_id)
 {
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    for (int i = 0; i < seen_message_count; ++i) {
-        if (seen_message_ids[i] == message_id) {
+    uint32_t *ids = (uint32_t *)seen_id_pool.blocks;
+    for (size_t i = 0; i < seen_id_pool.used_count; ++i) {
+        if (ids[i] == message_id) {
             xSemaphoreGive(state_mutex);
             return true;
         }
@@ -59,15 +62,27 @@ bool mesh_now_is_message_seen(uint32_t message_id)
 void mesh_now_mark_message_seen(uint32_t message_id)
 {
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    if (seen_message_count < MAX_SEEN_MESSAGE_IDS) {
-        seen_message_ids[seen_message_count++] = message_id;
+    uint32_t *ids = (uint32_t *)seen_id_pool.blocks;
+    for (size_t i = 0; i < seen_id_pool.used_count; ++i) {
+        if (ids[i] == message_id) {
+            xSemaphoreGive(state_mutex);
+            return; // already present
+        }
+    }
+
+    if (seen_id_pool.used_count < seen_id_pool.block_count) {
+        uint32_t *slot = mesh_now_pool_alloc(&seen_id_pool);
+        if (slot != NULL) {
+            *slot = message_id;
+        }
         xSemaphoreGive(state_mutex);
         return;
     }
 
-    memmove(&seen_message_ids[0], &seen_message_ids[1],
-            (MAX_SEEN_MESSAGE_IDS - 1) * sizeof(uint32_t));
-    seen_message_ids[MAX_SEEN_MESSAGE_IDS - 1] = message_id;
+    // Ring buffer: shift left and append at the end.
+    memmove(&ids[0], &ids[1],
+            (seen_id_pool.block_count - 1) * sizeof(uint32_t));
+    ids[seen_id_pool.block_count - 1] = message_id;
     xSemaphoreGive(state_mutex);
 }
 
@@ -165,7 +180,7 @@ int mesh_now_get_peer_count(void)
 
 mesh_peer_t *mesh_now_get_peers(void)
 {
-    return peers;
+    return (mesh_peer_t *)peer_pool.blocks;
 }
 
 bool mesh_now_is_encrypted(void)
@@ -201,11 +216,15 @@ int mesh_now_snapshot_peers(mesh_peer_t *out, size_t max_out)
         return 0;
     }
     xSemaphoreTake(state_mutex, portMAX_DELAY);
+    mesh_peer_t *peer_blocks = (mesh_peer_t *)peer_pool.blocks;
     size_t to_copy = peer_count < (int)max_out ? peer_count : max_out;
-    for (size_t i = 0; i < to_copy; i++) {
-        out[i] = peers[i];
+    size_t copied = 0;
+    for (size_t i = 0; i < peer_pool.block_count && copied < to_copy; i++) {
+        if (peer_blocks[i].active) {
+            out[copied++] = peer_blocks[i];
+        }
     }
-    int count = (int)to_copy;
+    int count = (int)copied;
     xSemaphoreGive(state_mutex);
     return count;
 }
@@ -218,6 +237,66 @@ esp_err_t mesh_now_init(void)
     if (state_mutex == NULL) {
         ESP_LOGE(TAG, "Failed to create state mutex");
         return ESP_FAIL;
+    }
+
+    // Create all fixed-block pools from the heap
+    esp_err_t err;
+
+    err = mesh_now_pool_create(&peer_pool, sizeof(mesh_peer_t),
+                               MAX_PEERS);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create peer pool");
+        return err;
+    }
+
+    err = mesh_now_pool_create(&route_pool, sizeof(mesh_route_t),
+                               MAX_ROUTES);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create route pool");
+        mesh_now_pool_destroy(&peer_pool);
+        return err;
+    }
+
+    err = mesh_now_pool_create(&rreq_cache_pool, sizeof(rreq_cache_entry_t),
+                               MAX_RREQ_CACHE);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create RREQ cache pool");
+        mesh_now_pool_destroy(&route_pool);
+        mesh_now_pool_destroy(&peer_pool);
+        return err;
+    }
+
+    err = mesh_now_pool_create(&route_request_pool, sizeof(route_request_t),
+                               MAX_ROUTE_REQUESTS);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create route-request pool");
+        mesh_now_pool_destroy(&rreq_cache_pool);
+        mesh_now_pool_destroy(&route_pool);
+        mesh_now_pool_destroy(&peer_pool);
+        return err;
+    }
+
+    err = mesh_now_pool_create(&pending_pool, sizeof(pending_message_t),
+                               MAX_PENDING_MESSAGES);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create pending pool");
+        mesh_now_pool_destroy(&route_request_pool);
+        mesh_now_pool_destroy(&rreq_cache_pool);
+        mesh_now_pool_destroy(&route_pool);
+        mesh_now_pool_destroy(&peer_pool);
+        return err;
+    }
+
+    err = mesh_now_pool_create(&seen_id_pool, sizeof(uint32_t),
+                               MAX_SEEN_MESSAGE_IDS);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create seen-ID pool");
+        mesh_now_pool_destroy(&pending_pool);
+        mesh_now_pool_destroy(&route_request_pool);
+        mesh_now_pool_destroy(&rreq_cache_pool);
+        mesh_now_pool_destroy(&route_pool);
+        mesh_now_pool_destroy(&peer_pool);
+        return err;
     }
 
     message_queue_init();
@@ -277,6 +356,13 @@ esp_err_t mesh_now_deinit(void)
     }
 
     peer_count = 0;
+
+    mesh_now_pool_destroy(&peer_pool);
+    mesh_now_pool_destroy(&route_pool);
+    mesh_now_pool_destroy(&rreq_cache_pool);
+    mesh_now_pool_destroy(&route_request_pool);
+    mesh_now_pool_destroy(&pending_pool);
+    mesh_now_pool_destroy(&seen_id_pool);
 
     if (state_mutex != NULL) {
         vSemaphoreDelete(state_mutex);

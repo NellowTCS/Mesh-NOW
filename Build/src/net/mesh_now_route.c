@@ -6,17 +6,18 @@
 
 #define TAG "MESH_NOW"
 
-// Index of a virtual peer by destination MAC within the active region
-// [0, route_count), or -1 if not present. Caller must hold state_mutex.
-static int find_route(const uint8_t *dest_mac)
+// Find an active route block by destination MAC. Returns the block pointer
+// or NULL.  Caller must hold state_mutex.
+static mesh_route_t *find_route_locked(const uint8_t *dest_mac)
 {
-    for (int i = 0; i < route_count; i++) {
+    mesh_route_t *routes = (mesh_route_t *)route_pool.blocks;
+    for (size_t i = 0; i < route_pool.block_count; i++) {
         if (routes[i].active &&
             memcmp(routes[i].dest_mac, dest_mac, ESP_NOW_ETH_ALEN) == 0) {
-            return i;
+            return &routes[i];
         }
     }
-    return -1;
+    return NULL;
 }
 
 void mesh_now_add_route(const uint8_t *dest_mac, const uint8_t *next_hop,
@@ -30,14 +31,14 @@ void mesh_now_add_route(const uint8_t *dest_mac, const uint8_t *next_hop,
 
     xSemaphoreTake(state_mutex, portMAX_DELAY);
 
-    int idx = find_route(dest_mac);
-    if (idx >= 0) {
-        if (!routes[idx].pinned) {
-            memcpy(routes[idx].next_hop, next_hop, ESP_NOW_ETH_ALEN);
-            routes[idx].hop_count = hop_count;
-            routes[idx].dest_seq = dest_seq;
-            routes[idx].active = true;
-            routes[idx].last_used_us = esp_timer_get_time();
+    mesh_route_t *r = find_route_locked(dest_mac);
+    if (r != NULL) {
+        if (!r->pinned) {
+            memcpy(r->next_hop, next_hop, ESP_NOW_ETH_ALEN);
+            r->hop_count = hop_count;
+            r->dest_seq = dest_seq;
+            r->active = true;
+            r->last_used_us = esp_timer_get_time();
         }
         xSemaphoreGive(state_mutex);
         return;
@@ -50,14 +51,21 @@ void mesh_now_add_route(const uint8_t *dest_mac, const uint8_t *next_hop,
         return;
     }
 
-    memcpy(routes[route_count].dest_mac, dest_mac, ESP_NOW_ETH_ALEN);
-    memcpy(routes[route_count].next_hop, next_hop, ESP_NOW_ETH_ALEN);
-    routes[route_count].hop_count = hop_count;
-    routes[route_count].dest_seq = dest_seq;
-    routes[route_count].last_used_us = esp_timer_get_time();
-    routes[route_count].active = true;
-    routes[route_count].pinned = false;
-    routes[route_count].node_name[0] = '\0';
+    r = (mesh_route_t *)mesh_now_pool_alloc(&route_pool);
+    if (r == NULL) {
+        ESP_LOGW(TAG, "Route pool exhausted");
+        xSemaphoreGive(state_mutex);
+        return;
+    }
+
+    memcpy(r->dest_mac, dest_mac, ESP_NOW_ETH_ALEN);
+    memcpy(r->next_hop, next_hop, ESP_NOW_ETH_ALEN);
+    r->hop_count = hop_count;
+    r->dest_seq = dest_seq;
+    r->last_used_us = esp_timer_get_time();
+    r->active = true;
+    r->pinned = false;
+    r->node_name[0] = '\0';
     route_count++;
 
     xSemaphoreGive(state_mutex);
@@ -80,22 +88,27 @@ esp_err_t mesh_now_pin_route(const uint8_t *dest_mac, const uint8_t *proxy_mac)
 
     xSemaphoreTake(state_mutex, portMAX_DELAY);
 
-    int idx = find_route(dest_mac);
-    if (idx < 0) {
+    mesh_route_t *r = find_route_locked(dest_mac);
+    if (r == NULL) {
         if (route_count >= MAX_ROUTES) {
             xSemaphoreGive(state_mutex);
             return ESP_ERR_NO_MEM;
         }
-        idx = route_count++;
-        memset(&routes[idx], 0, sizeof(routes[idx]));
-        memcpy(routes[idx].dest_mac, dest_mac, ESP_NOW_ETH_ALEN);
+        r = (mesh_route_t *)mesh_now_pool_alloc(&route_pool);
+        if (r == NULL) {
+            xSemaphoreGive(state_mutex);
+            return ESP_ERR_NO_MEM;
+        }
+        memset(r, 0, sizeof(*r));
+        memcpy(r->dest_mac, dest_mac, ESP_NOW_ETH_ALEN);
+        route_count++;
     }
 
-    routes[idx].pinned = true;
-    routes[idx].active = true;
-    memcpy(routes[idx].next_hop, proxy_mac, ESP_NOW_ETH_ALEN);
-    routes[idx].hop_count = 1;
-    routes[idx].last_used_us = esp_timer_get_time();
+    r->pinned = true;
+    r->active = true;
+    memcpy(r->next_hop, proxy_mac, ESP_NOW_ETH_ALEN);
+    r->hop_count = 1;
+    r->last_used_us = esp_timer_get_time();
 
     xSemaphoreGive(state_mutex);
     return ESP_OK;
@@ -108,12 +121,12 @@ esp_err_t mesh_now_unpin_route(const uint8_t *dest_mac)
     }
 
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    int idx = find_route(dest_mac);
-    if (idx < 0) {
+    mesh_route_t *r = find_route_locked(dest_mac);
+    if (r == NULL) {
         xSemaphoreGive(state_mutex);
         return ESP_ERR_NOT_FOUND;
     }
-    routes[idx].pinned = false;
+    r->pinned = false;
     xSemaphoreGive(state_mutex);
     return ESP_OK;
 }
@@ -122,10 +135,10 @@ bool mesh_now_get_route(const uint8_t *dest_mac, mesh_route_t *out)
 {
     bool found = false;
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    int idx = find_route(dest_mac);
-    if (idx >= 0) {
+    mesh_route_t *r = find_route_locked(dest_mac);
+    if (r != NULL) {
         if (out != NULL) {
-            *out = routes[idx];
+            *out = *r;
         }
         found = true;
     }
@@ -147,77 +160,81 @@ int mesh_now_snapshot_routes(mesh_route_t *out, size_t max_out)
         return 0;
     }
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    size_t to_copy = route_count < (int)max_out ? route_count : max_out;
-    for (size_t i = 0; i < to_copy; i++) {
-        out[i] = routes[i];
+    mesh_route_t *routes = (mesh_route_t *)route_pool.blocks;
+    size_t copied = 0;
+    for (size_t i = 0; i < route_pool.block_count && copied < max_out; i++) {
+        if (routes[i].active) {
+            out[copied++] = routes[i];
+        }
     }
-    int count = (int)to_copy;
+    int count = (int)copied;
     xSemaphoreGive(state_mutex);
     return count;
 }
 
-// Drop inbound routes through a dead next hop so senders re-discover.
-// Pinned routes are kept; returns how many were invalidated.
+// Drop routes through a dead next hop so senders re-discover.  Pinned routes
+// are kept; their pool blocks are never freed here. Returns how many were
+// invalidated.
 int mesh_now_invalidate_routes_through(const uint8_t *next_hop)
 {
     xSemaphoreTake(state_mutex, portMAX_DELAY);
 
-    for (int i = 0; i < route_count; i++) {
+    mesh_route_t *routes = (mesh_route_t *)route_pool.blocks;
+    int removed = 0;
+    for (size_t i = 0; i < route_pool.block_count; i++) {
         if (routes[i].active && !routes[i].pinned &&
             memcmp(routes[i].next_hop, next_hop, ESP_NOW_ETH_ALEN) == 0) {
             routes[i].active = false;
+            mesh_now_pool_free(&route_pool, &routes[i]);
+            route_count--;
+            removed++;
         }
     }
 
-    bool active[MAX_ROUTES];
-    for (int i = 0; i < route_count; i++) {
-        active[i] = routes[i].active || routes[i].pinned;
-    }
-    size_t count = (size_t)route_count;
-    size_t removed =
-        mesh_now_compact_entries(routes, &count, sizeof(routes[0]), active);
-    route_count = (int)count;
     xSemaphoreGive(state_mutex);
 
     if (removed > 0) {
-        ESP_LOGD(TAG, "Invalidated %zu route(s) via %s", removed,
+        ESP_LOGD(TAG, "Invalidated %d route(s) via %s", removed,
                  mesh_now_mac_str(next_hop));
     }
-    return (int)removed;
+    return removed;
 }
 
-// Invalidate routes untouched for ROUTE_LIFETIME_US, then compact. Pinned
-// routes never expire.
+// Invalidate routes untouched for ROUTE_LIFETIME_US. Pinned routes never
+// expire.
 void mesh_now_expire_routes(int64_t now_us)
 {
-    bool active[MAX_ROUTES];
     xSemaphoreTake(state_mutex, portMAX_DELAY);
 
-    for (int i = 0; i < route_count; i++) {
+    mesh_route_t *routes = (mesh_route_t *)route_pool.blocks;
+    int removed = 0;
+    for (size_t i = 0; i < route_pool.block_count; i++) {
         if (routes[i].active && !routes[i].pinned &&
             (now_us - routes[i].last_used_us) > ROUTE_LIFETIME_US) {
             ESP_LOGD(TAG, "Route to %s expired",
                      mesh_now_mac_str(routes[i].dest_mac));
+            mesh_now_pool_free(&route_pool, &routes[i]);
             routes[i].active = false;
+            route_count--;
+            removed++;
         }
-        active[i] = routes[i].active || routes[i].pinned;
     }
 
-    size_t count = (size_t)route_count;
-    mesh_now_compact_entries(routes, &count, sizeof(routes[0]), active);
-    route_count = (int)count;
-
     xSemaphoreGive(state_mutex);
+
+    if (removed > 0) {
+        ESP_LOGD(TAG, "Expired %d route(s)", removed);
+    }
 }
 
 // Store the route entry's node_name (RREP carries the answering node's name).
 void mesh_now_route_set_name(const uint8_t *dest_mac, const char *name)
 {
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    int idx = find_route(dest_mac);
-    if (idx >= 0) {
-        strncpy(routes[idx].node_name, name, MESH_NOW_NODE_NAME_MAX);
-        routes[idx].node_name[MESH_NOW_NODE_NAME_MAX] = '\0';
+    mesh_route_t *r = find_route_locked(dest_mac);
+    if (r != NULL) {
+        strncpy(r->node_name, name, MESH_NOW_NODE_NAME_MAX);
+        r->node_name[MESH_NOW_NODE_NAME_MAX] = '\0';
     }
     xSemaphoreGive(state_mutex);
 }

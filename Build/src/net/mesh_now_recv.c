@@ -146,7 +146,8 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
 
         if (mesh_msg.node_name[0] != '\0') {
             xSemaphoreTake(state_mutex, portMAX_DELAY);
-            for (int i = 0; i < peer_count; i++) {
+            mesh_peer_t *peers = (mesh_peer_t *)peer_pool.blocks;
+            for (size_t i = 0; i < peer_pool.block_count; i++) {
                 if (peers[i].active &&
                     memcmp(peers[i].peer_addr, mesh_msg.sender_mac,
                            ESP_NOW_ETH_ALEN) == 0) {
@@ -172,11 +173,8 @@ static void esp_now_recv_cb(const uint8_t *mac_addr, const uint8_t *data,
             return;
         }
 
-        int pending_index = mesh_now_find_pending(mesh_msg.reply_to);
-        if (pending_index >= 0) {
-            mesh_now_release_pending(pending_index);
-            ESP_LOGD(TAG, "Received ACK for message %u", mesh_msg.reply_to);
-        }
+        mesh_now_release_pending(mesh_msg.reply_to);
+        ESP_LOGD(TAG, "Received ACK for message %u", mesh_msg.reply_to);
     } else if (mesh_msg.type == MSG_TYPE_ROUTE_REQUEST) {
         mesh_now_handle_rreq(&mesh_msg, src_addr);
     } else if (mesh_msg.type == MSG_TYPE_ROUTE_REPLY) {

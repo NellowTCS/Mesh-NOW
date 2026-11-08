@@ -29,7 +29,10 @@ extern "C" {
 #endif
 
 // Cap on the physical (one-hop) ESP-NOW peer table.
-#define MAX_PEERS 20
+#ifndef CONFIG_MESH_NOW_MAX_PEERS
+#define CONFIG_MESH_NOW_MAX_PEERS 20
+#endif
+#define MAX_PEERS CONFIG_MESH_NOW_MAX_PEERS
 
 // Wire magic bytes ("MN").
 #define MESH_NOW_MAGIC_0 0x4d

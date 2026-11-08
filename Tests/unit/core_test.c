@@ -79,14 +79,14 @@ static void seen_cache_round_trip_and_shift(void)
     for (int i = 0; i < MAX_SEEN_MESSAGE_IDS; i++) {
         mesh_now_mark_message_seen((uint32_t)(1000 + i));
     }
-    CHECK(seen_message_count == MAX_SEEN_MESSAGE_IDS);
+    CHECK(seen_id_pool.used_count == MAX_SEEN_MESSAGE_IDS);
     CHECK(mesh_now_is_message_seen(1000u));
     CHECK(mesh_now_is_message_seen(1000u + MAX_SEEN_MESSAGE_IDS - 1));
 
     mesh_now_mark_message_seen(9999);
     CHECK(!mesh_now_is_message_seen(1000u));
     CHECK(mesh_now_is_message_seen(9999));
-    CHECK(seen_message_count == MAX_SEEN_MESSAGE_IDS);
+    CHECK(seen_id_pool.used_count == MAX_SEEN_MESSAGE_IDS);
 }
 
 static void time_sync_offset_and_average(void)
@@ -111,16 +111,17 @@ static void peer_online_respects_expiry_window(void)
     test_reset_all();
     CHECK(!mesh_now_peer_is_online(NULL));
 
-    peers[0].active = true;
-    peers[0].last_seen = g_now_us;
-    CHECK(mesh_now_peer_is_online(&peers[0]));
+    mesh_peer_t *peer_blocks = (mesh_peer_t *)peer_pool.blocks;
+    peer_blocks[0].active = true;
+    peer_blocks[0].last_seen = g_now_us;
+    CHECK(mesh_now_peer_is_online(&peer_blocks[0]));
 
-    peers[0].last_seen = g_now_us - PEER_EXPIRY_US - 1;
-    CHECK(!mesh_now_peer_is_online(&peers[0]));
+    peer_blocks[0].last_seen = g_now_us - PEER_EXPIRY_US - 1;
+    CHECK(!mesh_now_peer_is_online(&peer_blocks[0]));
 
-    peers[1].active = false;
-    peers[1].last_seen = g_now_us;
-    CHECK(!mesh_now_peer_is_online(&peers[1]));
+    peer_blocks[1].active = false;
+    peer_blocks[1].last_seen = g_now_us;
+    CHECK(!mesh_now_peer_is_online(&peer_blocks[1]));
 }
 
 void run_core_tests(void)

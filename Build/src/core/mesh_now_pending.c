@@ -5,6 +5,19 @@
 
 #define TAG "MESH_NOW"
 
+// Find an active pending block by message ID. Returns the block pointer or
+// NULL.  Caller must hold state_mutex.
+static pending_message_t *find_pending_locked(uint32_t message_id)
+{
+    pending_message_t *pendings = (pending_message_t *)pending_pool.blocks;
+    for (size_t i = 0; i < pending_pool.block_count; i++) {
+        if (pendings[i].active && pendings[i].message_id == message_id) {
+            return &pendings[i];
+        }
+    }
+    return NULL;
+}
+
 int mesh_now_add_pending(const uint8_t *dest_mac, const uint8_t *remote_dest,
                          const uint8_t *wire, size_t wire_len,
                          uint32_t message_id, uint8_t flags, bool route_wait)
@@ -12,53 +25,58 @@ int mesh_now_add_pending(const uint8_t *dest_mac, const uint8_t *remote_dest,
     // Init under one mutex hold so the retransmit task never sees a partial
     // slot.
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    for (int i = 0; i < MAX_PENDING_MESSAGES; ++i) {
-        if (pending_messages[i].active) {
-            continue;
-        }
-        pending_messages[i].message_id = message_id;
-        pending_messages[i].flags = flags;
-        memcpy(pending_messages[i].wire_buf, wire, wire_len);
-        pending_messages[i].wire_len = wire_len;
-        pending_messages[i].route_wait = route_wait;
-        if (dest_mac != NULL) {
-            memcpy(pending_messages[i].dest_mac, dest_mac, ESP_NOW_ETH_ALEN);
-        }
-        if (remote_dest != NULL) {
-            memcpy(pending_messages[i].remote_dest, remote_dest,
-                   ESP_NOW_ETH_ALEN);
-        }
-        pending_messages[i].retries = 0;
-        pending_messages[i].last_send_time_ms = esp_timer_get_time() / 1000;
-        pending_messages[i].active = true;
+
+    pending_message_t *p =
+        (pending_message_t *)mesh_now_pool_alloc(&pending_pool);
+    if (p == NULL) {
         xSemaphoreGive(state_mutex);
-        return i;
+        return -1;
     }
+
+    p->message_id = message_id;
+    p->flags = flags;
+    memcpy(p->wire_buf, wire, wire_len);
+    p->wire_len = wire_len;
+    p->route_wait = route_wait;
+    if (dest_mac != NULL) {
+        memcpy(p->dest_mac, dest_mac, ESP_NOW_ETH_ALEN);
+    }
+    if (remote_dest != NULL) {
+        memcpy(p->remote_dest, remote_dest, ESP_NOW_ETH_ALEN);
+    }
+    p->retries = 0;
+    p->last_send_time_ms = esp_timer_get_time() / 1000;
+    p->active = true;
+
     xSemaphoreGive(state_mutex);
-    return -1;
+    return 0;
 }
 
 int mesh_now_find_pending(uint32_t message_id)
 {
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    for (int i = 0; i < MAX_PENDING_MESSAGES; ++i) {
-        if (pending_messages[i].active &&
-            pending_messages[i].message_id == message_id) {
-            xSemaphoreGive(state_mutex);
-            return i;
-        }
-    }
+    pending_message_t *p = find_pending_locked(message_id);
     xSemaphoreGive(state_mutex);
-    return -1;
+    return p != NULL ? 0 : -1;
 }
 
-void mesh_now_release_pending(int index)
+pending_message_t *mesh_now_find_pending_locked(uint32_t message_id)
 {
-    if (index >= 0 && index < MAX_PENDING_MESSAGES) {
-        xSemaphoreTake(state_mutex, portMAX_DELAY);
-        pending_messages[index].active = false;
-        xSemaphoreGive(state_mutex);
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
+    pending_message_t *p = find_pending_locked(message_id);
+    xSemaphoreGive(state_mutex);
+    return p;
+}
+
+void mesh_now_release_pending(uint32_t message_id)
+{
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
+    pending_message_t *p = find_pending_locked(message_id);
+    if (p != NULL) {
+        mesh_now_pool_free(&pending_pool, p);
+        p->active = false; // pool_free overwrites the first bytes (incl. active)
     }
+    xSemaphoreGive(state_mutex);
 }
 
 // RREP resolved a route to target: deliver buffered DMs to its next hop.
@@ -75,9 +93,11 @@ void mesh_now_flush_route_wait(const uint8_t *target)
 
     int64_t now_ms = esp_timer_get_time() / 1000;
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    for (int i = 0;
-         i < MAX_PENDING_MESSAGES && flush_count < MAX_PENDING_MESSAGES; ++i) {
-        pending_message_t *pending = &pending_messages[i];
+    pending_message_t *pendings = (pending_message_t *)pending_pool.blocks;
+    for (size_t i = 0;
+         i < pending_pool.block_count && flush_count < MAX_PENDING_MESSAGES;
+         ++i) {
+        pending_message_t *pending = &pendings[i];
         if (!pending->active || !pending->route_wait ||
             memcmp(pending->remote_dest, target, ESP_NOW_ETH_ALEN) != 0) {
             continue;
@@ -95,22 +115,15 @@ void mesh_now_flush_route_wait(const uint8_t *target)
         uint8_t wire[WIRE_BUF_SIZE];
         size_t wire_len = 0;
         uint32_t msg_id = flush_ids[i];
-        int idx = -1;
         xSemaphoreTake(state_mutex, portMAX_DELAY);
-        for (int p = 0; p < MAX_PENDING_MESSAGES; ++p) {
-            if (pending_messages[p].active &&
-                pending_messages[p].message_id == msg_id) {
-                idx = p;
-                break;
-            }
-        }
-        if (idx >= 0) {
-            memcpy(dest, pending_messages[idx].dest_mac, ESP_NOW_ETH_ALEN);
-            wire_len = pending_messages[idx].wire_len;
-            memcpy(wire, pending_messages[idx].wire_buf, wire_len);
+        pending_message_t *pending = find_pending_locked(msg_id);
+        if (pending != NULL) {
+            memcpy(dest, pending->dest_mac, ESP_NOW_ETH_ALEN);
+            wire_len = pending->wire_len;
+            memcpy(wire, pending->wire_buf, wire_len);
         }
         xSemaphoreGive(state_mutex);
-        if (idx < 0) {
+        if (pending == NULL) {
             continue;
         }
         esp_err_t ret = esp_now_send(dest, wire, wire_len);

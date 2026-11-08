@@ -6,9 +6,6 @@
 
 #define TAG "MESH_NOW"
 
-// Number of active entries in the route_requests table.
-static int route_request_count = 0;
-
 // Elements expire after the RREP had time to traverse back; twice the RREQ
 // timeout is plenty.
 #define RREQ_CACHE_TTL_US (ROUTE_REQ_TIMEOUT_US * 2)
@@ -18,13 +15,13 @@ bool mesh_now_rreq_cache_hit(const uint8_t *origin_mac, uint32_t message_id)
     int64_t now_us = esp_timer_get_time();
     bool hit = false;
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    for (int i = 0; i < MAX_RREQ_CACHE; i++) {
-        rreq_cache_entry_t *entry = &rreq_cache[i];
-        if (!entry->active || entry->expires_us < now_us) {
+    rreq_cache_entry_t *cache = (rreq_cache_entry_t *)rreq_cache_pool.blocks;
+    for (size_t i = 0; i < rreq_cache_pool.block_count; i++) {
+        if (!cache[i].active || cache[i].expires_us < now_us) {
             continue;
         }
-        if (entry->message_id == message_id &&
-            memcmp(entry->origin_mac, origin_mac, ESP_NOW_ETH_ALEN) == 0) {
+        if (cache[i].message_id == message_id &&
+            memcmp(cache[i].origin_mac, origin_mac, ESP_NOW_ETH_ALEN) == 0) {
             hit = true;
             break;
         }
@@ -36,49 +33,52 @@ bool mesh_now_rreq_cache_hit(const uint8_t *origin_mac, uint32_t message_id)
 void mesh_now_rreq_cache_record(const uint8_t *origin_mac, uint32_t message_id)
 {
     int64_t now_us = esp_timer_get_time();
-    uint8_t *slot = NULL;
     int64_t expires_us = now_us + RREQ_CACHE_TTL_US;
 
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    for (int i = 0; i < MAX_RREQ_CACHE; i++) {
-        if (!rreq_cache[i].active || rreq_cache[i].expires_us < now_us) {
-            slot = rreq_cache[i].origin_mac;
-            rreq_cache[i].message_id = message_id;
-            rreq_cache[i].expires_us = expires_us;
-            rreq_cache[i].active = true;
+    rreq_cache_entry_t *cache = (rreq_cache_entry_t *)rreq_cache_pool.blocks;
+
+    // Reuse an expired or free slot first.
+    rreq_cache_entry_t *slot = NULL;
+    for (size_t i = 0; i < rreq_cache_pool.block_count; i++) {
+        if (!cache[i].active || cache[i].expires_us < now_us) {
+            cache[i].active = true;
+            cache[i].message_id = message_id;
+            cache[i].expires_us = expires_us;
+            memcpy(cache[i].origin_mac, origin_mac, ESP_NOW_ETH_ALEN);
+            slot = &cache[i];
             break;
         }
     }
     if (slot != NULL) {
-        memcpy(slot, origin_mac, ESP_NOW_ETH_ALEN);
         xSemaphoreGive(state_mutex);
         return;
     }
 
     // Cache full: evict the oldest entry via linear scan.
-    int oldest = 0;
-    for (int i = 1; i < MAX_RREQ_CACHE; i++) {
-        if (rreq_cache[i].expires_us < rreq_cache[oldest].expires_us) {
+    size_t oldest = 0;
+    for (size_t i = 1; i < rreq_cache_pool.block_count; i++) {
+        if (cache[i].expires_us < cache[oldest].expires_us) {
             oldest = i;
         }
     }
-    memcpy(rreq_cache[oldest].origin_mac, origin_mac, ESP_NOW_ETH_ALEN);
-    rreq_cache[oldest].message_id = message_id;
-    rreq_cache[oldest].expires_us = expires_us;
-    rreq_cache[oldest].active = true;
+    memcpy(cache[oldest].origin_mac, origin_mac, ESP_NOW_ETH_ALEN);
+    cache[oldest].message_id = message_id;
+    cache[oldest].expires_us = expires_us;
+    cache[oldest].active = true;
     xSemaphoreGive(state_mutex);
 }
 
-static int find_route_request(const uint8_t *dest_mac)
+static route_request_t *find_route_request_locked(const uint8_t *dest_mac)
 {
-    for (int i = 0; i < route_request_count; i++) {
-        if (route_requests[i].active &&
-            memcmp(route_requests[i].dest_mac, dest_mac, ESP_NOW_ETH_ALEN) ==
-                0) {
-            return i;
+    route_request_t *requests = (route_request_t *)route_request_pool.blocks;
+    for (size_t i = 0; i < route_request_pool.block_count; i++) {
+        if (requests[i].active &&
+            memcmp(requests[i].dest_mac, dest_mac, ESP_NOW_ETH_ALEN) == 0) {
+            return &requests[i];
         }
     }
-    return -1;
+    return NULL;
 }
 
 // Broadcast an RREQ for target; one in-flight entry covers the whole
@@ -102,26 +102,30 @@ esp_err_t mesh_now_request_route(const uint8_t *target)
 
     xSemaphoreTake(state_mutex, portMAX_DELAY);
 
-    int idx = find_route_request(target);
-    if (idx < 0) {
+    route_request_t *req = find_route_request_locked(target);
+    if (req == NULL) {
         if (route_request_count >= MAX_ROUTE_REQUESTS) {
             xSemaphoreGive(state_mutex);
             return ESP_ERR_NO_MEM;
         }
-        idx = route_request_count++;
-        // New request, first attempt.
-        memcpy(route_requests[idx].dest_mac, target, ESP_NOW_ETH_ALEN);
-        route_requests[idx].attempts = 1;
-        route_requests[idx].active = true;
+        req = (route_request_t *)mesh_now_pool_alloc(&route_request_pool);
+        if (req == NULL) {
+            xSemaphoreGive(state_mutex);
+            return ESP_ERR_NO_MEM;
+        }
+        memcpy(req->dest_mac, target, ESP_NOW_ETH_ALEN);
+        req->attempts = 1;
+        req->active = true;
+        route_request_count++;
     } else {
         // Retried: one more attempt. The retransmit task enforces the cap so
         // it can drop the buffered DM too.
-        route_requests[idx].attempts++;
+        req->attempts++;
     }
-    route_requests[idx].rreq_seq = mesh_now_generate_message_id();
-    route_requests[idx].expires_us = now_us + ROUTE_REQ_TIMEOUT_US;
-    uint32_t rreq_seq = route_requests[idx].rreq_seq;
-    int new_attempts = route_requests[idx].attempts;
+    req->rreq_seq = mesh_now_generate_message_id();
+    req->expires_us = now_us + ROUTE_REQ_TIMEOUT_US;
+    uint32_t rreq_seq = req->rreq_seq;
+    int new_attempts = req->attempts;
 
     xSemaphoreGive(state_mutex);
 
@@ -148,9 +152,9 @@ int mesh_now_route_request_attempts(const uint8_t *target)
 {
     int attempts = -1;
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    int idx = find_route_request(target);
-    if (idx >= 0) {
-        attempts = route_requests[idx].attempts;
+    route_request_t *req = find_route_request_locked(target);
+    if (req != NULL) {
+        attempts = req->attempts;
     }
     xSemaphoreGive(state_mutex);
     return attempts;
@@ -160,17 +164,11 @@ int mesh_now_route_request_attempts(const uint8_t *target)
 static void clear_route_request(const uint8_t *dest_mac)
 {
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    int idx = find_route_request(dest_mac);
-    if (idx >= 0) {
-        route_requests[idx].active = false;
-        bool active[MAX_ROUTE_REQUESTS];
-        for (int i = 0; i < route_request_count; i++) {
-            active[i] = route_requests[i].active;
-        }
-        size_t count = (size_t)route_request_count;
-        mesh_now_compact_entries(route_requests, &count,
-                                 sizeof(route_requests[0]), active);
-        route_request_count = (int)count;
+    route_request_t *req = find_route_request_locked(dest_mac);
+    if (req != NULL) {
+        mesh_now_pool_free(&route_request_pool, req);
+        req->active = false; // pool_free overwrites the first bytes (incl. active)
+        route_request_count--;
     }
     xSemaphoreGive(state_mutex);
 }
@@ -179,16 +177,19 @@ static void clear_route_request(const uint8_t *dest_mac)
 // same destination.
 void mesh_now_expire_route_requests(int64_t now_us)
 {
-    bool active[MAX_ROUTE_REQUESTS];
     xSemaphoreTake(state_mutex, portMAX_DELAY);
-    for (int i = 0; i < route_request_count; i++) {
-        active[i] =
-            route_requests[i].active && route_requests[i].expires_us >= now_us;
+
+    route_request_t *requests = (route_request_t *)route_request_pool.blocks;
+    int removed = 0;
+    for (size_t i = 0; i < route_request_pool.block_count; i++) {
+        if (requests[i].active && requests[i].expires_us < now_us) {
+            mesh_now_pool_free(&route_request_pool, &requests[i]);
+            requests[i].active = false; // pool_free overwrites the first bytes
+            route_request_count--;
+            removed++;
+        }
     }
-    size_t count = (size_t)route_request_count;
-    mesh_now_compact_entries(route_requests, &count, sizeof(route_requests[0]),
-                             active);
-    route_request_count = (int)count;
+
     xSemaphoreGive(state_mutex);
 }
 

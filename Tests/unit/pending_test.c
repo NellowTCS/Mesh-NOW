@@ -38,13 +38,19 @@ static void add_find_release(void)
     uint8_t wire[WIRE_BUF_SIZE];
     size_t wire_len = build_wire(900, wire, sizeof(wire));
 
-    int idx = mesh_now_add_pending(dest_hop, remote_a, wire, wire_len, 900,
-                                   MSG_FLAG_REQUIRES_ACK, true);
-    CHECK(idx >= 0);
-    CHECK(idx < MAX_PENDING_MESSAGES);
-    CHECK(mesh_now_find_pending(900) == idx);
+    CHECK(mesh_now_add_pending(dest_hop, remote_a, wire, wire_len, 900,
+                               MSG_FLAG_REQUIRES_ACK, true) == 0);
+    CHECK(mesh_now_find_pending(900) == 0); // found
 
-    pending_message_t *slot = &pending_messages[idx];
+    pending_message_t *pendings = (pending_message_t *)pending_pool.blocks;
+    pending_message_t *slot = NULL;
+    for (size_t i = 0; i < pending_pool.block_count; i++) {
+        if (pendings[i].active && pendings[i].message_id == 900) {
+            slot = &pendings[i];
+            break;
+        }
+    }
+    CHECK(slot != NULL);
     CHECK(slot->active);
     CHECK(slot->route_wait);
     CHECK(slot->retries == 0);
@@ -56,11 +62,10 @@ static void add_find_release(void)
 
     CHECK(mesh_now_find_pending(901) == -1);
 
-    mesh_now_release_pending(idx);
+    mesh_now_release_pending(900);
     CHECK(mesh_now_find_pending(900) == -1);
-    CHECK(!pending_messages[idx].active);
 
-    mesh_now_release_pending(-1); // out of range is a no-op
+    mesh_now_release_pending(9999); // unknown id is a no-op
 }
 
 static void full_buffer_refuses_extra_slots(void)
@@ -70,7 +75,7 @@ static void full_buffer_refuses_extra_slots(void)
     for (uint32_t i = 0; i < MAX_PENDING_MESSAGES; i++) {
         size_t len = build_wire(1000 + i, wire, sizeof(wire));
         CHECK(mesh_now_add_pending(dest_hop, remote_a, wire, len, 1000 + i,
-                                   MSG_FLAG_REQUIRES_ACK, true) >= 0);
+                                   MSG_FLAG_REQUIRES_ACK, true) == 0);
     }
     size_t len = build_wire(9999, wire, sizeof(wire));
     CHECK(mesh_now_add_pending(dest_hop, remote_a, wire, len, 9999,
@@ -99,16 +104,16 @@ static void flush_delivers_to_route_next_hop(void)
     CHECK(g_send_calls == 2);
     CHECK(macs_equal(g_send.dest, dest_hop));
 
-    int idx1 = mesh_now_find_pending(1);
-    int idx2 = mesh_now_find_pending(2);
-    int idx3 = mesh_now_find_pending(3);
-    CHECK(idx1 >= 0 && idx2 >= 0 && idx3 >= 0);
-    CHECK(!pending_messages[idx1].route_wait);
-    CHECK(!pending_messages[idx2].route_wait);
-    CHECK(macs_equal(pending_messages[idx1].dest_mac, dest_hop));
-    CHECK(macs_equal(pending_messages[idx2].dest_mac, dest_hop));
-    CHECK(pending_messages[idx3].route_wait); // untouched
-    CHECK(macs_equal(pending_messages[idx3].dest_mac, dest_hop));
+    pending_message_t *p1 = mesh_now_find_pending_locked(1);
+    pending_message_t *p2 = mesh_now_find_pending_locked(2);
+    pending_message_t *p3 = mesh_now_find_pending_locked(3);
+    CHECK(p1 != NULL && p2 != NULL && p3 != NULL);
+    CHECK(!p1->route_wait);
+    CHECK(!p2->route_wait);
+    CHECK(macs_equal(p1->dest_mac, dest_hop));
+    CHECK(macs_equal(p2->dest_mac, dest_hop));
+    CHECK(p3->route_wait); // untouched
+    CHECK(macs_equal(p3->dest_mac, dest_hop));
 }
 
 static void flush_without_route_does_nothing(void)
@@ -121,7 +126,8 @@ static void flush_without_route_does_nothing(void)
 
     mesh_now_flush_route_wait(remote_a);
     CHECK(g_send_calls == 0);
-    CHECK(pending_messages[0].route_wait);
+    pending_message_t *pendings = (pending_message_t *)pending_pool.blocks;
+    CHECK(pendings[0].route_wait);
 }
 
 void run_pending_tests(void)
