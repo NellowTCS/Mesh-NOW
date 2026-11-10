@@ -21,11 +21,15 @@ Mesh-NOW is a protocol and library that turns any ESP32 into a mesh networking n
 
 ## Web Installer
 
+<img src="Docs/assets/images/journal-1789367670421.webp">
+
 The [web installer](/Demo/flasher.html) flashes firmware to a node over Web
 Serial, without installing esptool or building anything. Pick a firmware
 version and target chip, plug in the node, and flash. Each tagged release
 publishes to GitHub Pages at [https://nellowtcs.me/Mesh-NOW/flasher.html](https://nellowtcs.github.io/Mesh-NOW/flasher.html), maintained by the
 `static-site` workflow:
+
+<img src="Docs/assets/images/journal-1789367670421.webp">
 
 - [https://nellowtcs.me/Mesh-NOW](https://nellowtcs.me/Mesh-NOW) - chat UI
 - [https://nellowtcs.me/Mesh-NOW/flasher.html](https://nellowtcs.me/Mesh-NOW/flasher.html) - web installer
