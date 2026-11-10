@@ -108,6 +108,34 @@ static void expire_deregisters_and_compacts(void)
     CHECK(!mesh_now_peer_is_direct(p1));
 }
 
+static void remove_readd_add_another_keeps_both(void)
+{
+    mocks_for_peer_tests();
+
+    // Remove a peer, re-add it, then add a different peer
+    mesh_now_add_peer(p1);
+    CHECK(mesh_now_get_peer_count() == 1);
+    CHECK(mesh_now_peer_is_direct(p1));
+
+    mesh_now_remove_peer(p1);
+    CHECK(mesh_now_get_peer_count() == 0);
+    CHECK(!mesh_now_peer_is_direct(p1));
+    CHECK(g_del_peer_calls == 1);
+
+    mesh_now_add_peer(p1);
+    CHECK(mesh_now_get_peer_count() == 1);
+    CHECK(mesh_now_peer_is_direct(p1));
+
+    mesh_now_add_peer(p2);
+    CHECK(mesh_now_get_peer_count() == 2);
+    CHECK(mesh_now_peer_is_direct(p1));
+    CHECK(mesh_now_peer_is_direct(p2));
+
+    // Both peers must have distinct slots
+    CHECK(g_add_peer_calls == 3); // p1 (initial) + p1 (re-add) + p2
+    CHECK(g_del_peer_calls == 1);
+}
+
 static void expire_invalidates_routes_and_sends_rerr(void)
 {
     mocks_for_peer_tests();
@@ -146,6 +174,7 @@ void run_peer_tests(void)
     full_table_refuses_new_peers();
     esp_now_reject_prevents_registration();
     remove_drops_entry_and_keeps_order();
+    remove_readd_add_another_keeps_both();
     expire_deregisters_and_compacts();
     expire_invalidates_routes_and_sends_rerr();
     snapshot_copies_up_to_max_out();

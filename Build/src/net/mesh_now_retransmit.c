@@ -123,18 +123,20 @@ void mesh_now_retransmit_task_fn(void *pvParameters)
                 continue;
             }
 
-            pending_message_t *p = mesh_now_find_pending_locked(message_id);
-            if (p == NULL) {
-                continue;
-            }
             size_t wire_len = 0;
             uint8_t wire[WIRE_BUF_SIZE];
             int retries = 0;
             xSemaphoreTake(state_mutex, portMAX_DELAY);
-            wire_len = p->wire_len;
-            memcpy(wire, p->wire_buf, wire_len);
-            retries = p->retries;
+            pending_message_t *p = mesh_now_find_pending_locked(message_id);
+            if (p != NULL) {
+                wire_len = p->wire_len;
+                memcpy(wire, p->wire_buf, wire_len);
+                retries = p->retries;
+            }
             xSemaphoreGive(state_mutex);
+            if (p == NULL) {
+                continue;
+            }
 
             esp_err_t ret = esp_now_send(dest_mac, wire, wire_len);
             if (ret == ESP_OK) {

@@ -101,6 +101,9 @@ void mesh_now_remove_peer(const uint8_t *mac)
         }
 
         p->active = false;
+        // Zero the MAC so a freed slot can't be matched by find_peer_locked()
+        // when the same MAC reappears
+        memset(p->peer_addr, 0, ESP_NOW_ETH_ALEN);
         mesh_now_pool_free(&peer_pool, p);
         peer_count--;
         ESP_LOGI(TAG, "Removed peer: %02x:%02x:%02x:%02x:%02x:%02x", mac[0],
@@ -151,6 +154,8 @@ void mesh_now_expire_peers(int64_t now_us)
                        ESP_NOW_ETH_ALEN);
                 expired_count++;
             }
+            // Zero the MAC
+            memset(peers[i].peer_addr, 0, ESP_NOW_ETH_ALEN);
             mesh_now_pool_free(&peer_pool, &peers[i]);
             peer_count--;
         }

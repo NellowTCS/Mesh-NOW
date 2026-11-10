@@ -104,9 +104,11 @@ static void flush_delivers_to_route_next_hop(void)
     CHECK(g_send_calls == 2);
     CHECK(macs_equal(g_send.dest, dest_hop));
 
+    xSemaphoreTake(state_mutex, portMAX_DELAY);
     pending_message_t *p1 = mesh_now_find_pending_locked(1);
     pending_message_t *p2 = mesh_now_find_pending_locked(2);
     pending_message_t *p3 = mesh_now_find_pending_locked(3);
+    xSemaphoreGive(state_mutex);
     CHECK(p1 != NULL && p2 != NULL && p3 != NULL);
     CHECK(!p1->route_wait);
     CHECK(!p2->route_wait);

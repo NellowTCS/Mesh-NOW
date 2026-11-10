@@ -62,10 +62,8 @@ int mesh_now_find_pending(uint32_t message_id)
 
 pending_message_t *mesh_now_find_pending_locked(uint32_t message_id)
 {
-    xSemaphoreTake(state_mutex, portMAX_DELAY);
-    pending_message_t *p = find_pending_locked(message_id);
-    xSemaphoreGive(state_mutex);
-    return p;
+    // Caller must hold state_mutex and not take it to prevent use-after-free.
+    return find_pending_locked(message_id);
 }
 
 void mesh_now_release_pending(uint32_t message_id)
