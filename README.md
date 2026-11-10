@@ -29,7 +29,7 @@ version and target chip, plug in the node, and flash. Each tagged release
 publishes to GitHub Pages at [https://nellowtcs.me/Mesh-NOW/flasher.html](https://nellowtcs.github.io/Mesh-NOW/flasher.html), maintained by the
 `static-site` workflow:
 
-<img src="Docs/assets/images/journal-1789367670421.webp">
+<img src="Docs/assets/images/journal-1788416075551.webp">
 
 - [https://nellowtcs.me/Mesh-NOW](https://nellowtcs.me/Mesh-NOW) - chat UI
 - [https://nellowtcs.me/Mesh-NOW/flasher.html](https://nellowtcs.me/Mesh-NOW/flasher.html) - web installer
