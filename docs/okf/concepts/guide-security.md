@@ -4,10 +4,10 @@ title: Security
 description: "What Mesh-NOW encryption protects and what it does not."
 source: "https://nellowtcs.me/Mesh-NOW/docs/guide/security/"
 path: /guide/security/
-updated: 2026-11-08
+updated: 2026-11-10
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-11-08T11:58:31.075Z"
+  generated_at: "2026-11-10T20:44:24.624Z"
 ---
 ---
 title: "Security"

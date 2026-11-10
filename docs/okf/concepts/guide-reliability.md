@@ -4,10 +4,10 @@ title: Reliability
 description: "ACK mechanism, retransmission, and pending message management."
 source: "https://nellowtcs.me/Mesh-NOW/docs/guide/reliability/"
 path: /guide/reliability/
-updated: 2026-11-08
+updated: 2026-11-10
 okf:
   generated_by: "@docmd/plugin-okf"
-  generated_at: "2026-11-08T11:58:31.074Z"
+  generated_at: "2026-11-10T20:44:24.623Z"
 ---
 ---
 title: "Reliability"
